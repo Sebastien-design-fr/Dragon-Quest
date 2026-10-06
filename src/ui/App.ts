@@ -55,7 +55,7 @@ export class App {
     this.screenEl = root.querySelector('#screen')!;
     this.toastEl = root.querySelector('#toast')!;
     this.tabs = root.querySelector('#tabs')!;
-    this.tray = root.querySelector('#sim-tray')!;
+    this.tray = document.querySelector('#sim-tray')!;
 
     this.screens = this.isParent
       ? [new ValidationsScreen(this), new ParentMissionsScreen(this), new FamilyScreen(this)]

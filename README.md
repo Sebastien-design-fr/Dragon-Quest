@@ -127,6 +127,28 @@ Chaque pièce est dessinée dans la boîte et autour du pivot indiqués dans le 
 
 **Brief pour l'illustrateur** : livrer chaque stade en pièces séparées, sur fond transparent, vue de profil (tête à droite), pose neutre identique à celle des placeholders. Dans un outil type Spine ou Rive, on peut aussi caler le squelette directement sur l'illustration puis reporter les coordonnées dans le rig.
 
+## Mode maison : profils, missions et validations
+
+Une seule appli, deux profils choisis au premier lancement :
+
+- **Enfant** : son dragon, ses missions du jour (« C'est fait »), les initiatives, la boutique, l'inventaire. Rappels à l'heure de chaque mission puis relance 1 h plus tard, programmés par le téléphone lui-même.
+- **Parent** : les demandes à valider (aussi directement depuis la notification : Valider / À refaire, ou +10 / +25 pour une initiative), les missions de chaque enfant (création, jours, heure, quêtes spéciales), le coup de cœur (bonus libre), l'ajout de téléphones.
+
+Les téléphones se parlent **directement sur le Wi-Fi de la maison**, sans serveur ni compte :
+
+- découverte automatique (mDNS / NSD), connexion TCP directe ;
+- messages signés (HMAC-SHA256) avec la clé secrète de la famille, transmise une seule fois à l'appairage ;
+- appairage par **code à 6 chiffres** affiché par un parent (valable 10 min, 5 essais) ;
+- un service Android en veille reçoit les messages appli fermée et affiche les notifications (Android impose une petite notification permanente) ;
+- hors du Wi-Fi, les messages attendent et partent au retour ;
+- le téléphone de l'enfant fait foi pour le dragon : les parents reçoivent son état (niveau, missions du jour, équipement) et voient son dragon.
+
+Le module natif est dans `plugins/home-link/` (Java), la logique dans `src/family/` et `src/link/`. Missions par défaut : `www/data/missions.json`.
+
+**Tester sans téléphone** : `npm run build && npm run serve`, puis ouvrir deux onglets `http://localhost:5173/?device=parent` et `?device=enfant`. Les notifications apparaissent en bandeau en haut de page, avec leurs boutons.
+
+**Outils de test** (XP, stades, couches) : appuyer 7 fois sur la ligne de version, en bas des Réglages ou de Famille.
+
 ## Performance
 
 - Seuls les fichiers réellement présents (liste générée au build) sont demandés.
@@ -141,5 +163,5 @@ Stockée sur l'appareil : stade, niveau, XP, or, objets possédés, objets port�
 
 ## À venir
 
-- Profils Enfant / Parent, missions, validation et notifications (en discussion).
 - Remplacement des placeholders par les illustrations définitives.
+- Option : relais Supabase pour valider hors de la maison.
