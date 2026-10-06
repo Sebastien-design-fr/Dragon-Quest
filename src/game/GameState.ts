@@ -62,7 +62,9 @@ export class GameState {
 
   // ---------- Progression ----------
   xpToNext(level = this.data.level): number {
-    return Math.round(this.catalog.xp.base * Math.pow(this.catalog.xp.growth, level - 1));
+    const c = this.catalog.xp;
+    if (c.step !== undefined) return Math.round(c.base + c.step * (level - 1));
+    return Math.round(c.base * Math.pow(c.growth ?? 1.15, level - 1));
   }
   stageForLevel(level: number): StageDef {
     let s = this.catalog.stages[0];
@@ -93,7 +95,7 @@ export class GameState {
     this.commit();
   }
 
-  addGold(n: number): void { this.data.gold += n; this.commit(); }
+  addGold(n: number): void { this.data.gold = Math.max(0, this.data.gold + n); this.commit(); }
 
   // ---------- Boutique & inventaire ----------
   owns(id: string): boolean { return this.data.owned.includes(id); }

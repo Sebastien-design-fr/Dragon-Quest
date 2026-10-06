@@ -29,6 +29,8 @@ export interface RequestInfo {
   note?: string;
   childName?: string;
   date: string;
+  /** Moment où l'enfant a coché la mission (ponctualité). */
+  doneAt?: number;
 }
 
 /** Photo de l'état de l'enfant, envoyée aux parents. */
@@ -45,6 +47,10 @@ export interface ChildSnapshot {
   today: Record<string, MissionStatus>;
   date: string;
   streak: number;
+  energy?: number;
+  title?: string | null;
+  badgeCount?: number;
+  badgeTotal?: number;
 }
 
 export const DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];

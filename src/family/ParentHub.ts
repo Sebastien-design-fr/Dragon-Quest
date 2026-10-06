@@ -70,6 +70,11 @@ export class ParentHub {
         this.data.children[msg.from] = { name: p.name || msg.fromName, snapshot: p as ChildSnapshot, updatedAt: Date.now() };
         return true;
       }
+      case 'badge': {
+        if (msg.outgoing) return false;
+        this.log(`${msg.fromName} a débloqué « ${p.title} »`);
+        return true;
+      }
       case 'family.joined': {
         this.log(`${p.name} a rejoint la famille (${p.role === 'parent' ? 'parent' : 'enfant'})`);
         if (p.role === 'child') this.data.children[p.id] = { name: p.name, snapshot: null, updatedAt: 0 };
@@ -103,6 +108,16 @@ export class ParentHub {
       title: 'Coup de cœur !', body: `${rewardText(xp, gold)}${message ? ` — « ${message} »` : ''}`, tag: newId('gift-'), channel: 'missions'
     });
     this.log(`Coup de cœur envoyé à ${this.child(childId)?.name ?? 'l’enfant'} : ${rewardText(xp, gold)}`);
+    this.save();
+  }
+
+  /** Avertissement : retire de l'or à l'enfant (50 au maximum) et un peu d'énergie au dragon. */
+  async warn(childId: string, gold: number, reason: string): Promise<void> {
+    const g = Math.min(50, Math.max(0, Math.round(gold)));
+    await this.link.send(childId, 'warning', { gold: g, reason }, {
+      title: 'Avertissement', body: `−${g} or${reason ? ` — « ${reason} »` : ''}. Ton dragon perd aussi un peu d’énergie.`, tag: newId('warn-'), channel: 'missions'
+    });
+    this.log(`Avertissement à ${this.child(childId)?.name ?? 'l’enfant'} : −${g} or (${reason})`);
     this.save();
   }
 

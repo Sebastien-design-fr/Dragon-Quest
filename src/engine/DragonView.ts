@@ -61,6 +61,8 @@ export class DragonView {
   quality: QualityPreset = { particleMultiplier: 1, permanentEffects: true, fpsCap: 60, maxResolution: 2, secondaryMotion: true };
   effectsEnabled = true;
   showAnchors = false;
+  /** Dragon fatigué (énergie basse) : couleurs ternies. */
+  tired = false;
 
   private time = 0;
   private cam: Rect = { x: -300, y: -400, w: 600, h: 420 };
@@ -274,6 +276,8 @@ export class DragonView {
 
     if (this.layers.magicalEffect) { this.camM.apply(ctx); this.particles.draw(ctx, 'magical'); }
 
+    ctx.filter = this.tired ? 'grayscale(0.75) brightness(0.62) contrast(0.92)' : 'none';
+    this.animator.speed = this.tired ? 0.6 : 1;
     const style = { palette: this.rig.palette, params: this.rig.params, time: this.time, effects: this.effectsEnabled && this.quality.permanentEffects };
     for (const d of this.drawables) {
       if (this.layers[d.layer] === false) continue;
@@ -301,6 +305,7 @@ export class DragonView {
       }
     }
 
+    ctx.filter = 'none';
     if (this.layers.foregroundEffect) { this.camM.apply(ctx); this.particles.draw(ctx, 'foreground'); }
 
     if (this.flash > 0) {

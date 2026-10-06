@@ -1,10 +1,45 @@
 {
   "note": "Stades d'évolution. minLevel = niveau à partir duquel le stade est atteint. Ajouter un stade = une entrée ici + son rig.",
   "stages": [
-    { "id": "baby",      "label": "Dragon bébé",       "tagline": "Mignon mais puissant",       "minLevel": 1,  "rig": "data/rigs/baby.sprite.json",      "permanentEffects": [] },
-    { "id": "young",     "label": "Jeune dragon",      "tagline": "Élancé et agile",            "minLevel": 6,  "rig": "data/rigs/young.sprite.json",     "permanentEffects": [] },
-    { "id": "adult",     "label": "Dragon adulte",     "tagline": "Massif et imposant",         "minLevel": 12, "rig": "data/rigs/adult.sprite.json",     "permanentEffects": [] },
-    { "id": "legendary", "label": "Dragon légendaire", "tagline": "Apothéose de la puissance",  "minLevel": 20, "rig": "data/rigs/legendary.sprite.json", "permanentEffects": ["legendaryAura", "legendaryGold"] }
+    {
+      "id": "baby",
+      "label": "Dragon bébé",
+      "tagline": "Mignon mais puissant",
+      "minLevel": 1,
+      "rig": "data/rigs/baby.sprite.json",
+      "permanentEffects": []
+    },
+    {
+      "id": "young",
+      "label": "Jeune dragon",
+      "tagline": "Élancé et agile",
+      "minLevel": 6,
+      "rig": "data/rigs/young.sprite.json",
+      "permanentEffects": []
+    },
+    {
+      "id": "adult",
+      "label": "Dragon adulte",
+      "tagline": "Massif et imposant",
+      "minLevel": 15,
+      "rig": "data/rigs/adult.sprite.json",
+      "permanentEffects": []
+    },
+    {
+      "id": "legendary",
+      "label": "Dragon légendaire",
+      "tagline": "Apothéose de la puissance",
+      "minLevel": 30,
+      "rig": "data/rigs/legendary.sprite.json",
+      "permanentEffects": [
+        "legendaryAura",
+        "legendaryGold"
+      ]
+    }
   ],
-  "xp": { "base": 100, "growth": 1.15 }
+  "xp": {
+    "base": 190,
+    "step": 26,
+    "note": "XP pour passer du niveau N au suivant = base + step × (N − 1). Avec ~400 XP/semaine : jeune ≈ 3 semaines, adulte ≈ 3 mois, légendaire ≈ 9-10 mois."
+  }
 }

@@ -73,7 +73,8 @@ export class App {
     state.events.on('evolve', ({ to }) => { if (!this.isParent) this.evolve(to); });
 
     const book = family.book, hub = family.hub;
-    book?.events.on('change', () => this.refresh());
+    book?.events.on('change', () => { this.view.tired = (book.data.energy ?? 100) < 25; this.refresh(); });
+    if (book) this.view.tired = book.data.energy < 25;
     book?.events.on('toast', t => this.toast(t));
     hub?.events.on('change', () => { this.showChildDragon(); this.refresh(); });
     hub?.events.on('toast', t => this.toast(t));
@@ -206,7 +207,7 @@ export class App {
     this.hud.append(
       h('div', { class: 'hud-id' },
         h('div', { class: 'hud-stage' }, stage.label, this.stageOverride ? h('em', null, ' (aperçu)') : null),
-        h('div', { class: 'hud-level' }, `Niveau ${d.level}`)),
+        h('div', { class: 'hud-level' }, `Niveau ${d.level}${this.family.book?.titleText() ? ' · ' + this.family.book.titleText() : ''}`)),
       h('div', { class: 'hud-xp' },
         h('div', { class: 'bar' }, h('div', { class: 'fill', style: { width: `${Math.min(100, (d.xp / need) * 100)}%` } })),
         h('div', { class: 'hud-xp-label' }, `${d.xp} / ${need} XP`)),

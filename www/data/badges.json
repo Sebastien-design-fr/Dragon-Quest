@@ -1,0 +1,24 @@
+{
+  "note": "Badges (succès). when : condition. Types : total (missions faites), mission (une mission précise, par id), perfectDays (journées parfaites), streak (meilleure série), initiatives (initiatives récompensées), punctual (missions faites avant l'heure du rappel), gifts (coups de cœur reçus), level, stage. title : titre que l'enfant peut afficher. reward : or offert au déblocage. tier : bronze | argent | or | legende.",
+  "badges": [
+    { "id": "b_first",     "title": "Apprenti dompteur",       "description": "Accomplir sa première mission.",            "tier": "bronze", "reward": 20,  "when": { "type": "total", "n": 1 } },
+    { "id": "b_total25",   "title": "Dompteur assidu",         "description": "Accomplir 25 missions.",                    "tier": "bronze", "reward": 40,  "when": { "type": "total", "n": 25 } },
+    { "id": "b_total100",  "title": "Maître des corvées",      "description": "Accomplir 100 missions.",                   "tier": "argent", "reward": 100, "when": { "type": "total", "n": 100 } },
+    { "id": "b_total365",  "title": "Légende du quotidien",    "description": "Accomplir 365 missions.",                   "tier": "or",     "reward": 300, "when": { "type": "total", "n": 365 } },
+    { "id": "b_cat10",     "title": "Ami des félins",          "description": "Changer la litière 10 fois.",               "tier": "bronze", "reward": 40,  "when": { "type": "mission", "mission": "m_litiere", "n": 10 } },
+    { "id": "b_cat50",     "title": "Gardien(ne) du chat",     "description": "Changer la litière 50 fois.",               "tier": "argent", "reward": 120, "when": { "type": "mission", "mission": "m_litiere", "n": 50 } },
+    { "id": "b_study20",   "title": "Esprit studieux",         "description": "Faire ses devoirs 20 fois.",                "tier": "bronze", "reward": 50,  "when": { "type": "mission", "mission": "m_devoirs", "n": 20 } },
+    { "id": "b_study100",  "title": "Érudit(e) draconique",    "description": "Faire ses devoirs 100 fois.",               "tier": "or",     "reward": 200, "when": { "type": "mission", "mission": "m_devoirs", "n": 100 } },
+    { "id": "b_room10",    "title": "Gardien(ne) du repaire",  "description": "Ranger sa chambre 10 fois.",                "tier": "argent", "reward": 80,  "when": { "type": "mission", "mission": "m_chambre", "n": 10 } },
+    { "id": "b_perfect1",  "title": "Journée parfaite",        "description": "Faire toutes les missions d’une journée.",  "tier": "bronze", "reward": 30,  "when": { "type": "perfectDays", "n": 1 } },
+    { "id": "b_perfect20", "title": "Perfectionniste",         "description": "Réussir 20 journées parfaites.",            "tier": "argent", "reward": 150, "when": { "type": "perfectDays", "n": 20 } },
+    { "id": "b_streak7",   "title": "Flamme vive",             "description": "Tenir une série de 7 jours.",               "tier": "bronze", "reward": 50,  "when": { "type": "streak", "n": 7 } },
+    { "id": "b_streak30",  "title": "Flamme éternelle",        "description": "Tenir une série de 30 jours.",              "tier": "or",     "reward": 250, "when": { "type": "streak", "n": 30 } },
+    { "id": "b_init5",     "title": "Esprit d’initiative",     "description": "Voir 5 initiatives récompensées.",          "tier": "argent", "reward": 80,  "when": { "type": "initiatives", "n": 5 } },
+    { "id": "b_punct20",   "title": "Toujours à l’heure",      "description": "Faire 20 missions avant l’heure du rappel.","tier": "argent", "reward": 80,  "when": { "type": "punctual", "n": 20 } },
+    { "id": "b_gift3",     "title": "Chouchou de la famille",  "description": "Recevoir 3 coups de cœur.",                 "tier": "bronze", "reward": 30,  "when": { "type": "gifts", "n": 3 } },
+    { "id": "b_young",     "title": "Dragon éveillé",          "description": "Atteindre le stade Jeune dragon.",          "tier": "argent", "reward": 100, "when": { "type": "stage", "stage": "young" } },
+    { "id": "b_adult",     "title": "Seigneur des cieux",      "description": "Atteindre le stade Dragon adulte.",         "tier": "or",     "reward": 250, "when": { "type": "stage", "stage": "adult" } },
+    { "id": "b_legend",    "title": "Légende vivante",         "description": "Atteindre le stade Dragon légendaire.",     "tier": "legende","reward": 500, "when": { "type": "stage", "stage": "legendary" } }
+  ]
+}

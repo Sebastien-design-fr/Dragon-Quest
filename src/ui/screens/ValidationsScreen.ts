@@ -1,3 +1,4 @@
+import { energyLabel } from '../../family/badges.js';
 import { rewardText, type MissionStatus } from '../../family/model.js';
 import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon } from '../dom.js';
@@ -21,6 +22,8 @@ export class ValidationsScreen implements Screen {
   private el: HTMLElement | null = null;
   private giftAmount = 25;
   private giftMessage = '';
+  private warnAmount = 25;
+  private warnReason = '';
   constructor(private app: App) {}
 
   badge(): number { return this.app.family.hub?.pendingList().length ?? 0; }
@@ -85,7 +88,18 @@ export class ValidationsScreen implements Screen {
           const st = snap.today[m.id];
           card.append(h('div', { class: 'week-row' }, h('span', { class: 'grow' }, m.title), h('span', { class: `pill ${st}` }, STATUS_LABEL[st])));
         }
-        card.append(h('p', { class: 'small muted' }, `Série : ${snap.streak} jour${snap.streak > 1 ? 's' : ''} · état reçu ${new Date(c.updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`));
+        if (snap.energy !== undefined) {
+          const en = energyLabel(snap.energy);
+          card.append(h('div', { class: `energy-line ${en.level}` },
+            h('span', null, `Énergie du dragon : ${snap.energy} % · ${en.label}`),
+            h('div', { class: 'bar energy-bar' }, h('div', { class: 'fill', style: { width: `${snap.energy}%` } }))));
+        }
+        card.append(h('p', { class: 'small muted' }, [
+          `Série : ${snap.streak} jour${snap.streak > 1 ? 's' : ''}`,
+          snap.badgeTotal ? `succès : ${snap.badgeCount}/${snap.badgeTotal}` : null,
+          snap.title ? `titre : ${snap.title}` : null,
+          `état reçu ${new Date(c.updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+        ].filter(Boolean).join(' · ')));
       }
       el.append(card);
 
@@ -103,6 +117,25 @@ export class ValidationsScreen implements Screen {
           this.giftMessage = '';
           app.toast('Coup de cœur envoyé');
         } }, 'Envoyer'))));
+    }
+
+    // ---- Avertissement (malus) ----
+    if (c && id) {
+      const reason = h('input', { type: 'text', maxlength: '80', placeholder: 'Chambre pas rangée malgré 3 rappels', value: this.warnReason,
+        oninput: (e: Event) => { this.warnReason = (e.target as HTMLInputElement).value; } });
+      el.append(h('section', { class: 'card warn-card' },
+        h('h3', null, 'Avertissement'),
+        h('p', { class: 'small muted' }, `Retire de l’or à ${c.name} et un peu d’énergie à son dragon. Jamais de niveau ni d’objet. Le motif lui est affiché.`),
+        h('div', { class: 'segmented' }, ...[10, 25, 50].map(n =>
+          h('button', { class: this.warnAmount === n ? 'active' : '', onclick: () => { this.warnAmount = n; rerender(); } }, `−${n} or`))),
+        h('label', { class: 'field-col' }, h('span', { class: 'small' }, 'Motif (obligatoire)'), reason),
+        h('div', { class: 'row end' }, h('button', { class: 'btn danger', onclick: async () => {
+          if (this.warnReason.trim().length < 3) { app.toast('Indiquez le motif.'); return; }
+          if (!confirm(`Envoyer un avertissement à ${c.name} (−${this.warnAmount} or) ?`)) return;
+          await hub.warn(id, this.warnAmount, this.warnReason.trim());
+          this.warnReason = '';
+          app.toast('Avertissement envoyé');
+        } }, 'Envoyer l’avertissement'))));
     }
 
     if (hub.data.log.length) {

@@ -57,7 +57,7 @@ async function boot(): Promise<void> {
     await hub.sync();
     link.onInbox(() => void hub!.sync());
   } else {
-    book = new ChildBook(link, state, reminders);
+    book = new ChildBook(link, state, reminders, catalog.badges);
     book.childName = linkState.deviceName;
     await book.init();
     link.onInbox(() => void book!.sync());
