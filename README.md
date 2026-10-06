@@ -19,7 +19,7 @@ Ce dépôt contient **le socle technique** : moteur d'animation à squelette, co
 2. Ouvrir l'exécution terminée, section **Artifacts**, télécharger `quete-du-dragon-apk`.
 3. Sur le téléphone : autoriser l'installation depuis cette source, puis ouvrir l'APK.
 
-Pour une version publiée : créer un tag `v0.1.0`, l'APK est attaché à la Release.
+**Lien direct, toujours vers la dernière version :** https://github.com/Sebastien-design-fr/Dragon-Quest/releases/latest/download/quete-du-dragon.apk
 
 ## Développer en local
 

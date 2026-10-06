@@ -45,15 +45,20 @@ jobs:
           ./gradlew assembleDebug --no-daemon
 
       - name: Renommage
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk quete-du-dragon-${{ github.ref_name }}-${{ github.run_number }}.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk quete-du-dragon.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: quete-du-dragon-apk
-          path: quete-du-dragon-*.apk
+          path: quete-du-dragon.apk
 
-      - name: Release (tags v*)
-        if: startsWith(github.ref, 'refs/tags/v')
+      # Chaque build publie une Release : le lien
+      # https://github.com/<compte>/<depot>/releases/latest/download/quete-du-dragon.apk
+      # pointe donc toujours vers la dernière version.
+      - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          files: quete-du-dragon-*.apk
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('build-{0}', github.run_number) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('Version de test n°{0}', github.run_number) }}
+          make_latest: true
+          files: quete-du-dragon.apk
