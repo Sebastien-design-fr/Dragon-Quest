@@ -42,6 +42,8 @@ jobs:
           set -o pipefail
           ( [ -d android ] || npx cap add android ) 2>&1 | tee ci.log
           npx cap sync android 2>&1 | tee -a ci.log
+          # Icône du dragon (générée par scripts/make-icon.py)
+          cp -r resources/android/res/. android/app/src/main/res/
 
       - name: Compilation de l'APK
         working-directory: android
