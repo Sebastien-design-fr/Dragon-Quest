@@ -18,6 +18,9 @@ export function h<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Attrs | 
   return el;
 }
 
+/** Comme Element.append, mais ignore null / false et aplatit les tableaux. */
+export function put(el: Element, ...children: Child[]): void { append(el, children); }
+
 function append(el: Element, children: Child[]): void {
   for (const c of children) {
     if (c === null || c === undefined || c === false) continue;
@@ -58,5 +61,16 @@ export const ICONS = {
   claw: 'M5 20c2-6 5-10 9-13 M9 20c2-5 4-8 8-10 M13 20c1-3 3-5 6-6',
   flame: 'M12 3c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-2.5 1.5-3.5 2-5 1 1.5 2 2 3 2-1-3 0-5 0-7z',
   star: 'M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6L12 16.8 6.7 19.6l1.1-6L3.4 9.4l6-.8z',
-  lock: 'M6 11h12v9H6z M9 11V8a3 3 0 0 1 6 0v3'
+  lock: 'M6 11h12v9H6z M9 11V8a3 3 0 0 1 6 0v3',
+  missions: 'M9 6h11 M9 12h11 M9 18h11 M4 6l1 1 2-2 M4 12l1 1 2-2 M4 18l1 1 2-2',
+  check: 'M5 12l5 5 9-10',
+  clock: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16z M12 8v4l3 2',
+  family: 'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M17 11a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z M2 20c.5-4 3-6 6-6s5.5 2 6 6 M14 14c3 0 5.5 1.5 6 5',
+  shield: 'M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z M9 12l2 2 4-4',
+  gift: 'M4 10h16v10H4z M3 7h18v3H3z M12 7v13 M12 7c-2-4-6-3-5 0 M12 7c2-4 6-3 5 0',
+  plus: 'M12 5v14 M5 12h14',
+  edit: 'M4 20h4L19 9l-4-4L4 16z M14 6l4 4',
+  trash: 'M5 7h14 M9 7V4h6v3 M7 7l1 13h8l1-13',
+  spark: 'M12 3v4 M12 17v4 M3 12h4 M17 12h4 M6 6l2.5 2.5 M15.5 15.5L18 18 M6 18l2.5-2.5 M15.5 8.5L18 6',
+  wifi: 'M2 9a15 15 0 0 1 20 0 M5 12.5a10 10 0 0 1 14 0 M8.5 16a5 5 0 0 1 7 0 M12 19.5h0'
 };
