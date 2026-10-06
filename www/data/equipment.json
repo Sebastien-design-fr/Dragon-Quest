@@ -98,11 +98,9 @@
       "description": "Pointes d'acier rouge fixées sur la queue.",
       "asset": "eq_tail_epic_01", "compatibleDragonStages": ["young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
       "placeholder": { "shape": "tailspikes", "tint": "#5a1f26" } },
-    { "id": "tail_blade", "name": "Lame de queue", "category": "tail", "rarity": "legendary", "price": 2000,
-      "description": "Une lame dorée au bout de la queue. Redoutable.",
+    { "id": "tail_blade", "name": "Gaine draconique", "category": "tail", "rarity": "legendary", "price": 2000,
+      "description": "Une gaine d'or ardent qui couvre la queue jusqu'à sa pointe.",
       "asset": "eq_tail_legendary_01", "compatibleDragonStages": ["young", "adult", "legendary"], "animationProfile": "pulse", "stats": null,
-      "anchor": ["tail_tip_anchor"],
-      "offsets": { "young": { "scale": 1.5 }, "adult": { "scale": 1.5 }, "legendary": { "scale": 1.6 } },
       "placeholder": { "shape": "blade", "tint": "#3a2f1a" } },
 
     { "id": "fx_dark_smoke", "name": "Fumée sombre", "category": "effects", "rarity": "common", "price": 150,

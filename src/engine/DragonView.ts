@@ -11,7 +11,7 @@
 import { Mat2D, lerp } from '../core/math.js';
 import { loadJSON } from '../core/data.js';
 import type {
-  AnimEvent, CategoryDef, EquipmentDef, ParticlePreset, PartDef, QualityPreset, RarityDef, Rect, RigDef, StageDef
+  AnimEvent, CategoryDef, EquipFit, EquipmentDef, FitTable, ParticlePreset, PartDef, QualityPreset, RarityDef, Rect, RigDef, StageDef
 } from '../core/types.js';
 import { Animator, AnimationLibrary } from './Animator.js';
 import { AssetScope, Assets } from './AssetManager.js';
@@ -33,7 +33,7 @@ interface Drawable {
   part?: PartDef;
   partPath?: string | null;
   /** Équipement */
-  equip?: { def: EquipmentDef; anchor: string; w: number; h: number; dx: number; dy: number; rot: number; path: string | null; color: string; glow: number; phase: number };
+  equip?: { def: EquipmentDef; anchor: string; w: number; h: number; dx: number; dy: number; rot: number; path: string | null; color: string; glow: number; phase: number; fit: EquipFit | null };
 }
 
 export interface DragonViewDeps {
@@ -41,6 +41,7 @@ export interface DragonViewDeps {
   presets: Map<string, ParticlePreset>;
   categories: Map<string, CategoryDef>;
   rarities: Map<string, RarityDef>;
+  fits?: { categories: Record<string, FitTable>; items: Record<string, FitTable> };
 }
 
 export class DragonView {
@@ -143,19 +144,33 @@ export class DragonView {
       (def.anchor ?? cat.anchors).forEach((anchorName, i) => {
         const anchor = this.skeleton!.anchor(anchorName);
         if (!anchor) return;
+        const fit = path ? this.fitFor(def, anchorName) : null;
+        if (fit?.hidden) return;
         this.drawables.push({
           z: anchor.z + cat.zOffset, layer: cat.layer, bone: anchor.bone,
           equip: {
             def, anchor: anchorName, path,
             w: cat.defaultSize[0] * scale, h: cat.defaultSize[1] * scale,
             dx: (off.x ?? 0) * this.rig!.scale, dy: (off.y ?? 0) * this.rig!.scale, rot: off.rotation ?? 0,
-            color: rarity?.color ?? '#999', glow: rarity?.glow ?? 0, phase: i * 1.3
+            color: rarity?.color ?? '#999', glow: rarity?.glow ?? 0, phase: i * 1.3, fit
           }
         });
       });
     }
     this.drawables.sort((a, b) => a.z - b.z);
     previous.dispose();
+  }
+
+  /** Placement d'un objet : catégorie puis objet ; "*" puis stade ; puis ancrage précis. */
+  private fitFor(def: EquipmentDef, anchor: string): EquipFit {
+    const st = this.stage!.id;
+    const keys = ['*', st, `*:${anchor}`, `${st}:${anchor}`];
+    const out: EquipFit = {};
+    for (const table of [this.deps.fits?.categories[def.category], this.deps.fits?.items[def.id]]) {
+      if (!table) continue;
+      for (const k of keys) if (table[k]) Object.assign(out, table[k]);
+    }
+    return out;
   }
 
   setLayerVisible(layer: LayerName, visible: boolean): void { this.layers[layer] = visible; }
@@ -292,13 +307,22 @@ export class DragonView {
         const e = d.equip;
         const anchorM = sk.anchorWorld(e.anchor, this.tmp2);
         if (!anchorM) continue;
-        let rot = e.rot;
-        if (this.quality.secondaryMotion && e.def.animationProfile === 'sway') rot += Math.sin(this.time * 2.4 + e.phase) * 7;
-        Mat2D.fromTRS(e.dx, e.dy, rot, 1, 1, this.tmp);
-        this.camM.multiply(anchorM.multiply(this.tmp, this.tmp), this.tmp).apply(ctx);
         const img = e.path ? Assets.peek(e.path) : null;
-        if (img) ctx.drawImage(img, -e.w / 2, -e.h / 2, e.w, e.h);
-        else drawEquipment(ctx, e.def.placeholder?.shape ?? 'box', e.w, e.h, {
+        const f = img ? e.fit : null;
+        const s = this.rig.scale;
+        let rot = e.rot + (f?.rotation ?? 0);
+        if (this.quality.secondaryMotion && e.def.animationProfile === 'sway') rot += Math.sin(this.time * 2.4 + e.phase) * (f ? 2 : 7);
+        Mat2D.fromTRS(e.dx + (f?.x ?? 0) * s, e.dy + (f?.y ?? 0) * s, rot, f?.flipX ? -1 : 1, 1, this.tmp);
+        this.camM.multiply(anchorM.multiply(this.tmp, this.tmp), this.tmp).apply(ctx);
+        if (img) {
+          // Image définitive : proportions de l'image, découpe éventuelle, point d'accroche.
+          const [c0, c1] = f?.crop ?? [0, 1];
+          const sw = img.width * (c1 - c0);
+          const w = f?.width !== undefined ? f.width * s : e.w;
+          const hh = w * img.height / sw;
+          const [px, py] = f?.pivot ?? [0.5, 0.5];
+          ctx.drawImage(img, img.width * c0, 0, sw, img.height, -px * w, -py * hh, w, hh);
+        } else drawEquipment(ctx, e.def.placeholder?.shape ?? 'box', e.w, e.h, {
           color: e.color, tint: e.def.placeholder?.tint, time: this.time,
           glow: this.effectsEnabled && (e.def.animationProfile === 'pulse' || e.glow > 0.5) ? e.glow : 0
         });

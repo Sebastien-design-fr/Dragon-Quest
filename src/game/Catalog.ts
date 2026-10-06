@@ -3,7 +3,7 @@
 import { loadJSON } from '../core/data.js';
 import type { BadgeDef } from '../family/badges.js';
 import type {
-  CategoryDef, CollectionDef, EquipmentDef, ParticlePreset, QualityLevel, QualityPreset, RarityDef, StageDef
+  CategoryDef, CollectionDef, EquipmentDef, FitTable, ParticlePreset, QualityLevel, QualityPreset, RarityDef, StageDef
 } from '../core/types.js';
 
 export class Catalog {
@@ -17,9 +17,11 @@ export class Catalog {
   presets = new Map<string, ParticlePreset>();
   quality = {} as Record<QualityLevel, QualityPreset>;
   badges: BadgeDef[] = [];
+  /** Placements des équipements : par catégorie (défaut) et par objet. */
+  fits: { categories: Record<string, FitTable>; items: Record<string, FitTable> } = { categories: {}, items: {} };
 
   async load(): Promise<void> {
-    const [st, cat, rar, col, eq, fx, q, bd] = await Promise.all([
+    const [st, cat, rar, col, eq, fx, q, bd, ft] = await Promise.all([
       loadJSON<{ stages: StageDef[]; xp: { base: number; step?: number; growth?: number } }>('data/stages.json'),
       loadJSON<{ categories: CategoryDef[] }>('data/categories.json'),
       loadJSON<{ rarities: RarityDef[] }>('data/rarities.json'),
@@ -27,7 +29,8 @@ export class Catalog {
       loadJSON<{ items: EquipmentDef[] }>('data/equipment.json'),
       loadJSON<{ presets: ParticlePreset[] }>('data/effects.json'),
       loadJSON<Record<QualityLevel, QualityPreset>>('data/quality.json'),
-      loadJSON<{ badges: BadgeDef[] }>('data/badges.json').catch(() => ({ badges: [] as BadgeDef[] }))
+      loadJSON<{ badges: BadgeDef[] }>('data/badges.json').catch(() => ({ badges: [] as BadgeDef[] })),
+      loadJSON<{ categories: Record<string, FitTable>; items: Record<string, FitTable> }>('data/fits.json').catch(() => ({ categories: {}, items: {} }))
     ]);
     this.stages = [...st.stages].sort((a, b) => a.minLevel - b.minLevel);
     this.xp = st.xp;
@@ -37,6 +40,7 @@ export class Catalog {
     fx.presets.forEach(p => this.presets.set(p.id, p));
     this.quality = q;
     this.badges = bd.badges;
+    this.fits = { categories: ft.categories ?? {}, items: ft.items ?? {} };
     for (const item of eq.items) this.validate(item) && this.items.set(item.id, item);
   }
 

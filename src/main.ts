@@ -31,7 +31,7 @@ async function boot(): Promise<void> {
 
   const canvas = document.querySelector<HTMLCanvasElement>('#dragon')!;
   const view = new DragonView(canvas, {
-    library, presets: catalog.presets, categories: catalog.categories, rarities: catalog.rarities
+    library, presets: catalog.presets, categories: catalog.categories, rarities: catalog.rarities, fits: catalog.fits
   });
   const { quality, effects } = state.data.settings;
   view.setQuality(catalog.quality[quality], effects);

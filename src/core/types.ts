@@ -145,6 +145,22 @@ export interface EquipmentDef {
   placeholder?: { shape: string; tint?: string };
 }
 
+/**
+ * Placement d'une image d'équipement sur un dragon « illustration entière ».
+ * Unités : 1 = rig.scale pixels de l'image du dragon (les mêmes nombres conviennent aux 4 stades).
+ */
+export interface EquipFit {
+  x?: number; y?: number;       // décalage par rapport à l'ancrage
+  rotation?: number;            // degrés
+  width?: number;               // largeur de l'objet
+  flipX?: boolean;              // miroir horizontal
+  crop?: [number, number];      // ne garder qu'une partie de l'image (fraction horizontale 0..1)
+  pivot?: [number, number];     // point de l'image posé sur l'ancrage (0..1), défaut centre
+  hidden?: boolean;             // ne pas afficher cet objet sur ce stade / cet ancrage
+}
+/** clé "*" = tous les stades ; "<stade>" ; "<stade>:<ancrage>" ou "*:<ancrage>" pour un ancrage précis. */
+export type FitTable = Record<string, EquipFit>;
+
 export interface ParticlePreset {
   id: string;
   layer: 'magical' | 'foreground';
