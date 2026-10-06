@@ -59,6 +59,13 @@ interface Data {
   lastOpen: number;
   /** Notifications « venant du dragon » déjà programmées par jour (au plus 2). */
   seenStage: string | null;
+  /** Malade : missions oubliées plusieurs jours d'affilée. Guérit après une journée parfaite. */
+  sick: boolean;
+  /** Grotte : décorations achetées, débris à ramasser. */
+  decor: string[];
+  debris: number;
+  lairDay: string;
+  tidied: number;
 }
 
 const KEY = 'quete-du-dragon:companion';
@@ -78,7 +85,7 @@ export class Companion {
     const defaults: Data = {
       name: null, hunger: 80, clean: 85, mood: 75, bond: 0, updatedAt: now,
       food: { ration: 3, meat: 0, fish: 1, fireFruit: 0, treat: 0 },
-      day: todayKey(), pets: 0, petBond: 0, played: false, tucked: false, album: [], lastOpen: now, seenStage: null
+      day: todayKey(), pets: 0, petBond: 0, played: false, tucked: false, album: [], lastOpen: now, seenStage: null, sick: false, decor: [], debris: 2, lairDay: todayKey(), tidied: 0
     };
     const saved = readStore<Partial<Data>>(KEY, {});
     this.data = { ...defaults, ...saved, food: { ...defaults.food, ...(saved.food ?? {}) } };
@@ -106,6 +113,12 @@ export class Companion {
     }
     d.hunger = clamp(d.hunger); d.clean = clamp(d.clean); d.mood = clamp(d.mood);
     d.updatedAt = now;
+    // Chaque nouveau jour, un peu de désordre s'accumule dans la grotte.
+    if (d.lairDay !== todayKey()) {
+      const days = Math.max(1, Math.round((Date.parse(todayKey()) - Date.parse(d.lairDay || todayKey())) / 86400000));
+      d.debris = Math.min(8, (d.debris ?? 0) + Math.min(3, days));
+      d.lairDay = todayKey();
+    }
     if (d.day !== todayKey()) { d.day = todayKey(); d.pets = 0; d.petBond = 0; d.played = false; d.tucked = false; }
   }
 
@@ -123,8 +136,8 @@ export class Companion {
   get name(): string { return this.data.name || 'Ton dragon'; }
   wellbeing(): number { const d = this.data; return Math.round((d.hunger + d.clean + d.mood) / 3); }
   /** Bonus d'XP des missions : un dragon heureux et bien soigné apprend plus vite. */
-  xpBonus(): number { const d = this.data; return d.hunger >= 50 && d.clean >= 50 && d.mood >= 50 ? 1.1 : 1; }
-  sad(): boolean { return this.data.mood < 25 || this.wellbeing() < 30; }
+  xpBonus(): number { const d = this.data; return !d.sick && d.hunger >= 50 && d.clean >= 50 && d.mood >= 50 ? 1.1 : 1; }
+  sad(): boolean { return this.data.sick || this.data.mood < 25 || this.wellbeing() < 30; }
 
   bondLevel(): { level: number; label: string; next: number | null; progress: number } {
     const b = this.data.bond;
@@ -137,6 +150,7 @@ export class Companion {
   mood(): { key: string; label: string } {
     const d = this.data;
     if (isNight() && !d.tucked && d.hunger > 25) return { key: 'sleepy', label: 'Il a sommeil' };
+    if (d.sick) return { key: 'sick', label: 'Malade' };
     if (d.hunger < 25) return { key: 'hungry', label: 'Affamé' };
     if (d.clean < 25) return { key: 'dirty', label: 'Tout sale' };
     if (d.mood < 25) return { key: 'sad', label: 'Triste' };
@@ -221,8 +235,9 @@ export class Companion {
     return true;
   }
 
-  canPlay(missionsDoneToday: number): 'ok' | 'played' | 'locked' {
+  canPlay(missionsDoneToday: number): 'ok' | 'played' | 'locked' | 'sick' {
     this.tick();
+    if (this.data.sick) return 'sick';
     if (this.data.played) return 'played';
     return missionsDoneToday > 0 ? 'ok' : 'locked';
   }
@@ -235,6 +250,38 @@ export class Companion {
     if (gold) this.state.addGold(gold);
     this.save();
     return gold;
+  }
+
+  /** Sanction : humeur en baisse (missions oubliées). */
+  punish(mood: number): void { this.tick(); this.data.mood = clamp(this.data.mood - mood); this.data.debris = Math.min(8, this.data.debris + 2); this.save(); }
+
+  // ---------- Grotte ----------
+  lair(): { owned: string[]; debris: number } { this.tick(); return { owned: this.data.decor, debris: this.data.debris }; }
+  buyDecor(id: string, price: number): boolean {
+    if (this.data.decor.includes(id) || this.state.data.gold < price) return false;
+    this.state.addGold(-price);
+    this.data.decor.push(id);
+    this.data.mood = clamp(this.data.mood + 10);
+    this.addBond(1);
+    if (this.data.decor.length === 1) this.remember('lair1', 'Première décoration', 'La grotte commence à ressembler à un vrai chez-soi.');
+    this.save();
+    return true;
+  }
+  tidyLair(): void {
+    if (this.data.debris <= 0) return;
+    this.data.debris--;
+    this.data.tidied++;
+    this.data.mood = clamp(this.data.mood + 2);
+    if (this.data.tidied % 5 === 0) this.addBond(1);
+    this.save();
+  }
+
+  setSick(on: boolean): void {
+    if (this.data.sick === on) return;
+    this.data.sick = on;
+    if (on) this.events.emit('toast', `${this.name} est tombé malade… une journée où toutes les missions sont faites le guérira.`);
+    else { this.data.mood = clamp(this.data.mood + 20); this.events.emit('react', { anim: 'happy', fx: 'hearts', say: 'cured' }); }
+    this.save();
   }
 
   tricks(): Array<TrickDef & { unlocked: boolean }> {

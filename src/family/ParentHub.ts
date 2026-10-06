@@ -2,7 +2,7 @@
 import { EventBus } from '../core/events.js';
 import type { LinkMessage, Member, Transport } from '../link/Transport.js';
 import { readStore, writeStore } from '../platform/storage.js';
-import { newId, rewardText, type ChildSnapshot, type Mission, type RequestInfo } from './model.js';
+import { newId, rewardText, type ChildSnapshot, type Mission, type RequestInfo, type Reward } from './model.js';
 
 interface Pending extends RequestInfo { childId: string; receivedAt: number }
 interface HubData {
@@ -70,6 +70,12 @@ export class ParentHub {
         this.data.children[msg.from] = { name: p.name || msg.fromName, snapshot: p as ChildSnapshot, updatedAt: Date.now() };
         return true;
       }
+      case 'penalty': {
+        if (msg.outgoing) return false;
+        this.log(`${msg.fromName} a oublié : ${(p.missed ?? []).join(', ')} — −${p.xp} XP, −${p.gold} or${p.sick ? ' (dragon malade)' : ''}`);
+        this.events.emit('toast', `${msg.fromName} a oublié des missions`);
+        return true;
+      }
       case 'badge': {
         if (msg.outgoing) return false;
         this.log(`${msg.fromName} a débloqué « ${p.title} »`);
@@ -92,7 +98,9 @@ export class ParentHub {
     const xp = req.kind === 'initiative' ? bonus ?? 0 : req.xp;
     const gold = req.kind === 'initiative' ? bonus ?? 0 : req.gold;
     const payload = { requestId, approved, xp, gold };
-    const notif = approved
+    const notif = req.kind === 'reward'
+      ? { title: approved ? 'Récompense accordée !' : 'Récompense refusée', body: approved ? req.title : `${req.title} : tes gemmes te sont rendues.`, tag: 'res-' + requestId, channel: 'missions' as const }
+      : approved
       ? { title: req.kind === 'initiative' ? 'Initiative récompensée !' : 'Mission validée !', body: `${req.title} : ${rewardText(xp, gold)}`, tag: 'res-' + requestId, channel: 'missions' as const }
       : { title: req.kind === 'initiative' ? 'Initiative non retenue' : 'Mission à refaire', body: req.kind === 'initiative' ? req.title : `${req.title} : tes parents te demandent de la reprendre.`, tag: 'res-' + requestId, channel: 'missions' as const };
     await this.link.send(req.childId, 'validation.response', payload, notif);
@@ -112,6 +120,22 @@ export class ParentHub {
   }
 
   /** Avertissement : retire de l'or à l'enfant (50 au maximum) et un peu d'énergie au dragon. */
+  /** Vitrine des vraies récompenses de l'enfant. */
+  async setRewards(childId: string, rewards: Reward[]): Promise<void> {
+    await this.link.send(childId, 'rewards.set', { rewards }, null);
+    const c = this.data.children[childId];
+    if (c?.snapshot) c.snapshot.rewards = rewards;
+    this.save();
+  }
+
+  /** Sévérité des sanctions pour les missions oubliées. */
+  async setSeverity(childId: string, severity: 'doux' | 'normal' | 'strict'): Promise<void> {
+    await this.link.send(childId, 'rules', { severity }, null);
+    const c = this.data.children[childId];
+    if (c?.snapshot) c.snapshot.severity = severity;
+    this.save();
+  }
+
   /** Friandise pour le dragon (elle la donne elle-même à son dragon). */
   async treat(childId: string, message: string): Promise<void> {
     await this.link.send(childId, 'treat', { message }, {

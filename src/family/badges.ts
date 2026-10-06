@@ -25,6 +25,7 @@ export interface ChildStats {
   punctual: number;
   gifts: number;
   warnings: number;
+  missed?: number;
 }
 
 export const EMPTY_STATS: ChildStats = { total: 0, perMission: {}, perfectDays: 0, maxStreak: 0, initiatives: 0, punctual: 0, gifts: 0, warnings: 0 };
@@ -73,3 +74,28 @@ export function energyLabel(energy: number): { label: string; detail: string; le
   if (energy < 50) return { label: 'Fatigué', detail: 'XP × 0,75', level: 'low' };
   return { label: 'En forme', detail: 'XP normal', level: 'ok' };
 }
+
+// ---------------- Sanctions des missions oubliées ----------------
+export type Severity = 'doux' | 'normal' | 'strict';
+export interface PenaltyRule {
+  label: string;
+  /** Part de l'XP / de l'or de la mission retirée quand elle est oubliée. */
+  xp: number; gold: number; goldCap: number;
+  /** Humeur du dragon perdue par mission oubliée. */
+  mood: number;
+  /** Jours d'oubli d'affilée avant que le dragon tombe malade. */
+  sickAfter: number;
+  /** Peut faire redescendre d'un niveau (jamais de stade). */
+  levelLoss: boolean;
+  /** Jours d'oubli d'affilée avant confiscation d'un équipement (0 = jamais). */
+  confiscateAfter: number;
+  text: string;
+}
+export const PENALTY: Record<Severity, PenaltyRule> = {
+  doux: { label: 'Doux', xp: 0, gold: 0.5, goldCap: 40, mood: 10, sickAfter: 3, levelLoss: false, confiscateAfter: 0,
+    text: 'Moitié de l’or de la mission perdu, pas d’XP. Le dragon tombe malade après 3 jours d’oubli.' },
+  normal: { label: 'Normal', xp: 1, gold: 1, goldCap: 80, mood: 15, sickAfter: 2, levelLoss: false, confiscateAfter: 0,
+    text: 'L’XP et l’or de la mission sont perdus (jamais de niveau). Le dragon tombe malade après 2 jours d’oubli.' },
+  strict: { label: 'Strict', xp: 1.5, gold: 1.5, goldCap: 150, mood: 20, sickAfter: 2, levelLoss: true, confiscateAfter: 3,
+    text: '1,5 × l’XP et l’or perdus, on peut redescendre d’un niveau. Malade après 2 jours, un équipement confisqué après 3.' }
+};

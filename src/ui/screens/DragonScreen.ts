@@ -4,6 +4,10 @@ import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon, put } from '../dom.js';
 import { playGemGame } from '../MiniGame.js';
 import { openSheet } from './common.js';
+import { todayKey } from '../../family/model.js';
+import { fill, journeyFor, landmarks } from '../../family/Expedition.js';
+import { openLair } from '../Lair.js';
+import { shareCard } from '../ShareCard.js';
 
 export class DragonScreen implements Screen {
   id = 'dragon'; label = 'Dragon'; icon = ICONS.dragon;
@@ -81,6 +85,26 @@ export class DragonScreen implements Screen {
     const mood = comp.mood();
     const bond = comp.bondLevel();
     const out: HTMLElement[] = [];
+    const book = app.family.book;
+
+    // Sanctions : bilan d'hier, maladie, objet confisqué, ce que coûtera un oubli ce soir.
+    if (book) {
+      const lp = book.data.lastPenalty;
+      const rule = book.severityRule();
+      const lines: Array<HTMLElement | null> = [];
+      if (lp && lp.date === todayKey()) lines.push(h('p', null, `Oublié : ${lp.missed.join(', ')}. Perdu : ${lp.xp} XP et ${lp.gold} or.`));
+      if (d.sick) lines.push(h('p', null, `${comp.name} est malade : pas de tours ni de jeu, et pas de bonus d’XP. Une journée où toutes les missions sont faites le guérira.`));
+      if (book.data.confiscated) {
+        const def = app.catalog.item(book.data.confiscated.id);
+        lines.push(h('p', null, `Confisqué : ${def?.name ?? 'un équipement'}, rendu après une journée parfaite.`));
+      }
+      if (lines.length) out.push(h('section', { class: 'card penalty-card' },
+        h('h3', null, 'Missions oubliées'), ...lines,
+        h('p', { class: 'small muted' }, `Règle fixée par tes parents : ${rule.label}. ${rule.text}`)));
+      const cost = book.pendingCost();
+      if (cost.count && new Date().getHours() >= 17 && !lines.length) out.push(h('section', { class: 'card warn-card' },
+        h('p', { class: 'small' }, `Encore ${cost.count} mission${cost.count > 1 ? 's' : ''} aujourd’hui. Oubliées, elles coûteront ${cost.xp} XP et ${cost.gold} or demain matin.`)));
+    }
 
     if (!d.name) {
       const input = h('input', { type: 'text', maxlength: '18', placeholder: 'Pyros, Nyx, Ember…', 'aria-label': 'Nom du dragon' });
@@ -126,7 +150,74 @@ export class DragonScreen implements Screen {
     out.push(h('p', { class: 'small muted care-hint' }, app.careMode === 'wash'
       ? 'Mode lavage : frotte les écailles avec ton doigt jusqu’à ce qu’il brille.'
       : 'Astuce : frotte-le doucement avec ton doigt pour le caresser.'));
+    if (book) out.push(this.expeditionCard(comp));
+    out.push(h('div', { class: 'row lair-row' },
+      h('button', { class: 'btn grow', onclick: () => openLair(app) }, icon(ICONS.dragon, 18), ' Sa grotte'),
+      h('button', { class: 'btn grow', onclick: () => void shareCard(app) }, icon(ICONS.star, 18), ' Partager')));
     return out;
+  }
+
+  private expeditionCard(comp: Companion): HTMLElement {
+    const book = this.app.family.book!;
+    const e = book.data.expedition, goal = book.expeditionGoal();
+    const j = journeyFor(e.week);
+    const done = e.steps >= goal;
+    return h('button', { class: `card expedition${done && !e.opened ? ' ready' : ''}`, style: { '--c1': j.colors[0], '--c2': j.colors[1] }, onclick: () => this.mapSheet(comp) },
+      h('div', { class: 'row' }, h('div', { class: 'grow' },
+        h('div', { class: 'small muted' }, 'Expédition de la semaine'),
+        h('div', { class: 'item-name' }, j.title)),
+        h('span', { class: 'small' }, done ? (e.opened ? 'Terminée' : 'Coffre à ouvrir !') : `${e.steps} / ${goal}`)),
+      h('div', { class: 'bar exp-bar' }, h('div', { class: 'fill', style: { width: `${Math.min(100, (e.steps / goal) * 100)}%` } })),
+      h('div', { class: 'small muted' }, 'Chaque mission fait avancer ' + comp.name + ' d’une étape.'));
+  }
+
+  private mapSheet(comp: Companion): void {
+    const { app } = this;
+    const book = app.family.book!;
+    const e = book.data.expedition, goal = book.expeditionGoal();
+    const j = journeyFor(e.week);
+    const marks = landmarks(j, goal);
+    openSheet(j.title, close => {
+      // Carte : chemin sinueux, repères, position du dragon.
+      const W = 320, H = 190, pts: Array<[number, number]> = [];
+      for (let i = 0; i <= 40; i++) { const t = i / 40; pts.push([20 + t * (W - 40), H / 2 + Math.sin(t * Math.PI * 2.4) * 55 * (0.6 + 0.4 * t)]); }
+      const at = (k: number) => pts[Math.min(40, Math.round((k / goal) * 40))];
+      const NS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('class', 'exp-map');
+      const add = (tag: string, attrs: Record<string, string>) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); svg.append(n); return n; };
+      add('rect', { x: '0', y: '0', width: String(W), height: String(H), rx: '14', fill: j.colors[1] });
+      const d = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+      add('path', { d, fill: 'none', stroke: 'rgba(255,255,255,.18)', 'stroke-width': '6', 'stroke-linecap': 'round' });
+      const prog = pts.slice(0, Math.round((Math.min(e.steps, goal) / goal) * 40) + 1);
+      if (prog.length > 1) add('path', { d: prog.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' '), fill: 'none', stroke: j.colors[0], 'stroke-width': '4', 'stroke-linecap': 'round', 'stroke-dasharray': '1 7' });
+      marks.forEach((m, i) => {
+        const [x, y] = at(m.at);
+        const reached = e.steps >= m.at;
+        add('circle', { cx: String(x), cy: String(y), r: i === marks.length - 1 ? '9' : '6', fill: reached ? j.colors[0] : '#2a2630', stroke: '#f2d48a', 'stroke-width': '1.5' });
+      });
+      const [dx, dy] = at(Math.min(e.steps, goal));
+      add('circle', { cx: String(dx), cy: String(dy - 12), r: '7', fill: '#d9a84a' });
+      add('path', { d: `M${dx - 4},${dy - 8} L${dx},${dy - 2} L${dx + 4},${dy - 8} Z`, fill: '#d9a84a' });
+      const txt = add('text', { x: String(dx), y: String(dy - 9), 'text-anchor': 'middle', 'font-size': '9', fill: '#1a1408', 'font-weight': '700' });
+      txt.textContent = '◆';
+
+      const nodes: Node[] = [svg as unknown as Node,
+        h('p', { class: 'story intro' }, fill(j.intro, comp.name)),
+        ...marks.map((m, i) => e.steps >= m.at
+          ? h('div', { class: 'story-row' }, h('div', { class: 'item-name' }, `${i + 1}. ${m.name}`), h('p', { class: 'small' }, fill(m.story, comp.name)))
+          : h('div', { class: 'story-row locked' }, h('div', { class: 'item-name' }, `${i + 1}. ???`), h('p', { class: 'small muted' }, `Encore ${m.at - e.steps} mission${m.at - e.steps > 1 ? 's' : ''} pour le découvrir.`)))];
+      if (e.steps >= goal && !e.opened) nodes.push(h('button', { class: 'btn primary chest-btn', onclick: () => {
+        const loot = book.openChest();
+        if (!loot) return;
+        close();
+        void app.act('roar');
+        app.view.emit('evolutionBurst', 'body_center');
+        app.say(`Le coffre contenait ${loot.gems} gemmes, ${loot.gold} or et un fruit de feu !`, null, 7000);
+      } }, 'Ouvrir le coffre'));
+      else if (!e.opened) nodes.push(h('p', { class: 'small muted' }, `Le coffre (5 gemmes, 120 or, un fruit de feu) t’attend au bout. Nouvelle expédition chaque lundi.`));
+      return nodes;
+    });
   }
 
   private feedSheet(comp: Companion): void {
@@ -159,6 +250,7 @@ export class DragonScreen implements Screen {
       h('p', { class: 'small muted' }, 'Plus vous êtes amis, plus il apprend de tours.'),
       ...comp.tricks().map(t => h('button', { class: `trick ${t.unlocked ? '' : 'locked'}`, onclick: () => {
         if (!t.unlocked) { app.toast(`Il l’apprendra au niveau d’amitié ${t.level}`); return; }
+        if (comp.data.sick) { app.say('Je suis trop malade pour faire des tours… une journée parfaite me guérira.', 'missions'); close(); return; }
         if (tired && t.level > 1) { app.say('Je suis trop fatigué… fais une mission pour me redonner des forces.', 'missions'); close(); return; }
         close();
         void app.act(t.anim);
@@ -179,6 +271,7 @@ export class DragonScreen implements Screen {
     const { app } = this;
     const st = comp.canPlay(doneToday);
     if (st === 'played') { app.say('On a déjà joué aujourd’hui… on rejoue demain ?', null, 4000); return; }
+    if (st === 'sick') { app.say('Je suis malade… on jouera quand je serai guéri. Fais toutes tes missions aujourd’hui !', 'missions', 5000); return; }
     if (st === 'locked') { app.say('On jouera dès que tu auras fait une mission aujourd’hui !', 'missions', 5000); return; }
     const score = await playGemGame(comp.name);
     const gold = comp.finishGame(score);

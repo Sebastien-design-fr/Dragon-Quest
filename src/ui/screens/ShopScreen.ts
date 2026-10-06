@@ -8,10 +8,33 @@ export class ShopScreen implements Screen {
   private el: HTMLElement | null = null;
   private category: string | null = 'head';
   private selected: string | null = null;
+  /** Boutique du dragon (or) ou vitrine des vraies récompenses (gemmes). */
+  private tab: 'dragon' | 'rewards' = 'dragon';
   constructor(private app: App) {}
 
   mount(el: HTMLElement): void { this.el = el; this.refresh(); }
   unmount(): void { this.el = null; this.selected = null; this.app.setPreview(null); }
+
+  private rewards(el: HTMLElement): void {
+    const { app } = this;
+    const book = app.family.book!;
+    el.append(h('section', { class: 'card gems-card' },
+      h('div', { class: 'row' }, h('span', { class: 'gem' }, '◆'), h('strong', { class: 'grow' }, `${book.data.gems} gemme${book.data.gems > 1 ? 's' : ''}`)),
+      h('p', { class: 'small muted' }, '1 gemme par mission, 2 par quête bonus ou journée parfaite, 5 dans le coffre de l’expédition. Échange-les contre de vraies récompenses choisies par tes parents.')));
+    const pending = book.pendingRequests().filter(r => r.kind === 'reward');
+    for (const r of pending) el.append(h('div', { class: 'list-row' }, h('span', { class: 'grow' }, r.title), h('span', { class: 'pill pending' }, 'Demandée')));
+    if (!book.data.rewards.length) el.append(h('p', { class: 'muted' }, 'Tes parents n’ont pas encore ajouté de récompenses.'));
+    for (const r of [...book.data.rewards].sort((a, b) => a.cost - b.cost)) {
+      const can = book.data.gems >= r.cost;
+      el.append(h('div', { class: `list-row reward-row${can ? ' can' : ''}` },
+        h('div', { class: 'grow' }, h('div', { class: 'item-name' }, r.title),
+          h('div', { class: 'bar gem-bar' }, h('div', { class: 'fill', style: { width: `${Math.min(100, (book.data.gems / r.cost) * 100)}%` } }))),
+        h('button', { class: `btn ${can ? 'primary' : ''} small-btn`, disabled: can ? undefined : true, onclick: async () => {
+          if (!confirm(`Demander « ${r.title} » pour ${r.cost} gemmes ?`)) return;
+          if (await book.requestReward(r)) this.refresh();
+        } }, `◆ ${r.cost}`)));
+    }
+  }
 
   private select(def: EquipmentDef): void {
     this.selected = def.id;
@@ -24,6 +47,14 @@ export class ShopScreen implements Screen {
     const el = this.el; if (!el) return;
     const { app } = this;
     clear(el);
+
+    const book = app.family.book;
+    if (book) {
+      el.append(h('div', { class: 'segmented two shop-tabs' },
+        h('button', { class: this.tab === 'dragon' ? 'active' : '', onclick: () => { this.tab = 'dragon'; this.refresh(); } }, 'Pour mon dragon'),
+        h('button', { class: this.tab === 'rewards' ? 'active' : '', onclick: () => { this.tab = 'rewards'; this.app.setPreview(null); this.refresh(); } }, 'Vraies récompenses')));
+      if (this.tab === 'rewards') { this.rewards(el); return; }
+    }
 
     const active = app.catalog.activeCollections();
     if (active.length) {

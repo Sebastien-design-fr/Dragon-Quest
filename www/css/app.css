@@ -271,3 +271,46 @@ details p { margin-top: 6px; line-height: 1.45; }
 .food-row { flex-wrap: wrap; }
 .food-row > .grow { flex: 1 1 100%; }
 .food-row > .btn:first-of-type { margin-left: auto; }
+.penalty-card { border-color: #6b2f2a; background: linear-gradient(180deg, #24151a, var(--panel)); }
+.penalty-card h3 { color: #ff9b8a; margin: 0; }
+.penalty-card p { margin: 0; }
+.warn-card { border-color: #6b5530; }
+.warn-card p { margin: 0; color: #f2d48a; }
+.small.bad { color: #ff9b8a; }
+.companion.mood-sick { border-color: #4f6b3a; }
+.shop-tabs { margin-bottom: 4px; }
+.gem { color: #7fd4ff; font-size: 20px; text-shadow: 0 0 8px rgba(127,212,255,.6); }
+.gems-card strong { font-size: 18px; color: #bfe9ff; }
+.gem-bar { height: 5px; margin-top: 6px; }
+.gem-bar .fill { background: linear-gradient(90deg, #4fb3ff, #a6e3ff); }
+.reward-row.can { border-color: #4f8fb8; }
+.gem-badge { color: #7fd4ff; border-color: #7fd4ff; }
+.quest-tag.x2 { background: #3a2a10; color: #ffd76a; border-color: #ffd76a; }
+.quest-tag.bonus { color: #8fd694; border-color: #8fd694; }
+.list-row.double { border-color: #a07a2a; box-shadow: 0 0 12px rgba(255,200,90,.12); }
+.done-btns { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.proof { width: 100%; max-height: 320px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
+.bonus-board h3 { margin: 0; }
+.reward-form { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.expedition { text-align: left; cursor: pointer; background: linear-gradient(135deg, color-mix(in srgb, var(--c2) 70%, var(--panel)), var(--panel)); border-color: color-mix(in srgb, var(--c1) 40%, var(--line)); color: var(--text); }
+.expedition.ready { box-shadow: 0 0 16px color-mix(in srgb, var(--c1) 40%, transparent); border-color: var(--c1); }
+.exp-bar .fill { background: var(--c1); }
+.exp-map { width: 100%; height: auto; display: block; }
+.story { margin: 0; font-style: italic; color: var(--gold-soft); }
+.story-row { padding: 8px 10px; border-left: 2px solid var(--gold); background: var(--panel-2); border-radius: 0 10px 10px 0; }
+.story-row p { margin: 4px 0 0; }
+.story-row.locked { border-left-color: var(--line); }
+.chest-btn { font-size: 16px; padding: 12px; }
+.lair-row { gap: 8px; }
+.lair-row .btn { justify-content: center; display: flex; align-items: center; gap: 6px; }
+.share-preview { width: 100%; border-radius: 12px; }
+/* Grotte */
+.lair { position: fixed; inset: 0; z-index: 45; background: #09080b; touch-action: manipulation; }
+.lair-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lair-top { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: 14px; right: 14px; display: flex; align-items: center; justify-content: space-between; color: var(--gold-soft); font-family: var(--display); }
+.lair-info { position: absolute; left: 14px; right: 14px; top: calc(52px + env(safe-area-inset-top)); color: var(--text); font-size: 13px; text-shadow: 0 1px 3px #000; pointer-events: none; }
+.lair-panel { position: absolute; left: 0; right: 0; bottom: 0; max-height: 30dvh; overflow: auto; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); background: rgba(21,19,26,.94); border-top: 1px solid var(--gold); display: flex; flex-direction: column; gap: 6px; }
+.decor-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.decor { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
+.decor.owned { border-color: #4f6b3a; opacity: .75; }
+.exp-map { width: 100%; height: auto; aspect-ratio: 320 / 190; flex-shrink: 0; }

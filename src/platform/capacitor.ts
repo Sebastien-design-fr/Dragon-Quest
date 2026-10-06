@@ -21,3 +21,6 @@ export async function loadCapacitor(): Promise<CapacitorCore | null> {
 }
 
 export function isNative(): boolean { return !!core; }
+
+/** Runtime déjà chargé (null dans un navigateur). */
+export function getCore(): CapacitorCore | null { return core ?? null; }

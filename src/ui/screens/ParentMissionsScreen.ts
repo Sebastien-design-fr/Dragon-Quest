@@ -1,4 +1,4 @@
-import { DAY_LABELS, newId, rewardText, type Mission, type Validation } from '../../family/model.js';
+import { DAY_LABELS, newId, rewardText, type Mission, type Reward, type Validation } from '../../family/model.js';
 import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon } from '../dom.js';
 import { childPicker } from './ValidationsScreen.js';
@@ -14,6 +14,7 @@ export class ParentMissionsScreen implements Screen {
   private el: HTMLElement | null = null;
   private draft: Draft | null = null;
   private editing = false;
+  private rewardDraft: Reward | null = null;
   constructor(private app: App) {}
 
   mount(el: HTMLElement): void { this.el = el; this.refresh(); }
@@ -42,14 +43,15 @@ export class ParentMissionsScreen implements Screen {
     el.append(h('div', { class: 'section-head' }, h('h2', null, `Missions de ${c.name}`)),
       h('div', { class: 'row' },
         h('button', { class: 'btn primary', onclick: () => { this.draft = blank(); this.editing = false; rerender(); } }, icon(ICONS.plus, 16), ' Mission'),
-        h('button', { class: 'btn', onclick: () => { this.draft = { ...blank(true), xp: 40, gold: 25 }; this.editing = false; rerender(); } }, icon(ICONS.spark, 16), ' Quête spéciale')));
+        h('button', { class: 'btn', onclick: () => { this.draft = { ...blank(true), xp: 40, gold: 25 }; this.editing = false; rerender(); } }, icon(ICONS.spark, 16), ' Quête spéciale'),
+        h('button', { class: 'btn', onclick: () => { this.draft = { ...blank(), xp: 30, gold: 15, time: null, days: [0, 1, 2, 3, 4, 5, 6], optional: true }; this.editing = false; rerender(); } }, icon(ICONS.star, 16), ' Quête bonus')));
 
     const list = h('div', { class: 'list' });
     const missions = [...c.snapshot.missions].sort((a, b) => Number(!!b.once) - Number(!!a.once) || (a.time ?? '99').localeCompare(b.time ?? '99'));
     for (const m of missions) {
       list.append(h('div', { class: 'list-row' },
         h('div', { class: 'grow' },
-          h('div', { class: 'item-name' }, m.title, m.once ? h('span', { class: 'quest-tag' }, 'Quête spéciale') : null),
+          h('div', { class: 'item-name' }, m.title, m.once ? h('span', { class: 'quest-tag' }, 'Quête spéciale') : m.optional ? h('span', { class: 'quest-tag bonus' }, 'Bonus') : null),
           h('div', { class: 'small muted' }, [
             m.once ? 'une seule fois' : m.days.length === 7 ? 'tous les jours' : m.days.map(d => DAY_LABELS[d]).join(' '),
             m.time ? `rappel ${m.time}` : null,
@@ -63,7 +65,45 @@ export class ParentMissionsScreen implements Screen {
         } }, icon(ICONS.trash, 18))));
     }
     el.append(list,
+      h('p', { class: 'small muted' }, 'Les quêtes bonus sont facultatives : elles rapportent plus (et 2 gemmes) et ne sont jamais sanctionnées.'),
       h('p', { class: 'small muted' }, 'Les modifications partent vers le téléphone de l’enfant par le Wi-Fi de la maison (ou dès son retour).'));
+    el.append(this.rewardsCard(id!, c.snapshot.rewards ?? []));
+  }
+
+  /** Vitrine des vraies récompenses (échangées contre des gemmes : 1 par mission, 2 par quête bonus ou journée parfaite). */
+  private rewardsCard(childId: string, rewards: Reward[]): HTMLElement {
+    const hub = this.app.family.hub!;
+    const rerender = () => this.refresh();
+    const card = h('section', { class: 'card' },
+      h('div', { class: 'section-head' }, h('h3', null, 'Vraies récompenses'), h('button', { class: 'btn small-btn', onclick: () => { this.rewardDraft = { id: newId('rw_'), title: '', cost: 20 }; rerender(); } }, icon(ICONS.plus, 14), ' Ajouter')),
+      h('p', { class: 'small muted' }, 'Elle gagne 1 gemme par mission, 2 par quête bonus ou journée parfaite, 5 par expédition terminée. Comptez environ 30 à 40 gemmes par semaine bien remplie.'));
+    for (const r of rewards) {
+      card.append(h('div', { class: 'list-row' },
+        h('div', { class: 'grow' }, h('div', { class: 'item-name' }, r.title), h('div', { class: 'small muted' }, `${r.cost} gemmes`)),
+        h('button', { class: 'icon-btn', 'aria-label': `Modifier ${r.title}`, onclick: () => { this.rewardDraft = { ...r }; rerender(); } }, icon(ICONS.edit, 18)),
+        h('button', { class: 'icon-btn', 'aria-label': `Supprimer ${r.title}`, onclick: async () => {
+          if (!confirm(`Supprimer « ${r.title} » ?`)) return;
+          await hub.setRewards(childId, rewards.filter(x => x.id !== r.id));
+        } }, icon(ICONS.trash, 18))));
+    }
+    const d = this.rewardDraft;
+    if (d) {
+      card.append(h('div', { class: 'reward-form' },
+        h('label', { class: 'field-col' }, h('span', { class: 'small' }, 'Récompense'), h('input', { type: 'text', maxlength: '60', value: d.title, placeholder: 'Une soirée pyjama avec une copine', oninput: (e: Event) => { d.title = (e.target as HTMLInputElement).value; } })),
+        h('label', { class: 'field-col' }, h('span', { class: 'small' }, 'Prix en gemmes'), h('input', { type: 'number', min: '1', max: '500', value: String(d.cost), inputmode: 'numeric', oninput: (e: Event) => { d.cost = Math.max(1, Number((e.target as HTMLInputElement).value) || 1); } })),
+        h('div', { class: 'row end' },
+          h('button', { class: 'btn', onclick: () => { this.rewardDraft = null; rerender(); } }, 'Annuler'),
+          h('button', { class: 'btn primary', onclick: async () => {
+            if (d.title.trim().length < 2) { this.app.toast('Donnez un intitulé.'); return; }
+            d.title = d.title.trim();
+            const next = rewards.some(x => x.id === d.id) ? rewards.map(x => (x.id === d.id ? d : x)) : [...rewards, d];
+            await hub.setRewards(childId, next);
+            this.rewardDraft = null;
+            this.app.toast('Vitrine mise à jour');
+            rerender();
+          } }, 'Enregistrer'))));
+    }
+    return card;
   }
 
   private form(childId: string, d: Draft): HTMLElement {
@@ -81,7 +121,7 @@ export class ParentMissionsScreen implements Screen {
     }, v === 'parent' ? 'Validation parent' : 'Confiance')));
 
     return h('section', { class: 'card' },
-      h('h3', null, this.editing ? 'Modifier la mission' : d.once ? 'Nouvelle quête spéciale' : 'Nouvelle mission'),
+      h('h3', null, this.editing ? 'Modifier la mission' : d.once ? 'Nouvelle quête spéciale' : d.optional ? 'Nouvelle quête bonus' : 'Nouvelle mission'),
       input('Intitulé', { type: 'text', value: d.title, maxlength: '60', placeholder: d.once ? 'Aider à préparer le repas de dimanche' : 'Ranger sa chambre' }, v => { d.title = v; }),
       h('div', { class: 'grid-2' },
         input('XP', { type: 'number', min: '0', max: '500', value: String(d.xp), inputmode: 'numeric' }, v => { d.xp = Math.max(0, Number(v) || 0); }),

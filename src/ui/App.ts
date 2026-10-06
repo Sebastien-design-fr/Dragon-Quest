@@ -30,7 +30,7 @@ export interface FamilyContext {
   companion: Companion | null;
 }
 
-export const APP_VERSION = '0.4.0';
+export const APP_VERSION = '0.5.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -84,9 +84,11 @@ export class App {
     state.events.on('evolve', ({ to }) => { if (!this.isParent) this.evolve(to); });
 
     const book = family.book, hub = family.hub;
-    book?.events.on('change', () => { this.view.tired = (book.data.energy ?? 100) < 25; this.refresh(); });
-    if (book) this.view.tired = book.data.energy < 25;
+    const tiredNow = () => (book?.data.energy ?? 100) < 25 || !!family.companion?.data.sick;
+    book?.events.on('change', () => { this.view.tired = tiredNow(); this.refresh(); });
+    if (book) this.view.tired = tiredNow();
     book?.events.on('toast', t => this.toast(t));
+    book?.events.on('story', t => setTimeout(() => this.say(t, null, 10000), 900));
     hub?.events.on('change', () => { this.showChildDragon(); this.refresh(); });
     hub?.events.on('toast', t => this.toast(t));
 
@@ -128,6 +130,8 @@ export class App {
         else this.think(true);
       }, 1500);
       window.setInterval(() => { comp.tick(); this.applyCare(); this.think(false); }, 40000);
+      // Malade : il éternue de petits nuages de fumée.
+      window.setInterval(() => { if (comp.data.sick && !this.sleeping) view.emit('sneeze', 'mouth_anchor'); }, 9000);
       document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(() => this.think(true), 1200); });
     }
 
@@ -221,6 +225,7 @@ export class App {
   private applyCare(): void {
     const c = this.family.companion;
     if (!c || this.isParent) return;
+    this.view.tired = (this.family.book?.data.energy ?? 100) < 25 || c.data.sick;
     this.view.dirt = Math.max(0, Math.min(1, (70 - c.data.clean) / 70));
     if (!this.sleeping) { const loop = this.baseLoop(); if (this.view.animator.baseId?.split('@')[0] !== loop) void this.view.play(loop); }
   }

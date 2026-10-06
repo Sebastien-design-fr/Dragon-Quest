@@ -2,7 +2,7 @@
 // Les rappels passent mieux quand ils viennent de lui : il parle à la première personne, avec affection.
 import type { ChildBook } from './ChildBook.js';
 import { isNight, type Companion } from './Companion.js';
-import type { Mission } from './model.js';
+import { todayKey, type Mission } from './model.js';
 
 export type ThoughtAction = 'missions' | 'feed' | 'wash' | 'pet' | 'sleep' | 'play' | null;
 export interface Thought { id: string; text: string; action: ThoughtAction; priority: number }
@@ -51,7 +51,18 @@ export function thoughts(book: ChildBook | null, c: Companion, childName: string
     }
   }
 
-  // 2. Besoins
+  // 2. Santé et sanctions
+  if (d.sick) out.push({ id: 'sick', text: 'Je suis malade… si tu fais toutes tes missions aujourd’hui, je guérirai.', action: 'missions', priority: 93 });
+  const lp = book?.data.lastPenalty;
+  if (lp && lp.date === todayKey()) {
+    out.push({ id: 'penalty', text: `Tu as oublié ${lp.missed.slice(0, 2).join(' et ')}${lp.missed.length > 2 ? '…' : ''} J’ai perdu ${lp.xp} XP et ${lp.gold} or. On se rattrape aujourd’hui ?`, action: 'missions', priority: 94 });
+  }
+  if (book) {
+    const cost = book.pendingCost();
+    if (cost.count && now.getHours() >= 19) out.push({ id: 'evening', text: `Il reste ${cost.count} mission${cost.count > 1 ? 's' : ''}. Si on les oublie, demain je perds ${cost.xp} XP et ${cost.gold} or…`, action: 'missions', priority: 88 });
+  }
+
+  // 3. Besoins
   if (isNight() && !d.tucked) out.push({ id: 'night', text: 'Il est tard… tu me mets au lit ? Et toi aussi, va dormir !', action: 'sleep', priority: 80 });
   if (d.hunger < 25) out.push({ id: 'hungry', text: d.food.ration + d.food.meat + d.food.fish + d.food.fireFruit + d.food.treat > 0 ? 'J’ai tellement faim… tu as des rations pour moi ?' : 'J’ai faim… une mission validée, ça me ferait une ration !', action: 'feed', priority: 85 });
   else if (d.hunger < 50) out.push({ id: 'peckish', text: 'Mon ventre gargouille un peu…', action: 'feed', priority: 50 });
@@ -86,6 +97,7 @@ export const REACTIONS: Record<string, string[]> = {
   wake: ['Mmh… encore cinq minutes…', 'Quoi ? Il fait encore nuit…'],
   tuck: ['Bonne nuit… à demain.', 'Tu me raconteras une histoire demain ?'],
   welcome: ['Te revoilà ! Tu m’as tellement manqué !', 'Enfin ! Je t’attendais !'],
-  locked: ['Je ne sais pas encore faire ça… soyons encore plus amis !']
+  locked: ['Je ne sais pas encore faire ça… soyons encore plus amis !'],
+  cured: ['Je suis guéri ! Merci, tu es génial.', 'Je revis ! Merci pour cette journée parfaite.']
 };
 export const sayFor = (key: string): string => pick(REACTIONS[key] ?? [key]);

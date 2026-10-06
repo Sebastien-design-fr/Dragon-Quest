@@ -14,6 +14,8 @@ export interface Mission {
   time: string | null;
   /** Quête spéciale ponctuelle : disparaît une fois accomplie. */
   once?: boolean;
+  /** Quête bonus facultative : rapporte plus, jamais sanctionnée si elle n'est pas faite. */
+  optional?: boolean;
   note?: string;
 }
 
@@ -21,7 +23,7 @@ export type MissionStatus = 'todo' | 'pending' | 'done' | 'refused';
 
 export interface RequestInfo {
   requestId: string;
-  kind: 'mission' | 'initiative';
+  kind: 'mission' | 'initiative' | 'reward';
   missionId?: string;
   title: string;
   xp: number;
@@ -31,7 +33,15 @@ export interface RequestInfo {
   date: string;
   /** Moment où l'enfant a coché la mission (ponctualité). */
   doneAt?: number;
+  /** Photo preuve (JPEG en data URL, réduite). */
+  photo?: string;
+  /** Récompense réelle demandée : identifiant et prix en gemmes. */
+  rewardId?: string;
+  gems?: number;
 }
+
+/** Vraie récompense proposée par les parents, échangée contre des gemmes. */
+export interface Reward { id: string; title: string; cost: number; note?: string }
 
 /** Photo de l'état de l'enfant, envoyée aux parents. */
 export interface ChildSnapshot {
@@ -51,6 +61,14 @@ export interface ChildSnapshot {
   title?: string | null;
   badgeCount?: number;
   badgeTotal?: number;
+  severity?: 'doux' | 'normal' | 'strict';
+  gems?: number;
+  rewards?: Reward[];
+  expedition?: { title: string; steps: number; goal: number; opened: boolean };
+  shields?: number;
+  missStreak?: number;
+  sick?: boolean;
+  confiscated?: string | null;
   companion?: { name: string; hunger: number; clean: number; mood: number; bond: string; moodLabel: string };
 }
 

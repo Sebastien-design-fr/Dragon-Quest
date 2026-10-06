@@ -95,6 +95,28 @@ export class GameState {
     this.commit();
   }
 
+  /**
+   * Retire de l'XP. Sans perte de niveau : l'XP du niveau en cours descend au plus à 0.
+   * Avec perte de niveau : on peut redescendre, mais jamais sous le premier niveau du stade (pas de « dé-évolution »).
+   * Retourne l'XP réellement retiré.
+   */
+  removeXp(amount: number, allowLevelLoss = false): number {
+    let left = Math.max(0, Math.round(amount)), lost = 0;
+    const floor = this.stage.minLevel;
+    while (left > 0) {
+      if (this.data.xp >= left) { this.data.xp -= left; lost += left; left = 0; break; }
+      lost += this.data.xp; left -= this.data.xp; this.data.xp = 0;
+      if (!allowLevelLoss || this.data.level <= floor) break;
+      this.data.level--;
+      this.data.xp = this.xpToNext();
+    }
+    this.commit();
+    return lost;
+  }
+
+  /** Objets confisqués (sanction) : impossibles à équiper tant qu'ils ne sont pas rendus. */
+  locked = new Set<string>();
+
   addGold(n: number): void { this.data.gold = Math.max(0, this.data.gold + n); this.commit(); }
 
   // ---------- Boutique & inventaire ----------
@@ -116,6 +138,7 @@ export class GameState {
   equip(id: string): ActionResult {
     const def = this.catalog.item(id);
     if (!def || !this.owns(id)) return { ok: false, reason: 'Objet non possédé.' };
+    if (this.locked.has(id)) return { ok: false, reason: 'Objet confisqué : fais toutes tes missions d’une journée pour le récupérer.' };
     this.data.equipped[def.category] = id; // un objet par catégorie : remplace l'éventuel précédent
     this.commit();
     return { ok: true };

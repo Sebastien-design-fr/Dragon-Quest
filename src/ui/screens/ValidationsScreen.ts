@@ -1,4 +1,4 @@
-import { energyLabel } from '../../family/badges.js';
+import { PENALTY, energyLabel, type Severity } from '../../family/badges.js';
 import { rewardText, type MissionStatus } from '../../family/model.js';
 import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon } from '../dom.js';
@@ -59,7 +59,19 @@ export class ValidationsScreen implements Screen {
     if (!pending.length) el.append(h('p', { class: 'muted' }, 'Rien à valider pour le moment.'));
     for (const r of pending) {
       const isInit = r.kind === 'initiative';
+      if (r.kind === 'reward') {
+        el.append(h('section', { class: 'card request reward-request' },
+          h('div', { class: 'row' }, h('span', { class: 'badge gem-badge' }, 'Récompense'),
+            h('span', { class: 'small muted' }, `${r.childName ?? ''} · ${new Date(r.receivedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`)),
+          h('div', { class: 'item-name big' }, r.title),
+          h('p', { class: 'small muted' }, `${r.gems} gemmes, gagnées avec ses missions. Si vous refusez, elles lui sont rendues.`),
+          h('div', { class: 'row end' },
+            h('button', { class: 'btn', onclick: () => void hub.decide(r.requestId, false) }, 'Refuser'),
+            h('button', { class: 'btn primary', onclick: () => void hub.decide(r.requestId, true) }, 'Accorder'))));
+        continue;
+      }
       el.append(h('section', { class: 'card request' },
+        r.photo ? h('img', { class: 'proof', src: r.photo, alt: `Photo : ${r.title}` }) : null,
         h('div', { class: 'row' },
           h('span', { class: 'badge' }, isInit ? 'Initiative' : 'Mission'),
           h('span', { class: 'small muted' }, `${r.childName ?? ''} · ${new Date(r.receivedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`)),
@@ -125,6 +137,17 @@ export class ValidationsScreen implements Screen {
           this.giftMessage = '';
           app.toast('Coup de cœur envoyé');
         } }, 'Envoyer'))));
+
+      // ---- Sanctions des missions oubliées ----
+      const sev: Severity = c.snapshot?.severity ?? 'normal';
+      el.append(h('section', { class: 'card' },
+        h('h3', null, h('span', { class: 'row' }, icon(ICONS.shield, 18), ' Missions oubliées')),
+        h('p', { class: 'small muted' }, 'Chaque matin, l’appli fait le bilan de la veille. Les missions non faites coûtent de l’XP et de l’or, rendent le dragon triste, puis malade si les oublis se répètent. Une journée parfaite efface tout.'),
+        h('div', { class: 'segmented' }, ...(['doux', 'normal', 'strict'] as Severity[]).map(k =>
+          h('button', { class: sev === k ? 'active' : '', onclick: async () => { await hub.setSeverity(id!, k); app.toast(`Sanctions : ${PENALTY[k].label}`); rerender(); } }, PENALTY[k].label))),
+        h('p', { class: 'small' }, PENALTY[sev].text),
+        c.snapshot?.sick ? h('p', { class: 'small bad' }, `Son dragon est malade (${c.snapshot.missStreak ?? 0} jours d’oubli d’affilée).`) : null,
+        c.snapshot?.confiscated ? h('p', { class: 'small bad' }, `Équipement confisqué : ${app.catalog.item(c.snapshot.confiscated)?.name ?? ''}.`) : null));
 
       // ---- Friandise pour le dragon ----
       el.append(h('section', { class: 'card' },
