@@ -16,6 +16,16 @@
     "attack@sprite.json",
     "fire@sprite.json",
     "level_up@sprite.json",
-    "evolution@sprite.json"
+    "evolution@sprite.json",
+    "pet@sprite.json",
+    "sad@sprite.json",
+    "bow@sprite.json",
+    "dance@sprite.json",
+    "ring@sprite.json",
+    "roar@sprite.json",
+    "hover@sprite.json",
+    "wake@sprite.json",
+    "welcome@sprite.json",
+    "shake@sprite.json"
   ]
 }

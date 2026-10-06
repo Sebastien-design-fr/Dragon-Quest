@@ -180,7 +180,7 @@ export interface ParticlePreset {
   spread: number;        // rayon de la zone d'émission (relatif à l'échelle du dragon)
   area: 'anchor' | 'body';
   fade: 'out' | 'inout';
-  shape: 'circle' | 'spark' | 'smoke';
+  shape: 'circle' | 'spark' | 'smoke' | 'heart' | 'bubble';
 }
 
 export interface QualityPreset {

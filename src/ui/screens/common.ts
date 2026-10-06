@@ -34,3 +34,15 @@ export function categoryChips(app: App, selected: string | null, onPick: (id: st
   for (const c of app.catalog.categories.values()) add(c.id, c.label, c.icon);
   return bar;
 }
+
+/** Panneau qui monte du bas de l'écran (nourriture, tours, album…). */
+export function openSheet(title: string, build: (close: () => void) => Node[]): () => void {
+  const close = () => { wrap.classList.remove('open'); setTimeout(() => wrap.remove(), 220); };
+  const panel = h('div', { class: 'sheet-panel', role: 'dialog', 'aria-label': title },
+    h('div', { class: 'sheet-head' }, h('h3', null, title), h('button', { class: 'btn ghost small-btn', onclick: close }, 'Fermer')));
+  const wrap = h('div', { class: 'sheet', onclick: (e: Event) => { if (e.target === wrap) close(); } }, panel);
+  for (const n of build(close)) panel.append(n);
+  document.body.append(wrap);
+  requestAnimationFrame(() => wrap.classList.add('open'));
+  return close;
+}

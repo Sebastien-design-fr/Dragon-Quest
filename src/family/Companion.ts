@@ -1,0 +1,315 @@
+// Le dragon compagnon (côté enfant) : il a faim, se salit, s'ennuie, et s'attache à celle qui s'occupe de lui.
+// Tout ce qu'il faut pour le soigner se gagne avec les vraies missions (rations, friandises, mini-jeu).
+// Il ne meurt jamais et ne s'enfuit jamais : négligé, il devient triste et terne, puis se remet vite.
+import { EventBus } from '../core/events.js';
+import type { GameState } from '../game/GameState.js';
+import { readStore, writeStore } from '../platform/storage.js';
+import { todayKey } from './model.js';
+
+export type FoodId = 'ration' | 'meat' | 'fish' | 'fireFruit' | 'treat';
+
+export interface FoodDef { id: FoodId; label: string; hint: string; hunger: number; mood: number; bond: number; price: number | null }
+
+export const FOODS: FoodDef[] = [
+  { id: 'ration', label: 'Ration de dragon', hint: 'Gagnée à chaque mission accomplie', hunger: 30, mood: 0, bond: 0, price: null },
+  { id: 'meat', label: 'Viande grillée', hint: 'Bien nourrissante', hunger: 50, mood: 6, bond: 0, price: 25 },
+  { id: 'fish', label: 'Poisson des montagnes', hint: 'Son plat préféré', hunger: 45, mood: 14, bond: 1, price: 40 },
+  { id: 'fireFruit', label: 'Fruit de feu', hint: 'Gagné quand toutes les missions du jour sont faites', hunger: 35, mood: 22, bond: 3, price: 120 },
+  { id: 'treat', label: 'Friandise des parents', hint: 'Envoyée par tes parents', hunger: 15, mood: 25, bond: 3, price: null }
+];
+
+export interface TrickDef { id: string; label: string; anim: string; level: number }
+export const TRICKS: TrickDef[] = [
+  { id: 'fire', label: 'Souffle de feu', anim: 'fire', level: 1 },
+  { id: 'attack', label: 'Coup de griffe', anim: 'attack', level: 1 },
+  { id: 'bow', label: 'La révérence', anim: 'bow', level: 2 },
+  { id: 'dance', label: 'La danse', anim: 'dance', level: 3 },
+  { id: 'ring', label: 'Anneau de feu', anim: 'ring', level: 4 },
+  { id: 'roar', label: 'Le rugissement', anim: 'roar', level: 5 },
+  { id: 'hover', label: 'Vol sur place', anim: 'hover', level: 6 }
+];
+
+/** Niveaux d'amitié : points de lien nécessaires. */
+export const BOND_LEVELS = [
+  { level: 1, at: 0, label: 'Curieux' },
+  { level: 2, at: 15, label: 'Confiant' },
+  { level: 3, at: 45, label: 'Complice' },
+  { level: 4, at: 100, label: 'Fidèle' },
+  { level: 5, at: 180, label: 'Inséparable' },
+  { level: 6, at: 300, label: 'Lié pour la vie' }
+];
+
+export interface AlbumEntry { id: string; at: number; title: string; text: string }
+
+interface Data {
+  name: string | null;
+  hunger: number;   // 100 = rassasié
+  clean: number;    // 100 = écailles brillantes
+  mood: number;     // 100 = ravi
+  bond: number;     // points d'amitié (ne baissent jamais)
+  updatedAt: number;
+  food: Record<FoodId, number>;
+  /** Compteurs du jour (anti-abus : les caresses ne rapportent pas à l'infini). */
+  day: string;
+  pets: number;
+  petBond: number;
+  played: boolean;
+  tucked: boolean;
+  album: AlbumEntry[];
+  lastOpen: number;
+  /** Notifications « venant du dragon » déjà programmées par jour (au plus 2). */
+  seenStage: string | null;
+}
+
+const KEY = 'quete-du-dragon:companion';
+const H = 3600 * 1000;
+
+// Baisse par heure (le jour) ; la nuit (22 h – 7 h), il dort : faim divisée par 2, humeur stable.
+const DECAY = { hunger: 4, clean: 1.4, mood: 2.2 };
+
+export function isNight(d = new Date()): boolean { const h = d.getHours(); return h >= 22 || h < 7; }
+
+export class Companion {
+  readonly events = new EventBus<{ change: void; toast: string; react: { anim?: string; fx?: string; anchor?: string; say?: string } }>();
+  data: Data;
+
+  constructor(private state: GameState) {
+    const now = Date.now();
+    const defaults: Data = {
+      name: null, hunger: 80, clean: 85, mood: 75, bond: 0, updatedAt: now,
+      food: { ration: 3, meat: 0, fish: 1, fireFruit: 0, treat: 0 },
+      day: todayKey(), pets: 0, petBond: 0, played: false, tucked: false, album: [], lastOpen: now, seenStage: null
+    };
+    const saved = readStore<Partial<Data>>(KEY, {});
+    this.data = { ...defaults, ...saved, food: { ...defaults.food, ...(saved.food ?? {}) } };
+    this.tick();
+    if (!this.data.seenStage) this.data.seenStage = state.data.stage;
+  }
+
+  save(): void { writeStore(KEY, this.data); this.events.emit('change', undefined); }
+
+  // ---------- Temps qui passe ----------
+  /** Applique la baisse des jauges depuis la dernière mise à jour (heure par heure, jour / nuit). */
+  tick(now = Date.now()): void {
+    const d = this.data;
+    let t = d.updatedAt;
+    if (now - t > 30 * 24 * H) t = now - 30 * 24 * H;
+    while (t < now) {
+      const step = Math.min(H, now - t);
+      const k = step / H;
+      const night = isNight(new Date(t));
+      d.hunger -= DECAY.hunger * k * (night ? 0.5 : 1);
+      d.clean -= DECAY.clean * k;
+      // Il s'ennuie plus vite s'il a faim ou s'il est sale ; la nuit, il dort.
+      if (!night) d.mood -= DECAY.mood * k * (d.hunger < 30 || d.clean < 30 ? 1.6 : 1);
+      t += step;
+    }
+    d.hunger = clamp(d.hunger); d.clean = clamp(d.clean); d.mood = clamp(d.mood);
+    d.updatedAt = now;
+    if (d.day !== todayKey()) { d.day = todayKey(); d.pets = 0; d.petBond = 0; d.played = false; d.tucked = false; }
+  }
+
+  /** À l'ouverture de l'appli : s'il ne l'a pas vue depuis longtemps, il lui fait la fête. */
+  greet(): string | null {
+    this.tick();
+    const away = Date.now() - this.data.lastOpen;
+    this.data.lastOpen = Date.now();
+    this.save();
+    if (away > 36 * H) return 'away';
+    return null;
+  }
+
+  // ---------- Lecture ----------
+  get name(): string { return this.data.name || 'Ton dragon'; }
+  wellbeing(): number { const d = this.data; return Math.round((d.hunger + d.clean + d.mood) / 3); }
+  /** Bonus d'XP des missions : un dragon heureux et bien soigné apprend plus vite. */
+  xpBonus(): number { const d = this.data; return d.hunger >= 50 && d.clean >= 50 && d.mood >= 50 ? 1.1 : 1; }
+  sad(): boolean { return this.data.mood < 25 || this.wellbeing() < 30; }
+
+  bondLevel(): { level: number; label: string; next: number | null; progress: number } {
+    const b = this.data.bond;
+    let i = 0;
+    while (i + 1 < BOND_LEVELS.length && b >= BOND_LEVELS[i + 1].at) i++;
+    const cur = BOND_LEVELS[i], nxt = BOND_LEVELS[i + 1];
+    return { level: cur.level, label: cur.label, next: nxt ? nxt.at : null, progress: nxt ? (b - cur.at) / (nxt.at - cur.at) : 1 };
+  }
+
+  mood(): { key: string; label: string } {
+    const d = this.data;
+    if (isNight() && !d.tucked && d.hunger > 25) return { key: 'sleepy', label: 'Il a sommeil' };
+    if (d.hunger < 25) return { key: 'hungry', label: 'Affamé' };
+    if (d.clean < 25) return { key: 'dirty', label: 'Tout sale' };
+    if (d.mood < 25) return { key: 'sad', label: 'Triste' };
+    const w = this.wellbeing();
+    if (w >= 80) return { key: 'great', label: 'Rayonnant' };
+    if (w >= 55) return { key: 'good', label: 'Content' };
+    return { key: 'meh', label: 'Un peu morose' };
+  }
+
+  // ---------- Gains venant des missions ----------
+  onMission(): void { this.tick(); this.data.food.ration++; this.addBond(1); this.data.mood = clamp(this.data.mood + 6); this.save(); }
+  onPerfectDay(): void { this.data.food.fireFruit++; this.events.emit('toast', 'Fruit de feu gagné pour ta journée parfaite !'); this.save(); }
+  onTreat(from: string): void {
+    this.data.food.treat++;
+    this.events.emit('toast', `${from} t’a envoyé une friandise pour ${this.name} !`);
+    this.save();
+  }
+
+  // ---------- Soins ----------
+  setName(name: string): void {
+    const n = name.trim().slice(0, 18);
+    if (!n) return;
+    const first = !this.data.name;
+    this.data.name = n;
+    if (first) this.remember('name', `Il s’appelle ${n}`, `Le jour où tu as donné un nom à ton dragon.`);
+    this.save();
+  }
+
+  feed(id: FoodId): string {
+    this.tick();
+    const f = FOODS.find(x => x.id === id)!;
+    const d = this.data;
+    if ((d.food[id] ?? 0) <= 0) return 'none';
+    if (d.hunger >= 95) { this.events.emit('react', { say: 'full' }); return 'full'; }
+    d.food[id]--;
+    const wasHungry = d.hunger < 60;
+    d.hunger = clamp(d.hunger + f.hunger);
+    d.mood = clamp(d.mood + f.mood);
+    this.addBond(f.bond + (wasHungry ? 1 : 0));
+    this.events.emit('react', { anim: 'eat', say: id === 'fireFruit' || id === 'treat' ? 'yum' : 'thanks-food' });
+    this.save();
+    return 'ok';
+  }
+
+  buy(id: FoodId): boolean {
+    const f = FOODS.find(x => x.id === id);
+    if (!f?.price || this.state.data.gold < f.price) return false;
+    this.state.addGold(-f.price);
+    this.data.food[id]++;
+    this.save();
+    return true;
+  }
+
+  /** Frotter les écailles : amount = distance frottée (0..1 par geste). Retourne vrai quand il est tout propre. */
+  scrub(amount: number): boolean {
+    const d = this.data;
+    if (d.clean >= 100) return true;
+    const before = d.clean;
+    d.clean = clamp(d.clean + amount * 9);
+    if (before < 100 && d.clean >= 100) {
+      if (before < 60) this.addBond(2);
+      d.mood = clamp(d.mood + 8);
+      this.events.emit('react', { anim: 'shake', say: 'clean' });
+      this.save();
+      return true;
+    }
+    return false;
+  }
+
+  /** Caresse (frottement du doigt). Les premières de la journée comptent pour l'amitié. */
+  pet(): void {
+    const d = this.data;
+    d.pets++;
+    d.mood = clamp(d.mood + (d.pets <= 20 ? 1.5 : 0.3));
+    if (d.pets % 6 === 0 && d.petBond < 3) { d.petBond++; this.addBond(1); }
+  }
+
+  tuck(): boolean {
+    this.tick();
+    if (!isNight() && new Date().getHours() < 20) return false;
+    if (!this.data.tucked) { this.data.tucked = true; this.data.mood = clamp(this.data.mood + 10); this.addBond(2); this.save(); }
+    return true;
+  }
+
+  canPlay(missionsDoneToday: number): 'ok' | 'played' | 'locked' {
+    this.tick();
+    if (this.data.played) return 'played';
+    return missionsDoneToday > 0 ? 'ok' : 'locked';
+  }
+
+  finishGame(score: number): number {
+    const gold = Math.min(40, Math.round(score * 1.5));
+    this.data.played = true;
+    this.data.mood = clamp(this.data.mood + 20);
+    this.addBond(3);
+    if (gold) this.state.addGold(gold);
+    this.save();
+    return gold;
+  }
+
+  tricks(): Array<TrickDef & { unlocked: boolean }> {
+    const lv = this.bondLevel().level;
+    return TRICKS.map(t => ({ ...t, unlocked: lv >= t.level }));
+  }
+
+  // ---------- Amitié et souvenirs ----------
+  private addBond(n: number): void {
+    if (n <= 0) return;
+    const before = this.bondLevel().level;
+    this.data.bond += n;
+    const after = this.bondLevel();
+    if (after.level > before) {
+      const trick = TRICKS.find(t => t.level === after.level);
+      this.remember(`bond${after.level}`, `Amitié : ${after.label}`, trick ? `${this.name} a appris un nouveau tour : ${trick.label}.` : 'Votre lien est plus fort que jamais.');
+      this.events.emit('toast', trick ? `Amitié « ${after.label} » : ${this.name} a appris ${trick.label.toLowerCase()} !` : `Amitié « ${after.label} » !`);
+      this.events.emit('react', { anim: 'happy', fx: 'hearts', say: 'bond' });
+    }
+  }
+
+  /** Souvenir pour l'album (une seule fois par id). */
+  remember(id: string, title: string, text: string): void {
+    if (this.data.album.some(a => a.id === id)) return;
+    this.data.album.unshift({ id, at: Date.now(), title, text });
+    this.data.album = this.data.album.slice(0, 60);
+  }
+
+  /** Appelé quand le stade change (évolution) ou quand un grand moment arrive. */
+  noteStage(stageId: string, label: string): void {
+    if (this.data.seenStage === stageId) return;
+    this.data.seenStage = stageId;
+    this.remember('stage-' + stageId, `Évolution : ${label}`, `${this.name} est devenu ${label.toLowerCase()}.`);
+    this.save();
+  }
+
+  /**
+   * Notifications « du dragon » à programmer : quand il aura faim, et s'il ne l'a pas vue depuis 2 jours.
+   * Jamais la nuit ni pendant l'école : décalées au créneau calme suivant. Au plus 2 par jour.
+   */
+  careNotifs(): Array<{ key: string; at: Date; body: string }> {
+    this.tick();
+    const d = this.data, now = Date.now();
+    const out: Array<{ key: string; at: Date; body: string }> = [];
+    if (d.hunger > 25) {
+      const at = calmSlot(new Date(now + ((d.hunger - 25) / DECAY.hunger) * H));
+      out.push({ key: 'hungry-' + todayKey(at), at, body: 'J’ai faim… tu viens me voir ? Une mission = une ration !' });
+    } else out.push({ key: 'hungry-now-' + todayKey(), at: calmSlot(new Date(now + 3 * H)), body: 'Mon ventre gargouille très fort… tu n’oublies pas ton dragon ?' });
+    const miss = calmSlot(new Date(d.lastOpen + 48 * H));
+    out.push({ key: 'miss-' + todayKey(miss), at: miss, body: 'Tu me manques… je t’attends dans ma grotte.' });
+    // au plus 2 par jour
+    const perDay = new Map<string, number>();
+    return out.filter(n => { const k = todayKey(n.at); const c = (perDay.get(k) ?? 0) + 1; perDay.set(k, c); return c <= 2; });
+  }
+
+  /** Résumé envoyé aux parents. */
+  summary() {
+    this.tick();
+    const d = this.data;
+    return { name: this.name, hunger: Math.round(d.hunger), clean: Math.round(d.clean), mood: Math.round(d.mood), bond: this.bondLevel().label, moodLabel: this.mood().label };
+  }
+}
+
+/** Prochain créneau calme : pas la nuit (21 h – 8 h), pas pendant l'école en semaine (8 h – 16 h 30). */
+function calmSlot(d: Date): Date {
+  const r = new Date(d);
+  const fix = () => {
+    const h = r.getHours() + r.getMinutes() / 60, wd = r.getDay(), week = wd >= 1 && wd <= 5;
+    if (h >= 21) { r.setDate(r.getDate() + 1); r.setHours(week ? 17 : 10, 0, 0, 0); return true; }
+    if (h < 8) { r.setHours(r.getDay() >= 1 && r.getDay() <= 5 ? 17 : 10, 0, 0, 0); return true; }
+    if (week && h >= 8 && h < 16.5) { r.setHours(17, 0, 0, 0); return true; }
+    return false;
+  };
+  for (let i = 0; i < 3 && fix(); i++) { /* recalcule après décalage */ }
+  return r;
+}
+
+function clamp(v: number): number { return v < 0 ? 0 : v > 100 ? 100 : v; }

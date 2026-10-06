@@ -14,6 +14,11 @@ interface LocalNotificationsPlugin {
 }
 
 const CHANNEL = 'qd_reminders';
+
+/** Voix du dragon : les rappels sont écrits par lui. */
+export interface DragonVoice { name: string; line: (m: Mission, kind: 'now' | 'late') => string }
+/** Notification de soin prévue (faim, il s'ennuie…). */
+export interface CareNotif { key: string; at: Date; body: string }
 const DAYS_AHEAD = 7;
 const FOLLOW_UP_MIN = 60;
 
@@ -49,7 +54,7 @@ export class Reminders {
   }
 
   /** statusFor(missionId, dateKey) : statut de la mission ce jour-là. */
-  async reschedule(missions: Mission[], statusFor: (id: string, date: string) => MissionStatus): Promise<void> {
+  async reschedule(missions: Mission[], statusFor: (id: string, date: string) => MissionStatus, voice?: DragonVoice, care: CareNotif[] = []): Promise<void> {
     if (!this.ln) return;
     await this.init();
     try {
@@ -68,9 +73,18 @@ export class Reminders {
           const [hh, mm] = m.time.split(':').map(Number);
           const at = new Date(day); at.setHours(hh, mm, 0, 0);
           const follow = new Date(at.getTime() + FOLLOW_UP_MIN * 60000);
-          if (at.getTime() > now) list.push(this.notif(m, key, 0, at, `C’est l’heure : ${m.title}`, 'Ton dragon compte sur toi.'));
-          if (follow.getTime() > now) list.push(this.notif(m, key, 1, follow, `Toujours pas fait : ${m.title}`, 'Ton dragon commence à s’ennuyer…'));
+          if (voice) {
+            if (at.getTime() > now) list.push(this.notif(m, key, 0, at, `${voice.name} : ${m.title}`, voice.line(m, 'now')));
+            if (follow.getTime() > now) list.push(this.notif(m, key, 1, follow, `${voice.name} s’inquiète…`, voice.line(m, 'late')));
+          } else {
+            if (at.getTime() > now) list.push(this.notif(m, key, 0, at, `C’est l’heure : ${m.title}`, 'Ton dragon compte sur toi.'));
+            if (follow.getTime() > now) list.push(this.notif(m, key, 1, follow, `Toujours pas fait : ${m.title}`, 'Ton dragon commence à s’ennuyer…'));
+          }
         }
+      }
+      for (const c of care) {
+        if (c.at.getTime() <= now) continue;
+        list.unshift({ id: hash('care|' + c.key), title: voice?.name ?? 'Ton dragon', body: c.body, channelId: CHANNEL, schedule: { at: c.at, allowWhileIdle: true }, extra: { care: c.key } });
       }
       if (list.length) await this.ln.schedule({ notifications: list.slice(0, 60) });
     } catch (e) {

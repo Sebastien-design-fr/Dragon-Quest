@@ -10,6 +10,8 @@ import {
   type ChildSnapshot, type Mission, type MissionStatus, type RequestInfo
 } from './model.js';
 import type { Reminders } from './Reminders.js';
+import type { Companion } from './Companion.js';
+import { missionLine } from './Thoughts.js';
 import { ENERGY, EMPTY_STATS, badgeProgress, xpMultiplier, type BadgeDef, type ChildStats } from './badges.js';
 
 interface DayRecord { date: string; status: MissionStatus; requestId?: string }
@@ -139,6 +141,8 @@ export class ChildBook {
 
   private name(): string { return this.childName || 'Votre enfant'; }
   childName = '';
+  /** Le dragon compagnon (soins, faim, amitié). */
+  companion: Companion | null = null;
 
   /**
    * Crédite une récompense. Pour une mission (mission = true), l'XP est modulé par l'énergie
@@ -147,11 +151,12 @@ export class ChildBook {
    */
   private reward(xp: number, gold: number, mission = false): string {
     const mult = mission ? xpMultiplier(this.data.energy) : 1;
-    const gainedXp = Math.round(xp * mult);
+    const care = mission && mult > 0 ? this.companion?.xpBonus() ?? 1 : 1;
+    const gainedXp = Math.round(xp * mult * care);
     if (gold) this.state.addGold(gold);
     if (gainedXp) this.state.addXp(gainedXp);
-    if (mission) this.data.energy = Math.min(ENERGY.max, this.data.energy + ENERGY.perMission);
-    const text = rewardText(gainedXp, gold) || 'aucune récompense';
+    if (mission) { this.data.energy = Math.min(ENERGY.max, this.data.energy + ENERGY.perMission); this.companion?.onMission(); }
+    const text = (rewardText(gainedXp, gold) || 'aucune récompense') + (mission ? ', +1 ration' : '') + (care > 1 ? ' (dragon heureux : XP +10 %)' : '');
     if (mission && mult < 1) return mult === 0 ? `${text} (dragon épuisé : pas d’XP, il reprend des forces)` : `${text} (dragon fatigué : XP × ${String(mult).replace('.', ',')})`;
     return text;
   }
@@ -239,6 +244,9 @@ export class ChildBook {
         this.data.stats.perfectDays++;
         this.data.stats.maxStreak = Math.max(this.data.stats.maxStreak, s);
         this.data.energy = Math.min(ENERGY.max, this.data.energy + ENERGY.perfectDayBonus);
+        this.companion?.onPerfectDay();
+        if (s === 7 || s === 30 || s === 100) this.companion?.remember('streak' + s, `${s} jours de suite`, `Toutes les missions faites ${s} jours d’affilée.`);
+        if (this.data.stats.perfectDays === 1) this.companion?.remember('perfect1', 'Première journée parfaite', 'Toutes les missions du jour faites pour la première fois.');
         if (s > 0 && s % 7 === 0) { this.reward(50, 50); this.events.emit('toast', `Série de ${s} jours ! Bonus +50 XP, +50 or`); }
         else this.events.emit('toast', 'Toutes les missions du jour sont faites !');
       }
@@ -365,6 +373,11 @@ export class ChildBook {
         this.events.emit('toast', text);
         return true;
       }
+      case 'treat': {
+        this.companion?.onTreat(by);
+        this.log(`Friandise envoyée par ${by}${p.message ? ` — « ${p.message} »` : ''}`);
+        return true;
+      }
       case 'status.request':
         this.queueStatus(0);
         return false;
@@ -383,7 +396,8 @@ export class ChildBook {
       stageLabel: this.state.stage.label, gold: d.gold, equipped: Object.values(d.equipped),
       missions: this.data.missions, today, date: todayKey(), streak: this.streak(),
       energy: this.data.energy, title: this.titleText(),
-      badgeCount: Object.keys(this.data.badges).length, badgeTotal: this.badgeDefs.length
+      badgeCount: Object.keys(this.data.badges).length, badgeTotal: this.badgeDefs.length,
+      companion: this.companion?.summary()
     };
   }
 
@@ -393,7 +407,9 @@ export class ChildBook {
   }
 
   async refreshReminders(): Promise<void> {
-    await this.reminders.reschedule(this.data.missions, (id, date) => this.status(id, date));
+    const c = this.companion;
+    await this.reminders.reschedule(this.data.missions, (id, date) => this.status(id, date),
+      c ? { name: c.name, line: (m, kind) => missionLine(m, kind) } : undefined, c?.careNotifs() ?? []);
   }
 }
 

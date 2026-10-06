@@ -112,6 +112,14 @@ export class ParentHub {
   }
 
   /** Avertissement : retire de l'or à l'enfant (50 au maximum) et un peu d'énergie au dragon. */
+  /** Friandise pour le dragon (elle la donne elle-même à son dragon). */
+  async treat(childId: string, message: string): Promise<void> {
+    await this.link.send(childId, 'treat', { message }, {
+      title: 'Une friandise pour ton dragon !', body: message ? `« ${message} »` : 'Va la lui donner, il va adorer.', tag: newId('treat-'), channel: 'missions'
+    });
+    this.events.emit('toast', 'Friandise envoyée');
+  }
+
   async warn(childId: string, gold: number, reason: string): Promise<void> {
     const g = Math.min(50, Math.max(0, Math.round(gold)));
     await this.link.send(childId, 'warning', { gold: g, reason }, {

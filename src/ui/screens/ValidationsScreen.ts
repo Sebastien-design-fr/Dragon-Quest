@@ -94,6 +94,14 @@ export class ValidationsScreen implements Screen {
             h('span', null, `Énergie du dragon : ${snap.energy} % · ${en.label}`),
             h('div', { class: 'bar energy-bar' }, h('div', { class: 'fill', style: { width: `${snap.energy}%` } }))));
         }
+        if (snap.companion) {
+          const cp = snap.companion;
+          const gauge = (label: string, v: number) => h('div', { class: 'care-mini' }, h('span', { class: 'small' }, label),
+            h('div', { class: `bar care-bar ${v < 25 ? 'low' : v < 50 ? 'mid' : ''}` }, h('div', { class: 'fill', style: { width: `${v}%` } })));
+          card.append(h('div', { class: 'care-parent' },
+            h('div', { class: 'small' }, h('strong', null, cp.name), ` · ${cp.moodLabel} · amitié : ${cp.bond}`),
+            h('div', { class: 'care-row' }, gauge('Faim', cp.hunger), gauge('Propreté', cp.clean), gauge('Humeur', cp.mood))));
+        }
         card.append(h('p', { class: 'small muted' }, [
           `Série : ${snap.streak} jour${snap.streak > 1 ? 's' : ''}`,
           snap.badgeTotal ? `succès : ${snap.badgeCount}/${snap.badgeTotal}` : null,
@@ -117,6 +125,15 @@ export class ValidationsScreen implements Screen {
           this.giftMessage = '';
           app.toast('Coup de cœur envoyé');
         } }, 'Envoyer'))));
+
+      // ---- Friandise pour le dragon ----
+      el.append(h('section', { class: 'card' },
+        h('h3', null, h('span', { class: 'row' }, icon(ICONS.heart, 18), ' Friandise pour son dragon')),
+        h('p', { class: 'small muted' }, `${c.name} la reçoit et la donne elle-même à son dragon : il adore ça (humeur et amitié en hausse).`),
+        h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: async () => {
+          await hub.treat(id!, this.giftMessage.trim());
+          app.toast('Friandise envoyée');
+        } }, 'Envoyer une friandise'))));
     }
 
     // ---- Avertissement (malus) ----

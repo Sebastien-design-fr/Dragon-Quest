@@ -51,6 +51,7 @@ export interface ChildSnapshot {
   title?: string | null;
   badgeCount?: number;
   badgeTotal?: number;
+  companion?: { name: string; hunger: number; clean: number; mood: number; bond: string; moodLabel: string };
 }
 
 export const DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];

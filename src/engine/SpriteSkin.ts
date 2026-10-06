@@ -108,6 +108,20 @@ export class SpriteSkin {
     }
   }
 
+  /** Le point (monde) est-il sur un triangle visible du maillage déformé ? */
+  contains(x: number, y: number): boolean {
+    const P = this.positions, I = this.indices;
+    for (let i = 0; i < I.length; i += 3) {
+      const a = I[i] * 2, b = I[i + 1] * 2, c = I[i + 2] * 2;
+      const d1 = (x - P[b]) * (P[a + 1] - P[b + 1]) - (P[a] - P[b]) * (y - P[b + 1]);
+      const d2 = (x - P[c]) * (P[b + 1] - P[c + 1]) - (P[b] - P[c]) * (y - P[c + 1]);
+      const d3 = (x - P[a]) * (P[c + 1] - P[a + 1]) - (P[c] - P[a]) * (y - P[a + 1]);
+      const neg = d1 < 0 || d2 < 0 || d3 < 0, pos = d1 > 0 || d2 > 0 || d3 > 0;
+      if (!(neg && pos)) return true;
+    }
+    return false;
+  }
+
   /** Repère monde déformé d'un repère de repos (ancrage) : mélange des matrices des os voisins. */
   deform(restWorld: Mat2D, out: Mat2D): Mat2D {
     const id = new Uint8Array(MAX_INFLUENCES), w = new Float32Array(MAX_INFLUENCES);

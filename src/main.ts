@@ -3,6 +3,7 @@ import { AnimationLibrary } from './engine/Animator.js';
 import { Assets } from './engine/AssetManager.js';
 import { DragonView } from './engine/DragonView.js';
 import { ChildBook } from './family/ChildBook.js';
+import { Companion } from './family/Companion.js';
 import { ParentHub } from './family/ParentHub.js';
 import { Reminders } from './family/Reminders.js';
 import { Catalog } from './game/Catalog.js';
@@ -52,6 +53,7 @@ async function boot(): Promise<void> {
 
   let book: ChildBook | null = null;
   let hub: ParentHub | null = null;
+  let companion: Companion | null = null;
   if (linkState.role === 'parent') {
     hub = new ParentHub(link);
     hub.syncMembers(linkState.members);
@@ -60,6 +62,8 @@ async function boot(): Promise<void> {
   } else {
     book = new ChildBook(link, state, reminders, catalog.badges);
     book.childName = linkState.deviceName;
+    companion = new Companion(state);
+    book.companion = companion;
     await book.init();
     link.onInbox(() => void book!.sync());
   }
@@ -70,7 +74,7 @@ async function boot(): Promise<void> {
     void (book ?? hub)?.sync();
   });
 
-  new App(root, catalog, state, view, { link, linkState, reminders, book, hub });
+  new App(root, catalog, state, view, { link, linkState, reminders, book, hub, companion });
 }
 
 boot().catch(err => {

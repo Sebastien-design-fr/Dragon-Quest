@@ -210,6 +210,159 @@ const clips = {};
   };
 }
 
+
+// ---------- Caresse : il penche la tête vers la main, ferme à moitié les yeux, la queue frétille ----------
+{
+  const D = 1.6;
+  const t = {
+    body: { y: mix(D, [[0, 0], [0.4, 2], [1.2, 2], [1.6, 0]]), rot: mix(D, [[0, 0], [0.4, 1.2], [1.2, 1.2], [1.6, 0]]) },
+    neck1: { rot: mix(D, [[0, 0], [0.4, 8], [1.2, 8], [1.6, 0]]) },
+    neck2: { rot: mix(D, [[0, 0], [0.4, 6], [1.2, 6], [1.6, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.4, 10], [1.2, 10], [1.6, 0]], t2 => (t2 > 0.4 && t2 < 1.2 ? 2.5 * Math.sin((t2 - 0.4) * 14) : 0), 0.05) },
+    wing2: { rot: mix(D, [[0, 0], [0.5, 5], [1.2, 3], [1.6, 0]]) }
+  };
+  tailWave(t, D, 8, 0.45, () => 3, 0.05);
+  clips.pet = { duration: D, loop: false, tracks: t, events: [{ t: 0.4, type: 'emit', preset: 'hearts', anchor: 'head_anchor' }] };
+}
+
+// ---------- Triste (boucle) : tête basse, ailes tombantes, queue au sol ----------
+{
+  const D = 7;
+  const t = {
+    body: { y: wave(D, t => 3 + 0.8 * sin(t, 3.5)) },
+    spine: { sy: wave(D, t => 1 + 0.02 * sin(t, 3.5)) },
+    neck1: { rot: wave(D, t => 12 + 1.5 * sin(t, D, 0.3)) },
+    neck2: { rot: wave(D, t => 9 + 1.2 * sin(t, D, 0.8)) },
+    head: { rot: wave(D, t => 12 + 1.5 * sin(t, D, 1.3)) },
+    wing1: { rot: wave(D, () => -3) },
+    wing2: { rot: wave(D, t => -7 + 1.2 * sin(t, 3.5, 0.6)) },
+    wingFar: { rot: wave(D, () => -4) }
+  };
+  tailWave(t, D, 1.4, D, (_, i) => 2 + i);
+  clips.sad = { duration: D, loop: true, tracks: t };
+}
+
+// ---------- Révérence ----------
+{
+  const D = 2.4;
+  const t = {
+    body: { rot: mix(D, [[0, 0], [0.6, 3], [1.5, 3], [2.1, 0]]), y: mix(D, [[0, 0], [0.6, 4], [1.5, 4], [2.1, 0]]) },
+    neck1: { rot: mix(D, [[0, 0], [0.6, 22], [1.5, 22], [2.1, -3], [2.4, 0]]) },
+    neck2: { rot: mix(D, [[0, 0], [0.6, 16], [1.5, 16], [2.1, -2], [2.4, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.6, 20], [1.5, 20], [2.1, -6], [2.4, 0]]) },
+    wing1: { rot: mix(D, [[0, 0], [0.6, 6], [1.5, 6], [2.1, 0]]) },
+    wing2: { rot: mix(D, [[0, 0], [0.6, -14], [1.5, -14], [2.1, 4], [2.4, 0]]) },
+    legFront: { x: mix(D, [[0, 0], [0.6, 40], [1.5, 40], [2.1, 0]]), y: mix(D, [[0, 0], [0.3, -40], [0.6, 0], [1.5, 0], [1.8, -30], [2.1, 0]]) }
+  };
+  tailWave(t, D, 3, 1.2);
+  clips.bow = { duration: D, loop: false, tracks: t, events: [{ t: 2.1, type: 'emit', preset: 'happySparkle', anchor: 'head_anchor' }] };
+}
+
+// ---------- Danse : balancement, ailes en rythme, petits sauts ----------
+{
+  const D = 3.2, beat = 0.8;
+  const t = {
+    body: { x: wave(D, t => 4 * sin(t, beat * 2), 0.05), y: wave(D, t => -6 * Math.abs(sin(t, beat * 2)), 0.05), rot: wave(D, t => 3 * sin(t, beat * 2), 0.05) },
+    ground: { y: wave(D, t => -4 * Math.max(0, sin(t, beat * 2, Math.PI / 2)), 0.05) },
+    neck1: { rot: wave(D, t => -6 * sin(t, beat * 2, 0.5), 0.05) },
+    neck2: { rot: wave(D, t => -4 * sin(t, beat * 2, 0.8), 0.05) },
+    head: { rot: wave(D, t => 8 * sin(t, beat, 0.3), 0.05) },
+    wing1: { rot: wave(D, t => 5 * sin(t, beat, 0.2), 0.05) },
+    wing2: { rot: wave(D, t => 16 * sin(t, beat, 0.6), 0.05) },
+    wingFar: { rot: wave(D, t => 10 * sin(t, beat, 0.9), 0.05) },
+    legFront: { y: wave(D, t => -30 * Math.max(0, sin(t, beat * 2)), 0.05) },
+    legRear: { y: wave(D, t => -26 * Math.max(0, -sin(t, beat * 2)), 0.05) }
+  };
+  tailWave(t, D, 10, beat * 2, () => 0, 0.05);
+  clips.dance = { duration: D, loop: false, tracks: t, events: [0.4, 1.2, 2.0, 2.8].map(tt => ({ t: tt, type: 'emit', preset: 'happySparkle', anchor: 'head_anchor' })) };
+}
+
+// ---------- Anneau de feu : tête vers le ciel, anneau de flammes ----------
+{
+  const D = 2.6;
+  const t = {
+    body: { y: mix(D, [[0, 0], [0.5, 4], [0.9, -4], [2.0, 0]]) },
+    spine: { sy: mix(D, [[0, 1], [0.6, 1.07], [0.9, 0.97], [1.6, 1]]) },
+    neck1: { rot: mix(D, [[0, 0], [0.6, -10], [0.9, -16], [1.8, -12], [2.5, 0]]) },
+    neck2: { rot: mix(D, [[0, 0], [0.6, -8], [0.9, -12], [1.8, -10], [2.5, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.6, -20], [0.9, -34], [1.8, -28], [2.5, 0]]) },
+    wing2: { rot: mix(D, [[0, 0], [0.6, 10], [0.9, 18], [1.8, 10], [2.5, 0]]) }
+  };
+  tailWave(t, D, 4, 0.8);
+  clips.ring = { duration: D, loop: false, tracks: t,
+    events: [{ t: 0.95, type: 'emit', preset: 'fireRing', anchor: 'mouth_anchor' }, { t: 1.25, type: 'emit', preset: 'fireRing', anchor: 'mouth_anchor' }, { t: 0.95, type: 'shake', value: 2 }] };
+}
+
+// ---------- Rugissement : il se dresse, ailes grandes ouvertes, tête au ciel ----------
+{
+  const D = 2.8;
+  const roar = t2 => (t2 > 0.8 && t2 < 2.0 ? 1.5 * Math.sin(t2 * 40) : 0);
+  const t = {
+    body: { rot: mix(D, [[0, 0], [0.7, -6], [2.0, -6], [2.6, 0]]), y: mix(D, [[0, 0], [0.7, -6], [2.0, -6], [2.6, 0]]) },
+    spine: { sy: mix(D, [[0, 1], [0.7, 1.06], [2.0, 1.04], [2.6, 1]]) },
+    neck1: { rot: mix(D, [[0, 0], [0.7, -12], [2.0, -12], [2.6, 0]]) },
+    neck2: { rot: mix(D, [[0, 0], [0.7, -10], [2.0, -10], [2.6, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.7, -26], [2.0, -24], [2.6, 0]], roar, 0.04) },
+    wing1: { rot: mix(D, [[0, 0], [0.7, -10], [2.0, -10], [2.6, 0]]) },
+    wing2: { rot: mix(D, [[0, 0], [0.7, 26], [2.0, 24], [2.6, 0]]) },
+    wingFar: { rot: mix(D, [[0, 0], [0.7, 18], [2.0, 16], [2.6, 0]]) }
+  };
+  tailWave(t, D, 5, 0.6, (tt) => (tt > 0.6 && tt < 2.1 ? 8 : 0), 0.05);
+  clips.roar = { duration: D, loop: false, tracks: t, events: [{ t: 0.85, type: 'shake', value: 10 }, { t: 0.85, type: 'flash', value: 0.15 }] };
+}
+
+// ---------- Vol sur place : il bat des ailes et décolle un instant ----------
+{
+  const D = 3.4, flap = 0.42;
+  const lift = [[0, 0], [0.4, 6], [0.8, -40], [2.6, -46], [3.2, 0]];
+  const t = {
+    body: { y: mix(D, lift, t2 => (t2 > 0.7 && t2 < 2.8 ? 4 * sin(t2, flap) : 0), 0.04), rot: mix(D, [[0, 0], [0.8, -3], [2.6, -3], [3.2, 0]]) },
+    ground: { y: mix(D, lift.map(([a, v]) => [a, Math.min(0, v + 6)]), t2 => (t2 > 0.7 && t2 < 2.8 ? 4 * sin(t2, flap) : 0), 0.04) },
+    neck1: { rot: mix(D, [[0, 0], [0.8, -6], [2.6, -6], [3.2, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.8, -6], [2.6, -6], [3.2, 0]]) },
+    wing1: { rot: wave(D, t2 => (t2 > 0.3 && t2 < 3.0 ? 6 * sin(t2, flap, Math.PI) : 0), 0.04) },
+    wing2: { rot: wave(D, t2 => (t2 > 0.3 && t2 < 3.0 ? 26 * sin(t2, flap) : 0), 0.04) },
+    wingFar: { rot: wave(D, t2 => (t2 > 0.3 && t2 < 3.0 ? 18 * sin(t2, flap, 0.3) : 0), 0.04) },
+    legFront: { rot: mix(D, [[0, 0], [0.8, 10], [2.6, 10], [3.2, 0]]) },
+    legRear: { rot: mix(D, [[0, 0], [0.8, -10], [2.6, -10], [3.2, 0]]) }
+  };
+  tailWave(t, D, 6, 0.8, (tt) => (tt > 0.8 && tt < 2.6 ? -4 : 0), 0.05);
+  clips.hover = { duration: D, loop: false, tracks: t, events: [{ t: 3.2, type: 'emit', preset: 'dust', anchor: 'front_leg_anchor' }, { t: 3.2, type: 'emit', preset: 'dust', anchor: 'rear_leg_anchor' }] };
+}
+
+// ---------- Réveil grognon ----------
+{
+  const D = 1.6;
+  const t = {
+    body: { y: mix(D, [[0, 7], [0.5, 2], [1.6, 0]]) },
+    neck1: { rot: mix(D, [[0, 16], [0.6, 4], [1.6, 0]]) },
+    neck2: { rot: mix(D, [[0, 16], [0.6, 4], [1.6, 0]]) },
+    head: { rot: mix(D, [[0, 14], [0.6, -4], [0.9, 3], [1.2, -3], [1.6, 0]]) },
+    wing2: { rot: mix(D, [[0, -9], [0.6, 6], [1.0, -3], [1.6, 0]]) }
+  };
+  clips.wake = { duration: D, loop: false, tracks: t };
+}
+
+// ---------- Fête des retrouvailles ----------
+{
+  const base = clips.happy;
+  clips.welcome = { ...base, duration: base.duration, events: [{ t: 0.3, type: 'emit', preset: 'hearts', anchor: 'head_anchor' }, { t: 1.0, type: 'emit', preset: 'hearts', anchor: 'head_anchor' }] };
+}
+
+// ---------- Il s'ébroue (lavage fini) ----------
+{
+  const D = 1.2;
+  const shakeF = t2 => (t2 < 0.9 ? 5 * Math.sin(t2 * 34) * (1 - t2 / 0.9) : 0);
+  const t = {
+    body: { rot: wave(D, t2 => shakeF(t2) * 0.5, 0.03) },
+    neck1: { rot: wave(D, shakeF, 0.03) },
+    head: { rot: wave(D, t2 => -shakeF(t2), 0.03) },
+    wing2: { rot: wave(D, t2 => shakeF(t2) * 2, 0.03) }
+  };
+  tailWave(t, D, 6, 0.3, () => 0, 0.03);
+  clips.shake = { duration: D, loop: false, tracks: t, events: [{ t: 0.1, type: 'emit', preset: 'bubbles', anchor: 'body_center' }, { t: 0.5, type: 'emit', preset: 'shine', anchor: 'body_center' }] };
+}
+
 for (const [id, c] of Object.entries(clips)) {
   for (const tr of Object.values(c.tracks)) for (const k of Object.keys(tr)) if (!tr[k].length) delete tr[k];
   const clip = { id: `${id}@sprite`, note: 'Généré par scripts/build-sprite-clips.mjs', duration: c.duration, loop: c.loop, tracks: c.tracks, ...(c.events ? { events: c.events } : {}) };

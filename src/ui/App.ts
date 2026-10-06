@@ -2,6 +2,8 @@
 import type { EquipmentDef, StageDef } from '../core/types.js';
 import type { DragonView } from '../engine/DragonView.js';
 import type { ChildBook } from '../family/ChildBook.js';
+import { isNight, type Companion } from '../family/Companion.js';
+import { sayFor, thoughts, type Thought, type ThoughtAction } from '../family/Thoughts.js';
 import type { ParentHub } from '../family/ParentHub.js';
 import type { Reminders } from '../family/Reminders.js';
 import type { Catalog } from '../game/Catalog.js';
@@ -25,9 +27,10 @@ export interface FamilyContext {
   reminders: Reminders;
   book: ChildBook | null;
   hub: ParentHub | null;
+  companion: Companion | null;
 }
 
-export const APP_VERSION = '0.3.0';
+export const APP_VERSION = '0.4.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -49,6 +52,14 @@ export class App {
   private tabs: HTMLElement;
   private tray: HTMLElement;
   private evolving = false;
+  /** Geste sur le dragon : caresser (par défaut) ou laver. */
+  careMode: 'pet' | 'wash' = 'pet';
+  private bubble: HTMLElement;
+  private bubbleTimer = 0;
+  private bubbleAction: ThoughtAction = null;
+  private shownAt = new Map<string, number>();
+  private remindTimer = 0;
+  private stroke: { x: number; y: number; dist: number; moved: number; pets: number } | null = null;
 
   constructor(readonly root: HTMLElement, readonly catalog: Catalog, readonly state: GameState, readonly view: DragonView, readonly family: FamilyContext) {
     this.hud = root.querySelector('#hud')!;
@@ -89,12 +100,36 @@ export class App {
       this.selectedChild = hub?.childIds()[0] ?? null;
       this.showChildDragon();
     }
-    // La tête du dragon suit le doigt (ou la souris) posé sur la scène.
+    // Gestes sur le dragon : la tête suit le doigt ; frotter = caresser ou laver.
+    this.bubble = h('button', { class: 'bubble', onclick: () => this.bubbleTap() });
+    root.querySelector('.stage-view')?.append(this.bubble);
     const cv = view.canvas;
-    const follow = (e: PointerEvent) => view.lookAt(e.clientX, e.clientY);
-    cv.addEventListener('pointerdown', follow);
-    cv.addEventListener('pointermove', follow);
-    cv.addEventListener('pointerleave', () => view.lookAt(null));
+    cv.addEventListener('pointerdown', e => this.pointer(e, 'down'));
+    cv.addEventListener('pointermove', e => this.pointer(e, 'move'));
+    cv.addEventListener('pointerup', e => this.pointer(e, 'up'));
+    cv.addEventListener('pointercancel', e => this.pointer(e, 'up'));
+    cv.addEventListener('pointerleave', () => { view.lookAt(null); this.endStroke(); });
+
+    const comp = family.companion;
+    if (comp && !this.isParent) {
+      comp.events.on('change', () => { this.applyCare(); this.refresh(); this.queueReminders(); });
+      comp.events.on('toast', t => this.toast(t));
+      comp.events.on('react', r => {
+        if (r.anim) void this.act(r.anim);
+        if (r.fx) view.emit(r.fx, r.fx === 'shine' ? 'body_center' : 'head_anchor');
+        if (r.say) this.say(sayFor(r.say), null, 4000);
+      });
+      if (isNight() && comp.data.tucked) this.sleeping = true; // déjà couché ce soir
+      this.applyCare();
+      void view.play(this.sleeping ? 'sleep' : this.baseLoop());
+      const away = comp.greet();
+      setTimeout(() => {
+        if (away && !this.sleeping) { void this.act('welcome'); this.say(sayFor('welcome'), null, 5000); }
+        else this.think(true);
+      }, 1500);
+      window.setInterval(() => { comp.tick(); this.applyCare(); this.think(false); }, 40000);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(() => this.think(true), 1200); });
+    }
 
     this.renderHud();
     this.show(this.screens[0].id);
@@ -167,13 +202,139 @@ export class App {
   }
 
   toggleSleep(force?: boolean): void {
+    const was = this.sleeping;
     this.sleeping = force ?? !this.sleeping;
-    void this.view.play(this.sleeping ? 'sleep' : 'idle');
+    const comp = this.family.companion;
+    if (this.sleeping && !was && comp?.tuck()) this.say(sayFor('tuck'), null, 4000);
+    void this.view.play(this.sleeping ? 'sleep' : this.baseLoop());
+    if (was && !this.sleeping && force === undefined) {
+      void this.view.play('wake');
+      if (isNight()) this.say(sayFor('wake'), null, 4000);
+    }
     this.current?.refresh?.();
+  }
+
+  /** Boucle de repos selon son état : triste s'il est négligé. */
+  baseLoop(): string { return this.family.companion?.sad() ? 'sad' : 'idle'; }
+
+  /** Reporte l'état du compagnon sur le dragon affiché (saleté, tristesse). */
+  private applyCare(): void {
+    const c = this.family.companion;
+    if (!c || this.isParent) return;
+    this.view.dirt = Math.max(0, Math.min(1, (70 - c.data.clean) / 70));
+    if (!this.sleeping) { const loop = this.baseLoop(); if (this.view.animator.baseId?.split('@')[0] !== loop) void this.view.play(loop); }
+  }
+
+  private queueReminders(): void {
+    clearTimeout(this.remindTimer);
+    this.remindTimer = window.setTimeout(() => void this.family.book?.refreshReminders(), 4000);
+  }
+
+  // ----- Bulles de pensée -----
+  say(text: string, action: ThoughtAction = null, ms = 7000): void {
+    this.bubble.textContent = text;
+    this.bubbleAction = action;
+    this.bubble.classList.toggle('actionable', !!action);
+    this.placeBubble();
+    this.bubble.classList.add('show');
+    clearTimeout(this.bubbleTimer);
+    this.bubbleTimer = window.setTimeout(() => this.bubble.classList.remove('show'), ms);
+  }
+
+  private placeBubble(): void {
+    const p = this.view.screenPos('head_anchor');
+    const host = this.bubble.parentElement;
+    if (!p || !host) return;
+    const w = host.clientWidth;
+    const bw = Math.min(240, w - 24);
+    this.bubble.style.maxWidth = `${bw}px`;
+    // à gauche de la tête, au-dessus ; reste dans la scène
+    const right = Math.max(12, Math.min(w - p.x + 10, w - bw - 12));
+    this.bubble.style.right = `${right}px`;
+    this.bubble.style.top = `${Math.max(8, p.y - 90)}px`;
+  }
+
+  /** Choisit une pensée : les rappels importants d'abord, sans répéter la même trop souvent. */
+  think(force: boolean): void {
+    const comp = this.family.companion;
+    if (!comp || this.isParent || this.evolving) return;
+    if (!force && this.bubble.classList.contains('show')) return;
+    if (this.sleeping && !isNight()) return;
+    const now = Date.now();
+    const list = thoughts(this.family.book, comp, this.family.book?.childName ?? '');
+    const fresh = (t: Thought) => now - (this.shownAt.get(t.id) ?? 0) > (t.priority >= 85 ? 3 : t.priority >= 60 ? 8 : 20) * 60000;
+    let t = list.find(x => x.priority >= 60 && fresh(x));
+    if (!t) {
+      if (!force && Math.random() < 0.5) return;
+      const pool = list.filter(fresh).slice(0, 5);
+      t = pool[Math.floor(Math.random() * pool.length)];
+    }
+    if (!t) return;
+    if (this.sleeping && t.id !== 'night') return;
+    this.shownAt.set(t.id, now);
+    this.say(t.text, t.action);
+  }
+
+  private bubbleTap(): void {
+    const a = this.bubbleAction;
+    this.bubble.classList.remove('show');
+    if (a === 'missions') this.show('missions');
+    else if (a === 'feed' || a === 'play' || a === 'wash' || a === 'sleep' || a === 'pet') { this.show('dragon'); (this.current as { focus?: (a: string) => void })?.focus?.(a); }
+  }
+
+  // ----- Gestes -----
+  private pointer(e: PointerEvent, kind: 'down' | 'move' | 'up'): void {
+    const view = this.view;
+    if (kind !== 'up') view.lookAt(e.clientX, e.clientY);
+    const comp = this.family.companion;
+    if (!comp || this.isParent) return;
+    if (kind === 'down') {
+      if (view.hitTest(e.clientX, e.clientY)) this.stroke = { x: e.clientX, y: e.clientY, dist: 0, moved: 0, pets: 0 };
+      return;
+    }
+    const st = this.stroke;
+    if (!st) return;
+    if (kind === 'up') {
+      if (st.moved < 12 && !this.sleeping) {
+        // Simple toucher : il réagit et dit quelque chose.
+        view.burstAt(e.clientX, e.clientY, this.careMode === 'wash' ? 'bubbles' : 'hearts');
+        if (this.careMode === 'pet') { comp.pet(); if (!this.view.animator.actionId) void this.act('pet'); }
+        this.think(true);
+      }
+      this.endStroke();
+      return;
+    }
+    const d = Math.hypot(e.clientX - st.x, e.clientY - st.y);
+    st.x = e.clientX; st.y = e.clientY;
+    st.moved += d;
+    if (!view.hitTest(e.clientX, e.clientY)) return;
+    st.dist += d;
+    if (this.careMode === 'wash') {
+      if (st.dist < 18) return;
+      st.dist = 0;
+      view.burstAt(e.clientX, e.clientY, 'bubbles');
+      const done = comp.scrub(0.14);
+      view.dirt = Math.max(0, Math.min(1, (70 - comp.data.clean) / 70));
+      if (done) { this.careMode = 'pet'; this.current?.refresh?.(); }
+    } else {
+      if (st.dist < 45) return;
+      st.dist = 0;
+      st.pets++;
+      comp.pet();
+      view.burstAt(e.clientX, e.clientY, 'hearts');
+      if (this.sleeping) return;
+      if (st.pets % 4 === 1 && !view.animator.actionId) void this.act('pet');
+      if (st.pets === 6) this.say(sayFor('pet'), null, 2500);
+    }
+  }
+
+  private endStroke(): void {
+    if (this.stroke) { this.stroke = null; this.family.companion?.save(); }
   }
 
   private evolve(to: StageDef): void {
     if (this.stageOverride) return; // en mode test, la vue reste sur le stade forcé
+    this.family.companion?.noteStage(to.id, to.label);
     this.evolving = true;
     this.toggleSleep(false);
     this.view.onSwapStage = () => this.view.setStage(to);

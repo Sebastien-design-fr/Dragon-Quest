@@ -20,6 +20,14 @@ import { drawEquipment, drawPart } from './Placeholders.js';
 import { Skeleton } from './Skeleton.js';
 import { MeshRenderer, SpriteSkin } from './SpriteSkin.js';
 
+/** Taches de saleté : [ancrage, décalage x, y, rayon, intensité] (unités : échelle des effets). */
+const DIRT_SPOTS: Array<[string, number, number, number, number]> = [
+  ['body_center', -40, 10, 34, 1], ['body_center', 40, -20, 26, 0.8], ['chest_anchor', 0, 10, 22, 0.9],
+  ['neck_anchor', -6, 0, 16, 0.7], ['tail_anchor', 10, -5, 22, 0.9], ['tail_anchor', 60, -25, 18, 0.7],
+  ['front_leg_anchor', 0, 15, 18, 1], ['rear_leg_anchor', 0, 15, 20, 1], ['head_anchor', -10, 12, 14, 0.6],
+  ['right_wing_anchor', 30, 40, 26, 0.6]
+];
+
 export const LAYERS = [
   'magicalEffect', 'base', 'headEquipment', 'neckEquipment', 'bodyEquipment',
   'legEquipment', 'wingEquipment', 'tailEquipment', 'foregroundEffect'
@@ -65,6 +73,9 @@ export class DragonView {
   showAnchors = false;
   /** Dragon fatigué (énergie basse) : couleurs ternies. */
   tired = false;
+  /** Saleté des écailles (0 = propre, 1 = très sale) : taches dessinées sur l'illustration. */
+  dirt = 0;
+  private dirtCanvas: HTMLCanvasElement | null = null;
 
   private time = 0;
   private cam: Rect = { x: -300, y: -400, w: 600, h: 420 };
@@ -355,7 +366,8 @@ export class DragonView {
       if (!bone) continue;
       if (d === this.skinPart && DragonView.mesh?.ready) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(DragonView.mesh.render(this.camM, W, H), 0, 0);
+        const gl = DragonView.mesh.render(this.camM, W, H);
+        ctx.drawImage(this.dirt > 0.04 ? this.withDirt(gl, W, H) : gl, 0, 0);
       } else if (d.part) {
         this.camM.multiply(bone.world, this.tmp).apply(ctx);
         const img = d.partPath ? Assets.peek(d.partPath) : null;
@@ -397,6 +409,76 @@ export class DragonView {
       this.flash = Math.max(0, this.flash - dt * 1.6);
     }
     if (this.showAnchors) this.drawAnchors(sk);
+  }
+
+  /** Taches de saleté posées sur les écailles (uniquement sur le dragon, pas autour). */
+  private withDirt(src: HTMLCanvasElement, W: number, H: number): HTMLCanvasElement {
+    const c = this.dirtCanvas ?? (this.dirtCanvas = document.createElement('canvas'));
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    const g = c.getContext('2d')!;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalCompositeOperation = 'source-over';
+    g.clearRect(0, 0, W, H);
+    g.drawImage(src, 0, 0);
+    g.globalCompositeOperation = 'source-atop';
+    const m = new Mat2D();
+    const k = this.rig?.fxScale ?? 2;
+    for (const [anchor, dx, dy, r, a] of DIRT_SPOTS) {
+      if (!this.anchorWorld(anchor, m)) continue;
+      const p = this.camM.point(m.e + dx * k, m.f + dy * k);
+      const rad = r * k * this.camM.a;
+      const alpha = Math.min(0.7, this.dirt * a * 0.85);
+      const grd = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad);
+      grd.addColorStop(0, `rgba(168,146,112,${alpha})`);
+      grd.addColorStop(0.55, `rgba(140,120,92,${alpha * 0.55})`);
+      grd.addColorStop(1, 'rgba(140,120,92,0)');
+      g.fillStyle = grd;
+      g.beginPath(); g.arc(p.x, p.y, rad, 0, Math.PI * 2); g.fill();
+      // grains de terre
+      g.fillStyle = `rgba(150,128,96,${Math.min(0.85, this.dirt * 1.1)})`;
+      let seed = (dx * 31 + dy * 17 + r) | 0;
+      const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+      const grains = Math.round(18 * this.dirt * a);
+      for (let i = 0; i < grains; i++) {
+        const ang = rnd() * Math.PI * 2, dist = Math.sqrt(rnd()) * rad * 0.8;
+        g.beginPath(); g.arc(p.x + Math.cos(ang) * dist, p.y + Math.sin(ang) * dist, (0.8 + rnd() * 1.6) * this.dpr, 0, Math.PI * 2); g.fill();
+      }
+    }
+    // Voile poussiéreux général
+    g.fillStyle = `rgba(120,108,92,${this.dirt * 0.2})`;
+    g.fillRect(0, 0, W, H);
+    return c;
+  }
+
+  /** Coordonnées CSS (relatives au canvas) d'un ancrage, pour placer une bulle. */
+  screenPos(anchor: string): { x: number; y: number } | null {
+    const m = new Mat2D();
+    if (!this.anchorWorld(anchor, m)) return null;
+    const p = this.camM.point(m.e, m.f);
+    return { x: p.x / this.dpr, y: p.y / this.dpr };
+  }
+
+  /** Le point (coordonnées écran) touche-t-il le dragon ? */
+  hitTest(clientX: number, clientY: number): boolean {
+    const r = this.canvas.getBoundingClientRect();
+    const inv = this.camM.invert();
+    const w = inv.point((clientX - r.left) * this.dpr, (clientY - r.top) * this.dpr);
+    if (this.skin) return this.skin.contains(w.x, w.y);
+    const b = this.rig?.bounds;
+    return !!b && w.x >= b.x && w.x <= b.x + b.w && w.y >= b.y && w.y <= b.y + b.h;
+  }
+
+  /** Petite gerbe de particules à l'endroit touché. */
+  burstAt(clientX: number, clientY: number, preset: string): void {
+    const r = this.canvas.getBoundingClientRect();
+    const w = this.camM.invert().point((clientX - r.left) * this.dpr, (clientY - r.top) * this.dpr);
+    this.particles.burst(preset, w.x, w.y, this.rig?.fxScale ?? 2);
+  }
+
+  /** Effet ponctuel sur un ancrage (cœurs sur la tête…). */
+  emit(preset: string, anchor = 'head_anchor'): void {
+    const src = this.anchorSource(anchor, this.deps.presets.get(preset))();
+    if (src) this.particles.burst(preset, src.x, src.y, src.scale);
   }
 
   /** Regard : s'ajoute à l'animation en cours (tête et cou), avec un retour progressif au repos. */

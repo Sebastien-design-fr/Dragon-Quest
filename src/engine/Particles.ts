@@ -74,6 +74,19 @@ export class ParticleSystem {
       const s = p.size * (p.preset.shape === 'smoke' ? 0.6 + t : 1);
       if (p.preset.shape === 'spark') {
         ctx.fillRect(p.x - s / 2, p.y - s * 1.5, s, s * 3);
+      } else if (p.preset.shape === 'heart') {
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y + s * 0.9);
+        ctx.bezierCurveTo(p.x - s * 1.6, p.y - s * 0.2, p.x - s * 0.7, p.y - s * 1.4, p.x, p.y - s * 0.5);
+        ctx.bezierCurveTo(p.x + s * 0.7, p.y - s * 1.4, p.x + s * 1.6, p.y - s * 0.2, p.x, p.y + s * 0.9);
+        ctx.fill();
+      } else if (p.preset.shape === 'bubble') {
+        ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(1, s * 0.18);
+        ctx.beginPath(); ctx.arc(p.x, p.y, s, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha *= 0.25; ctx.fill();
+        ctx.globalAlpha /= 0.25;
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.beginPath(); ctx.arc(p.x - s * 0.35, p.y - s * 0.35, s * 0.2, 0, Math.PI * 2); ctx.fill();
       } else {
         ctx.beginPath(); ctx.arc(p.x, p.y, s, 0, Math.PI * 2); ctx.fill();
       }
