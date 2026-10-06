@@ -1,0 +1,20 @@
+{
+  "id": "evolution",
+  "duration": 3.4,
+  "loop": false,
+  "tracks": {
+    "body":     { "y": [[0, 0], [1.0, 12], [1.6, 12], [1.85, -30], [2.6, 0]], "sy": [[0, 1], [1.6, 0.86], [1.85, 1.1], [2.4, 1]] },
+    "wingNear": { "rot": [[0, 0], [1.0, 20], [1.85, -46], [3.0, -30], [3.4, 0]] },
+    "wingFar":  { "rot": [[0, 0], [1.0, 16], [1.85, -40], [3.0, -26], [3.4, 0]] },
+    "neck1":    { "rot": [[0, 0], [1.0, 22], [1.85, -16], [3.4, 0]] },
+    "head":     { "rot": [[0, 0], [1.0, 20], [1.85, -30], [3.0, -20], [3.4, 0]] },
+    "jaw":      { "rot": [[0, 0], [1.85, 30], [2.8, 24], [3.4, 0]] }
+  },
+  "events": [
+    { "t": 0.1, "type": "emit", "preset": "evolutionCharge", "anchor": "body_center", "value": 1.6 },
+    { "t": 1.7, "type": "flash", "value": 1 },
+    { "t": 1.75, "type": "swapStage" },
+    { "t": 1.85, "type": "emit", "preset": "evolutionBurst", "anchor": "body_center" },
+    { "t": 1.85, "type": "shake", "value": 12 }
+  ]
+}

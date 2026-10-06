@@ -1,0 +1,8 @@
+{
+  "appId": "fr.questedudragon.app",
+  "appName": "Quête du Dragon",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0b0a0d"
+  }
+}

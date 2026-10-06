@@ -1,0 +1,19 @@
+{
+  "note": "Catégories d'équipement. anchors = points d'accroche (plusieurs = objet dupliqué). defaultSize = taille au stade adulte, mise à l'échelle automatiquement. icon = tracé SVG 24x24.",
+  "categories": [
+    { "id": "head",    "label": "Tête",    "layer": "headEquipment", "anchors": ["head_anchor"], "defaultSize": [70, 40], "zOffset": 0.5, "kind": "attachment", "order": 1,
+      "icon": "M4 16a8 8 0 0 1 16 0v3H4z M12 5v3 M8 6l1 2 M16 6l-1 2" },
+    { "id": "neck",    "label": "Cou",     "layer": "neckEquipment", "anchors": ["neck_anchor"], "defaultSize": [36, 46], "zOffset": 0.5, "kind": "attachment", "order": 2,
+      "icon": "M5 5c0 6 3 9 7 9s7-3 7-9 M12 14v2 M10 18l2 3 2-3z" },
+    { "id": "body",    "label": "Torse",   "layer": "bodyEquipment", "anchors": ["chest_anchor"], "defaultSize": [120, 70], "zOffset": 0.5, "kind": "attachment", "order": 3,
+      "icon": "M6 4l6 2 6-2 1 9-7 7-7-7z M12 6v14" },
+    { "id": "legs",    "label": "Pattes",  "layer": "legEquipment",  "anchors": ["front_leg_anchor", "rear_leg_anchor", "front_leg_far_anchor", "rear_leg_far_anchor"], "defaultSize": [34, 38], "zOffset": 0.5, "kind": "attachment", "order": 4,
+      "icon": "M7 4v9 M12 4v9 M17 4v9 M5 13l2 7 M10 13l2 7 M15 13l2 7" },
+    { "id": "wings",   "label": "Ailes",   "layer": "wingEquipment", "anchors": ["left_wing_anchor", "right_wing_anchor"], "defaultSize": [90, 36], "zOffset": 0.5, "kind": "attachment", "order": 5,
+      "icon": "M3 19c3-9 9-14 18-15-2 5-6 9-11 10l-7 5z M9 14l4-5" },
+    { "id": "tail",    "label": "Queue",   "layer": "tailEquipment", "anchors": ["tail_anchor"], "defaultSize": [40, 36], "zOffset": 0.5, "kind": "attachment", "order": 6,
+      "icon": "M3 6c6 0 6 12 12 12h6 M18 15l3 3-3 3" },
+    { "id": "effects", "label": "Effets",  "layer": "magicalEffect", "anchors": [], "defaultSize": [0, 0], "zOffset": 0, "kind": "effect", "order": 7,
+      "icon": "M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z M19 3v3 M17.5 4.5h3" }
+  ]
+}

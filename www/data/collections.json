@@ -1,0 +1,10 @@
+{
+  "note": "Collections temporaires : un équipement avec \"collection\": \"<id>\" n'apparaît en boutique que pendant la fenêtre (MM-JJ, bornes incluses). Une fois acheté, il reste dans l'inventaire. Les dates de Pâques sont à ajuster chaque année.",
+  "collections": [
+    { "id": "halloween",      "label": "Halloween",      "from": "10-15", "to": "11-02", "accent": "#e07a22" },
+    { "id": "noel",           "label": "Noël",           "from": "12-01", "to": "01-05", "accent": "#c8343c" },
+    { "id": "saint-valentin", "label": "Saint-Valentin", "from": "02-07", "to": "02-15", "accent": "#e0507a" },
+    { "id": "saint-patrick",  "label": "Saint-Patrick",  "from": "03-12", "to": "03-18", "accent": "#3fa45a" },
+    { "id": "paques",         "label": "Pâques",         "from": "03-28", "to": "04-14", "accent": "#d9b24a" }
+  ]
+}

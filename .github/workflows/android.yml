@@ -1,0 +1,59 @@
+# Construit l'APK Android à chaque push sur main (ou à la demande depuis l'onglet Actions).
+# L'APK est téléchargeable dans l'onglet Actions > dernière exécution > Artifacts.
+# Sur un tag v* (ex. v0.1.0), il est aussi publié dans une Release GitHub.
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Dépendances
+        run: npm ci || npm install
+
+      - name: Build web (manifeste des assets + TypeScript)
+        run: npm run build
+
+      - name: Projet Android (Capacitor)
+        run: |
+          [ -d android ] || npx cap add android
+          npx cap sync android
+
+      - name: Compilation de l'APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Renommage
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk quete-du-dragon-${{ github.ref_name }}-${{ github.run_number }}.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quete-du-dragon-apk
+          path: quete-du-dragon-*.apk
+
+      - name: Release (tags v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: quete-du-dragon-*.apk

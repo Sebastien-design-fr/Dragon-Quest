@@ -1,0 +1,21 @@
+{
+  "name": "quete-du-dragon",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Jeu mobile : dragon évolutif, animé et personnalisable (socle data-driven).",
+  "type": "module",
+  "scripts": {
+    "manifest": "node scripts/gen-manifest.mjs",
+    "rigs": "node scripts/build-rigs.mjs",
+    "build": "node scripts/gen-manifest.mjs && tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch",
+    "serve": "node scripts/serve.mjs",
+    "android:sync": "npm run build && npx cap sync android"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "typescript": "^5.6.0"
+  }
+}

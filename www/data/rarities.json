@@ -1,0 +1,9 @@
+{
+  "note": "Ajouter une rareté = une entrée ici. order = tri, glow = halo lumineux des équipements de cette rareté.",
+  "rarities": [
+    { "id": "common",    "label": "Commun",     "color": "#9aa1ab", "order": 1, "glow": 0,   "description": "Aspect simple, accessible." },
+    { "id": "rare",      "label": "Rare",       "color": "#4d8ef0", "order": 2, "glow": 0.3, "description": "Détails travaillés, plus de style." },
+    { "id": "epic",      "label": "Épique",     "color": "#a35cf0", "order": 3, "glow": 0.5, "description": "Apparence unique, effets spéciaux." },
+    { "id": "legendary", "label": "Légendaire", "color": "#e8b64c", "order": 4, "glow": 0.8, "description": "Design exceptionnel, auras et effets lumineux." }
+  ]
+}

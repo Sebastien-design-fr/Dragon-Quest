@@ -1,0 +1,27 @@
+{
+  "id": "sleep",
+  "duration": 5,
+  "loop": true,
+  "tracks": {
+    "body":         { "y": [[0, 34], [2.5, 36], [5, 34]], "sy": [[0, 0.96], [2.5, 1.0], [5, 0.96]] },
+    "legFrontNear": { "rot": [[0, -62]] },
+    "legFrontFar":  { "rot": [[0, -62]] },
+    "legRearNear":  { "rot": [[0, 58]] },
+    "legRearFar":   { "rot": [[0, 58]] },
+    "neck1":        { "rot": [[0, 46], [2.5, 44], [5, 46]] },
+    "neck2":        { "rot": [[0, 18]] },
+    "head":         { "rot": [[0, -44]] },
+    "jaw":          { "rot": [[0, -4]] },
+    "eyelid":       { "sy": [[0, 50]] },
+    "wingNear":     { "rot": [[0, 16], [2.5, 14], [5, 16]] },
+    "wingFar":      { "rot": [[0, 14]] },
+    "tail1":        { "rot": [[0, 4]] },
+    "tail2":        { "rot": [[0, 10]] },
+    "tail3":        { "rot": [[0, 16], [2.5, 20], [5, 16]] },
+    "tail4":        { "rot": [[0, 20], [2.5, 26], [5, 20]] }
+  },
+  "events": [
+    { "t": 1.0, "type": "emit", "preset": "sleepZ", "anchor": "head_anchor" },
+    { "t": 3.5, "type": "emit", "preset": "sleepZ", "anchor": "head_anchor" }
+  ]
+}

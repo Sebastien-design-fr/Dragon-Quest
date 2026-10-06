@@ -1,0 +1,4 @@
+{
+  "note": "Liste des clips chargés au démarrage. Ajouter une animation = créer son JSON ici puis l'ajouter à cette liste.",
+  "clips": ["idle.json", "happy.json", "sleep.json", "eat.json", "attack.json", "fire.json", "level_up.json", "evolution.json"]
+}
