@@ -1,0 +1,10 @@
+{
+  "name": "capacitor-home-link",
+  "version": "0.1.0",
+  "description": "Liaison directe entre les téléphones de la maison (Wi-Fi local) : découverte, messages signés, service en veille, notifications à boutons.",
+  "main": "index.js",
+  "license": "UNLICENSED",
+  "capacitor": {
+    "android": { "src": "android" }
+  }
+}

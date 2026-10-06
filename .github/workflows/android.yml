@@ -1,11 +1,13 @@
 # Construit l'APK Android à chaque push sur main (ou à la demande depuis l'onglet Actions).
-# L'APK est téléchargeable dans l'onglet Actions > dernière exécution > Artifacts.
-# Sur un tag v* (ex. v0.1.0), il est aussi publié dans une Release GitHub.
+# Chaque build publie une Release : le lien
+#   https://github.com/<compte>/<depot>/releases/latest/download/quete-du-dragon.apk
+# pointe donc toujours vers la dernière version.
+# En cas d'échec, le journal de compilation est publié dans la pré-release « journal-ci ».
 name: Android APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
     tags: ['v*']
   workflow_dispatch:
 
@@ -15,6 +17,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
 
@@ -28,9 +32,9 @@ jobs:
           java-version: 21
 
       - name: Dépendances
-        run: npm ci || npm install
+        run: npm install --no-audit --no-fund
 
-      - name: Build web (manifeste des assets + TypeScript)
+      - name: Build web (manifeste des assets, runtime Capacitor, TypeScript)
         run: npm run build
 
       - name: Projet Android (Capacitor)
@@ -42,7 +46,16 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          set -o pipefail
+          ./gradlew assembleDebug --no-daemon 2>&1 | tee ../gradle.log
+
+      - name: Journal en cas d'échec
+        if: failure()
+        run: |
+          touch gradle.log
+          grep -nE "error:|e: |FAILURE|What went wrong|wrong:" -A 6 gradle.log | head -200 > erreurs.txt || true
+          gh release delete journal-ci --yes --cleanup-tag || true
+          gh release create journal-ci gradle.log erreurs.txt --prerelease --title "Journal de compilation (échec)" --notes "Build ${{ github.run_number }}" --target ${{ github.sha }}
 
       - name: Renommage
         run: cp android/app/build/outputs/apk/debug/app-debug.apk quete-du-dragon.apk
@@ -52,10 +65,8 @@ jobs:
           name: quete-du-dragon-apk
           path: quete-du-dragon.apk
 
-      # Chaque build publie une Release : le lien
-      # https://github.com/<compte>/<depot>/releases/latest/download/quete-du-dragon.apk
-      # pointe donc toujours vers la dernière version.
-      - name: Release
+      - name: Release (branche main et tags uniquement)
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('build-{0}', github.run_number) }}

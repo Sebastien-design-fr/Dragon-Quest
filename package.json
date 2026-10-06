@@ -1,21 +1,26 @@
 {
   "name": "quete-du-dragon",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Jeu mobile : dragon évolutif, animé et personnalisable (socle data-driven).",
+  "description": "Jeu mobile : dragon évolutif, animé et personnalisable, avec missions familiales validées par les parents sur le Wi-Fi de la maison.",
   "type": "module",
   "scripts": {
     "manifest": "node scripts/gen-manifest.mjs",
+    "vendor": "node scripts/vendor.mjs",
     "rigs": "node scripts/build-rigs.mjs",
-    "build": "node scripts/gen-manifest.mjs && tsc -p tsconfig.json",
+    "build": "node scripts/gen-manifest.mjs && node scripts/vendor.mjs && tsc -p tsconfig.json",
     "watch": "tsc -p tsconfig.json --watch",
     "serve": "node scripts/serve.mjs",
     "android:sync": "npm run build && npx cap sync android"
   },
-  "devDependencies": {
+  "dependencies": {
     "@capacitor/android": "^7.0.0",
-    "@capacitor/cli": "^7.0.0",
     "@capacitor/core": "^7.0.0",
+    "@capacitor/local-notifications": "^7.0.0",
+    "capacitor-home-link": "file:plugins/home-link"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0",
     "typescript": "^5.6.0"
   }
 }
