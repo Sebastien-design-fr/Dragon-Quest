@@ -109,6 +109,11 @@ Un équipement saisonnier n'apparaît en boutique que pendant sa fenêtre ; une 
 
 ### Les illustrations du dragon
 
+**Mode actuel : illustration entière.** Une image par stade dans `art/dragons/<stade>.png` (fond transparent, profil, tête à droite, même pose pour les 4 stades). `python3 scripts/import-dragons.py` la découpe, la convertit en WebP dans `www/assets/dragon/<stade>/dragon_<stade>_full.webp` et génère `www/data/rigs/<stade>.sprite.json` (ancrages des équipements, en pixels de l'image, réglables en tête du script). Les animations utilisent alors les variantes `<animation>@sprite.json` (mouvements du corps entier : respiration, saut, élan, souffle de feu…).
+
+**Mode « pièces » (pour une animation articulée)** : chaque stade découpé en morceaux, comme ci-dessous.
+
+
 Chaque stade est découpé en pièces transparentes, une par os :
 
 ```

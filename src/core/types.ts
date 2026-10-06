@@ -38,7 +38,14 @@ export interface Rect { x: number; y: number; w: number; h: number }
 export interface RigDef {
   id: StageId;
   version: number;
+  /** parts : dragon découpé en pièces (une par os) ; sprite : illustration entière sur un seul os. */
+  kind?: 'parts' | 'sprite';
+  /** Échelle des équipements. */
   scale: number;
+  /** Échelle des déplacements des animations (défaut : scale). */
+  motionScale?: number;
+  /** Échelle des particules et de l'ombre (défaut : scale). */
+  fxScale?: number;
   params: { horn: number; spikes: number; gold: number };
   palette: Record<string, string>;
   bounds: Rect;

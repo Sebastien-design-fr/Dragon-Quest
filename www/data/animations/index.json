@@ -1,4 +1,21 @@
 {
-  "note": "Liste des clips chargés au démarrage. Ajouter une animation = créer son JSON ici puis l'ajouter à cette liste.",
-  "clips": ["idle.json", "happy.json", "sleep.json", "eat.json", "attack.json", "fire.json", "level_up.json", "evolution.json"]
+  "note": "Liste des clips chargés au démarrage. <nom>@sprite.json = variante pour un dragon « illustration entière » (choisie automatiquement).",
+  "clips": [
+    "idle.json",
+    "happy.json",
+    "sleep.json",
+    "eat.json",
+    "attack.json",
+    "fire.json",
+    "level_up.json",
+    "evolution.json",
+    "idle@sprite.json",
+    "happy@sprite.json",
+    "sleep@sprite.json",
+    "eat@sprite.json",
+    "attack@sprite.json",
+    "fire@sprite.json",
+    "level_up@sprite.json",
+    "evolution@sprite.json"
+  ]
 }

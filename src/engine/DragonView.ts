@@ -106,6 +106,9 @@ export class DragonView {
     }
     previous.dispose();
     this.camTarget = { ...rig.camera };
+    // La boucle en cours (repos, sommeil) bascule sur la variante adaptée au nouveau type de dragon.
+    const loop = this.animator.baseId;
+    if (loop && this.clipFor(loop) !== loop) void this.animator.play(this.clipFor(loop));
     if (instant) this.cam = { ...rig.camera };
     this.setEquipment(this.equipment);
     this.refreshPermanentEffects();
@@ -173,7 +176,14 @@ export class DragonView {
   }
 
   // ---------------- Animations ----------------
-  play(id: string): Promise<void> { return this.animator.play(id); }
+  /** Joue une animation ; un dragon « illustration entière » utilise sa variante <id>@sprite si elle existe. */
+  play(id: string): Promise<void> { return this.animator.play(this.clipFor(id)); }
+
+  private clipFor(id: string): string {
+    const base = id.split('@')[0];
+    if (this.rig?.kind === 'sprite' && this.deps.library.get(base + '@sprite')) return base + '@sprite';
+    return base;
+  }
 
   private handleEvent(e: AnimEvent): void {
     switch (e.type) {
@@ -204,7 +214,7 @@ export class DragonView {
       if (!this.skeleton || !this.rig) return null;
       const m = this.skeleton.anchorWorld(preset?.area === 'body' ? 'body_center' : anchor, local);
       if (!m) return null;
-      return { x: m.e, y: m.f, scale: this.rig.scale };
+      return { x: m.e, y: m.f, scale: this.rig.fxScale ?? this.rig.scale };
     };
   }
 
@@ -259,7 +269,8 @@ export class DragonView {
     // Ombre au sol
     this.camM.apply(ctx);
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.beginPath(); ctx.ellipse(0, 4 * this.rig.scale, this.rig.bounds.w * 0.32, 10 * this.rig.scale, 0, 0, Math.PI * 2); ctx.fill();
+    const fx = this.rig.fxScale ?? this.rig.scale;
+    ctx.beginPath(); ctx.ellipse(0, 4 * fx, this.rig.bounds.w * 0.32, 10 * fx, 0, 0, Math.PI * 2); ctx.fill();
 
     if (this.layers.magicalEffect) { this.camM.apply(ctx); this.particles.draw(ctx, 'magical'); }
 

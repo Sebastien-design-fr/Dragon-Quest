@@ -92,7 +92,7 @@ export class Animator {
   }
 
   private apply(skeleton: Skeleton, p: Playing, weight: number, blend: boolean): void {
-    const unit = skeleton.rig.scale; // déplacements exprimés à l'échelle adulte
+    const unit = skeleton.rig.motionScale ?? skeleton.rig.scale; // déplacements exprimés à l'échelle adulte
     for (const boneName in p.clip.tracks) {
       const bone = skeleton.bone(boneName);
       if (!bone) continue; // un clip peut viser des os optionnels

@@ -1,0 +1,16 @@
+{
+  "id": "sleep@sprite",
+  "duration": 5,
+  "loop": true,
+  "tracks": {
+    "body": {
+      "sy":  [[0, 0.9], [2.5, 0.92], [5, 0.9]],
+      "sx":  [[0, 1.03], [2.5, 1.025], [5, 1.03]],
+      "rot": [[0, 2.2], [2.5, 1.8], [5, 2.2]]
+    }
+  },
+  "events": [
+    { "t": 1.0, "type": "emit", "preset": "sleepZ", "anchor": "head_anchor" },
+    { "t": 3.5, "type": "emit", "preset": "sleepZ", "anchor": "head_anchor" }
+  ]
+}
