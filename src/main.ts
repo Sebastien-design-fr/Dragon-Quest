@@ -39,6 +39,7 @@ async function boot(): Promise<void> {
   view.setEquipment(state.equippedDefs());
   void view.play('idle');
   view.start();
+  (window as unknown as { __dragon: DragonView }).__dragon = view; // outils de test
   document.addEventListener('visibilitychange', () => (document.hidden ? view.stop() : view.start()));
   document.body.classList.add('ready');
 

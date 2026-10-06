@@ -27,7 +27,7 @@ export interface FamilyContext {
   hub: ParentHub | null;
 }
 
-export const APP_VERSION = '0.2.0';
+export const APP_VERSION = '0.3.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -89,6 +89,13 @@ export class App {
       this.selectedChild = hub?.childIds()[0] ?? null;
       this.showChildDragon();
     }
+    // La tête du dragon suit le doigt (ou la souris) posé sur la scène.
+    const cv = view.canvas;
+    const follow = (e: PointerEvent) => view.lookAt(e.clientX, e.clientY);
+    cv.addEventListener('pointerdown', follow);
+    cv.addEventListener('pointermove', follow);
+    cv.addEventListener('pointerleave', () => view.lookAt(null));
+
     this.renderHud();
     this.show(this.screens[0].id);
   }

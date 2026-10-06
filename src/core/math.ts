@@ -31,6 +31,15 @@ export class Mat2D {
     return this;
   }
 
+  /** out = this⁻¹ */
+  invert(out = new Mat2D()): Mat2D {
+    const det = this.a * this.d - this.b * this.c || 1e-9;
+    const a = this.d / det, b = -this.b / det, c = -this.c / det, d = this.a / det;
+    const e = -(a * this.e + c * this.f), f = -(b * this.e + d * this.f);
+    out.a = a; out.b = b; out.c = c; out.d = d; out.e = e; out.f = f;
+    return out;
+  }
+
   point(x: number, y: number): { x: number; y: number } {
     return { x: this.a * x + this.c * y + this.e, y: this.b * x + this.d * y + this.f };
   }

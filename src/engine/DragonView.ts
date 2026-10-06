@@ -18,6 +18,7 @@ import { AssetScope, Assets } from './AssetManager.js';
 import { ParticleSystem } from './Particles.js';
 import { drawEquipment, drawPart } from './Placeholders.js';
 import { Skeleton } from './Skeleton.js';
+import { MeshRenderer, SpriteSkin } from './SpriteSkin.js';
 
 export const LAYERS = [
   'magicalEffect', 'base', 'headEquipment', 'neckEquipment', 'bodyEquipment',
@@ -77,6 +78,13 @@ export class DragonView {
   private tmp = new Mat2D();
   private tmp2 = new Mat2D();
   private camM = new Mat2D();
+  /** Illustration déformable (os souples) et son rendu WebGL. */
+  private skin: SpriteSkin | null = null;
+  private skinPart: Drawable | null = null;
+  private restAnchors = new Map<string, Mat2D>();
+  private static mesh: MeshRenderer | null | undefined;
+  /** Regard : direction visée par la tête (-1..1), suivie en douceur. */
+  private look = { x: 0, y: 0, tx: 0, ty: 0, until: 0 };
   /** Appelé quand un clip demande le changement de stade (animation EVOLUTION). */
   onSwapStage: (() => Promise<void> | void) | null = null;
 
@@ -102,6 +110,8 @@ export class DragonView {
     const previous = this.stageAssets;
     this.stageAssets = new AssetScope();
     this.drawables = [];
+    this.skin = null;
+    this.skinPart = null;
     for (const b of rig.bones) {
       if (!b.part) continue;
       const partPath = this.stageAssets.use(Assets.dragonPart(stage.id, b.part.key));
@@ -224,12 +234,54 @@ export class DragonView {
     }
   }
 
+  /** Repère monde d'un ancrage ; sur une illustration déformée, il suit la déformation de l'image. */
+  anchorWorld(name: string, out: Mat2D): Mat2D | null {
+    if (this.skin) {
+      const rest = this.restAnchors.get(name);
+      return rest ? this.skin.deform(rest, out) : null;
+    }
+    return this.skeleton?.anchorWorld(name, out) ?? null;
+  }
+
+  /** La tête regarde vers un point du canvas (coordonnées CSS), ou revient au repos (null). */
+  lookAt(clientX: number | null, clientY = 0): void {
+    if (clientX === null || !this.skin) { this.look.tx = 0; this.look.ty = 0; return; }
+    const head = new Mat2D();
+    if (!this.anchorWorld('head_anchor', head)) return;
+    const p = this.camM.point(head.e, head.f);
+    const r = this.canvas.getBoundingClientRect();
+    const dx = (clientX - r.left) * this.dpr - p.x, dy = (clientY - r.top) * this.dpr - p.y;
+    const reach = Math.max(r.width, r.height) * this.dpr * 0.5;
+    this.look.tx = Math.max(-1, Math.min(1, dx / reach));
+    this.look.ty = Math.max(-1, Math.min(1, dy / reach));
+    this.look.until = this.time + 2.5;
+  }
+
+  /** Construit le maillage dès que l'image du dragon est chargée. */
+  private ensureSkin(): void {
+    if (this.skin || !this.rig?.skin || !this.skeleton) return;
+    const d = this.drawables.find(x => x.part?.shape === 'sprite');
+    const img = d?.partPath ? Assets.peek(d.partPath) : null;
+    if (!d || !img || !(img as HTMLImageElement).width) return;
+    if (DragonView.mesh === undefined) DragonView.mesh = MeshRenderer.create();
+    if (!DragonView.mesh) return;
+    const sk = this.skeleton;
+    const skin = new SpriteSkin(sk, sk.bone(d.bone)!, d.part!, img as HTMLImageElement, this.rig.skin.grid);
+    if (!skin.boneCount) return;
+    // Repères de repos des ancrages (le squelette est encore en pose de repos ici).
+    this.restAnchors.clear();
+    for (const name of sk.anchorNames()) { const m = sk.anchorWorld(name); if (m) this.restAnchors.set(name, m); }
+    DragonView.mesh.setMesh(skin, img as HTMLImageElement);
+    this.skin = skin;
+    this.skinPart = d;
+  }
+
   /** Source d'émission qui suit un ancrage (donc l'os animé). */
   private anchorSource(anchor: string, preset?: ParticlePreset) {
     const local = new Mat2D();
     return () => {
       if (!this.skeleton || !this.rig) return null;
-      const m = this.skeleton.anchorWorld(preset?.area === 'body' ? 'body_center' : anchor, local);
+      const m = this.anchorWorld(preset?.area === 'body' ? 'body_center' : anchor, local);
       if (!m) return null;
       return { x: m.e, y: m.f, scale: this.rig.fxScale ?? this.rig.scale };
     };
@@ -265,8 +317,11 @@ export class DragonView {
     ctx.clearRect(0, 0, W, H);
     if (!sk || !this.rig) return;
 
+    this.ensureSkin();
     this.animator.update(dt, sk);
+    this.applyLook(dt, sk);
     sk.update(new Mat2D());
+    this.skin?.update();
 
     for (const t of this.tempEmitters) if (this.time > t.until) this.particles.removeEmitter(t.id);
     this.tempEmitters = this.tempEmitters.filter(t => this.time <= t.until);
@@ -298,14 +353,17 @@ export class DragonView {
       if (this.layers[d.layer] === false) continue;
       const bone = sk.bone(d.bone);
       if (!bone) continue;
-      if (d.part) {
+      if (d === this.skinPart && DragonView.mesh?.ready) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(DragonView.mesh.render(this.camM, W, H), 0, 0);
+      } else if (d.part) {
         this.camM.multiply(bone.world, this.tmp).apply(ctx);
         const img = d.partPath ? Assets.peek(d.partPath) : null;
         if (img) ctx.drawImage(img, -d.part.pivot[0] * d.part.w, -d.part.pivot[1] * d.part.h, d.part.w, d.part.h);
         else drawPart(ctx, d.part, style);
       } else if (d.equip) {
         const e = d.equip;
-        const anchorM = sk.anchorWorld(e.anchor, this.tmp2);
+        const anchorM = this.anchorWorld(e.anchor, this.tmp2);
         if (!anchorM) continue;
         const img = e.path ? Assets.peek(e.path) : null;
         const f = img ? e.fit : null;
@@ -341,11 +399,26 @@ export class DragonView {
     if (this.showAnchors) this.drawAnchors(sk);
   }
 
+  /** Regard : s'ajoute à l'animation en cours (tête et cou), avec un retour progressif au repos. */
+  private applyLook(dt: number, sk: Skeleton): void {
+    if (!this.skin) return;
+    const L = this.look;
+    if (this.time > L.until) { L.tx = 0; L.ty = 0; }
+    const k = Math.min(1, dt * 4);
+    L.x += (L.tx - L.x) * k; L.y += (L.ty - L.y) * k;
+    if (Math.abs(L.x) + Math.abs(L.y) < 1e-3) return;
+    // vers le haut / le bas : la tête pivote ; vers l'avant / l'arrière : le cou se tend ou se recule.
+    const head = sk.bone('head'), n2 = sk.bone('neck2'), n1 = sk.bone('neck1');
+    if (head) head.offset.rot += L.y * 16 - L.x * 3;
+    if (n2) n2.offset.rot += L.y * 5 + L.x * 6;
+    if (n1) n1.offset.rot += L.x * 5;
+  }
+
   private drawAnchors(sk: Skeleton): void {
     const ctx = this.ctx;
     ctx.font = `${10 * this.dpr}px sans-serif`;
     for (const name of sk.anchorNames()) {
-      const m = sk.anchorWorld(name, this.tmp2);
+      const m = this.anchorWorld(name, this.tmp2);
       if (!m) continue;
       const p = this.camM.point(m.e, m.f);
       ctx.setTransform(1, 0, 0, 1, 0, 0);

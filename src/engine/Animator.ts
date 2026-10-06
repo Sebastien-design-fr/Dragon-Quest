@@ -92,10 +92,13 @@ export class Animator {
   }
 
   private apply(skeleton: Skeleton, p: Playing, weight: number, blend: boolean): void {
-    const unit = skeleton.rig.motionScale ?? skeleton.rig.scale; // déplacements exprimés à l'échelle adulte
+    const rigUnit = skeleton.rig.motionScale ?? skeleton.rig.scale; // déplacements exprimés à l'échelle adulte
+    const sprite = skeleton.rig.kind === 'sprite';
     for (const boneName in p.clip.tracks) {
       const bone = skeleton.bone(boneName);
       if (!bone) continue; // un clip peut viser des os optionnels
+      // Illustration : les os souples (portés par le corps) se déplacent en pixels de l'image.
+      const unit = sprite && bone.parent && bone.parent.def.parent ? 1 : rigUnit;
       const track = p.clip.tracks[boneName];
       for (const ch of CHANNELS) {
         const keys = track[ch];

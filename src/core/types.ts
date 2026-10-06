@@ -23,6 +23,8 @@ export interface BoneDef {
   parent: string | null;
   x: number; y: number; rotation: number; scaleX: number; scaleY: number;
   length: number;
+  /** Os souple : rayon d'influence (pixels de l'image) sur la déformation de l'illustration. */
+  radius?: number;
   part: PartDef | null;
 }
 
@@ -52,6 +54,8 @@ export interface RigDef {
   camera: Rect;
   bones: BoneDef[];
   anchors: AnchorDef[];
+  /** Illustration déformée par un maillage (taille des mailles en pixels de l'image). */
+  skin?: { grid: number };
 }
 
 export interface StageDef {

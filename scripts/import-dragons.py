@@ -66,6 +66,89 @@ STAGES = {
     },
 }
 
+# Os souples (déformation de l'illustration) : nom -> (parent, début (x, y), fin (x, y), rayon d'influence),
+# en pixels de l'image source. Les os de pattes sont portés par « ground » (ils restent au sol quand le
+# corps bouge) ; les autres par « body ». Une chaîne (cou, queue) se déclare dans l'ordre parent -> enfant.
+def chain(prefix, parent, pts, radius):
+    out = {}
+    for i in range(len(pts) - 1):
+        out[f'{prefix}{i + 1}'] = (parent if i == 0 else f'{prefix}{i}', pts[i], pts[i + 1], radius)
+    return out
+
+
+DEFORM = {
+    'adult': {
+        'spine': ('body', (560, 830), (950, 760), 150),
+        **chain('neck', 'body', [(960, 720), (1000, 560), (1050, 440)], 75),
+        'head': ('neck2', (1050, 440), (1210, 470), 115),
+        'wing1': ('body', (690, 620), (780, 290), 120),
+        'wing2': ('wing1', (780, 290), (250, 220), 230),
+        'wingFar': ('body', (760, 620), (820, 470), 80),
+        **chain('tail', 'body', [(480, 880), (330, 960), (170, 1000), (40, 930), (40, 810), (200, 740)], 80),
+        'legFront': ('ground', (1120, 1070), (1030, 900), 75),
+        'legFrontFar': ('ground', (820, 1060), (780, 930), 60),
+        'legRear': ('ground', (540, 1070), (520, 930), 75),
+        'legRearFar': ('ground', (700, 1040), (690, 950), 50),
+    },
+    'legendary': {
+        'spine': ('body', (560, 830), (960, 760), 150),
+        **chain('neck', 'body', [(970, 720), (1010, 560), (1060, 440)], 75),
+        'head': ('neck2', (1060, 440), (1220, 470), 115),
+        'wing1': ('body', (690, 620), (800, 290), 120),
+        'wing2': ('wing1', (800, 290), (200, 200), 240),
+        'wingFar': ('body', (770, 620), (830, 500), 80),
+        **chain('tail', 'body', [(480, 900), (330, 980), (170, 1020), (40, 950), (30, 820), (200, 750)], 80),
+        'legFront': ('ground', (1120, 1090), (1030, 920), 75),
+        'legFrontFar': ('ground', (850, 1070), (800, 950), 60),
+        'legRear': ('ground', (540, 1090), (520, 950), 75),
+        'legRearFar': ('ground', (720, 1060), (710, 960), 50),
+    },
+    'young': {
+        'spine': ('body', (560, 840), (960, 780), 150),
+        **chain('neck', 'body', [(980, 740), (1020, 600), (1060, 480)], 75),
+        'head': ('neck2', (1050, 490), (1200, 460), 125),
+        'wing1': ('body', (700, 640), (800, 410), 110),
+        'wing2': ('wing1', (800, 410), (250, 330), 200),
+        'wingFar': ('body', (760, 640), (840, 550), 70),
+        **chain('tail', 'body', [(480, 900), (330, 980), (160, 1010), (50, 930), (60, 800), (240, 740)], 75),
+        'legFront': ('ground', (1150, 1080), (1060, 930), 75),
+        'legFrontFar': ('ground', (800, 1060), (770, 950), 60),
+        'legRear': ('ground', (560, 1090), (540, 960), 75),
+        'legRearFar': ('ground', (700, 1050), (690, 960), 50),
+    },
+    'baby': {
+        'spine': ('body', (600, 860), (980, 800), 150),
+        **chain('neck', 'body', [(1000, 790), (1010, 650), (1030, 570)], 80),
+        'head': ('neck2', (1030, 570), (1230, 560), 150),
+        'wing1': ('body', (700, 690), (745, 500), 90),
+        'wing2': ('wing1', (745, 500), (330, 560), 150),
+        'wingFar': ('body', (790, 680), (820, 600), 60),
+        **chain('tail', 'body', [(520, 900), (360, 950), (190, 975), (50, 910), (70, 780), (270, 735)], 70),
+        'legFront': ('ground', (1130, 1030), (1060, 900), 75),
+        'legFrontFar': ('ground', (900, 1030), (880, 930), 60),
+        'legRear': ('ground', (580, 1030), (570, 920), 75),
+        'legRearFar': ('ground', (760, 1020), (740, 950), 50),
+    },
+}
+
+
+def deform_bones(stage, fx, fy, ds):
+    """Convertit les segments en os (position et angle relatifs au parent, en pixels de l'image)."""
+    bones, absang, start = [], {'body': 0.0, 'ground': 0.0}, {'body': (fx, fy), 'ground': (fx, fy)}
+    for name, (parent, a, b, radius) in DEFORM[stage].items():
+        ang = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0]))
+        pa = absang[parent]
+        px, py = start[parent]
+        dx, dy = a[0] - px, a[1] - py
+        c, s_ = math.cos(math.radians(-pa)), math.sin(math.radians(-pa))
+        lx, ly = dx * c - dy * s_, dx * s_ + dy * c
+        bones.append({'name': name, 'parent': parent, 'x': r(lx), 'y': r(ly), 'rotation': r(ang - pa),
+                      'scaleX': 1, 'scaleY': 1, 'length': r(math.hypot(b[0] - a[0], b[1] - a[1])),
+                      'radius': radius, 'part': None})
+        absang[name], start[name] = ang, a
+    return bones
+
+
 # Profondeur de dessin des équipements par ancrage (le dragon est à 20, l'aile lointaine fait partie de l'image).
 Z = {
     'head_anchor': 34, 'mouth_anchor': 35, 'neck_anchor': 30, 'chest_anchor': 28, 'front_leg_anchor': 42,
@@ -121,7 +204,10 @@ def build(stage, cfg):
             {'name': 'root', 'parent': None, 'x': 0, 'y': 0, 'rotation': 0, 'scaleX': 1, 'scaleY': 1, 'length': 0, 'part': None},
             {'name': 'body', 'parent': 'root', 'x': 0, 'y': 0, 'rotation': 0, 'scaleX': ds, 'scaleY': ds, 'length': 0,
              'part': {'key': 'full', 'shape': 'sprite', 'w': w, 'h': h, 'pivot': pivot, 'z': 20}},
+            {'name': 'ground', 'parent': 'root', 'x': 0, 'y': 0, 'rotation': 0, 'scaleX': ds, 'scaleY': ds, 'length': 0, 'part': None},
+            *deform_bones(stage, fx, fy, ds),
         ],
+        'skin': {'grid': 26},
         'anchors': anchors,
     }
     return rig, os.path.getsize(path)
