@@ -46,6 +46,8 @@ jobs:
       - name: Compilation de l'APK
         working-directory: android
         run: |
+          # Numéro de version croissant : Android accepte la mise à jour par-dessus l'ancienne.
+          sed -i -E "s/versionCode [0-9]+/versionCode ${{ github.run_number }}/" app/build.gradle
           chmod +x gradlew
           set -o pipefail
           ./gradlew assembleDebug --no-daemon 2>&1 | tee -a ../ci.log
@@ -65,8 +67,17 @@ jobs:
           git commit -q -m "Journal du build ${{ github.run_number }}"
           git push -f origin ci-logs
 
-      - name: Renommage
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk quete-du-dragon.apk
+      # Signature avec une clé fixe (signing/) : sans elle, chaque build aurait une clé différente
+      # et Android refuserait d'installer la nouvelle version par-dessus l'ancienne.
+      - name: Signature
+        run: |
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          $BT/apksigner sign --ks signing/quete-du-dragon.keystore --ks-key-alias quete \
+            --ks-pass pass:"$SIGNING_PASSWORD" --key-pass pass:"$SIGNING_PASSWORD" \
+            --out quete-du-dragon.apk android/app/build/outputs/apk/debug/app-debug.apk
+          $BT/apksigner verify --print-certs quete-du-dragon.apk | head -3
+        env:
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD || 'quetedudragon' }}
 
       - uses: actions/upload-artifact@v4
         with:
