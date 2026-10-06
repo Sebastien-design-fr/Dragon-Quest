@@ -2,6 +2,7 @@
 // Demain : un CloudSaveBackend implémentant la même interface (et SyncSaveBackend
 // combinant local + cloud, résolution par updatedAt) — sans toucher au reste du jeu.
 import type { SaveData } from '../../core/types.js';
+import { storageKey } from '../../platform/storage.js';
 
 export interface SaveBackend {
   load(): Promise<SaveData | null>;
@@ -10,7 +11,8 @@ export interface SaveBackend {
 }
 
 export class LocalSaveBackend implements SaveBackend {
-  constructor(private key = 'quete-du-dragon:save') {}
+  private key: string;
+  constructor(base = 'quete-du-dragon:save') { this.key = storageKey(base); }
 
   async load(): Promise<SaveData | null> {
     try {

@@ -27,7 +27,7 @@ export class GameState {
   private fresh(): SaveData {
     return {
       version: SAVE_VERSION, updatedAt: Date.now(),
-      stage: this.catalog.stages[0]?.id ?? 'baby', level: 1, xp: 0, gold: 1500,
+      stage: this.catalog.stages[0]?.id ?? 'baby', level: 1, xp: 0, gold: 100,
       owned: [], equipped: {}, settings: { quality: 'HIGH', effects: true }
     };
   }

@@ -39,23 +39,31 @@ jobs:
 
       - name: Projet Android (Capacitor)
         run: |
-          [ -d android ] || npx cap add android
-          npx cap sync android
+          set -o pipefail
+          ( [ -d android ] || npx cap add android ) 2>&1 | tee ci.log
+          npx cap sync android 2>&1 | tee -a ci.log
 
       - name: Compilation de l'APK
         working-directory: android
         run: |
           chmod +x gradlew
           set -o pipefail
-          ./gradlew assembleDebug --no-daemon 2>&1 | tee ../gradle.log
+          ./gradlew assembleDebug --no-daemon 2>&1 | tee -a ../ci.log
 
+      # Publie le journal sur la branche « ci-logs » (lisible sans compte GitHub).
       - name: Journal en cas d'échec
         if: failure()
         run: |
-          touch gradle.log
-          grep -nE "error:|e: |FAILURE|What went wrong|wrong:" -A 6 gradle.log | head -200 > erreurs.txt || true
-          gh release delete journal-ci --yes --cleanup-tag || true
-          gh release create journal-ci gradle.log erreurs.txt --prerelease --title "Journal de compilation (échec)" --notes "Build ${{ github.run_number }}" --target ${{ github.sha }}
+          touch ci.log
+          grep -nE "error:|e: |ERR|Error|FAILURE|What went wrong" -A 8 ci.log | head -300 > erreurs.txt || true
+          git config user.name "ci"; git config user.email "ci@users.noreply.github.com"
+          mkdir -p /tmp/logs && cp ci.log erreurs.txt /tmp/logs/
+          git checkout --orphan ci-logs
+          git rm -rf --cached . -q || true
+          cp /tmp/logs/* .
+          git add -f ci.log erreurs.txt
+          git commit -q -m "Journal du build ${{ github.run_number }}"
+          git push -f origin ci-logs
 
       - name: Renommage
         run: cp android/app/build/outputs/apk/debug/app-debug.apk quete-du-dragon.apk
