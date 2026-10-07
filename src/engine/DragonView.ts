@@ -20,6 +20,7 @@ import { drawEquipment, drawPart } from './Placeholders.js';
 import { Skeleton } from './Skeleton.js';
 import { TintCache, buildUniforms, dragonConfig, shadowBlob, type DragonLightConfig, type LightUniforms, type ShadowConfig, type VisualConfig } from './Lighting.js';
 import { OrganicLife, personalityFor } from './Organic.js';
+import { flightConfig, flightPhase, type FlightConfig } from './Flight.js';
 import { MeshRenderer, SpriteSkin } from './SpriteSkin.js';
 import { Backdrop, type BackdropDef } from './Backdrop.js';
 
@@ -173,11 +174,18 @@ export class DragonView {
   private springs = new Map<string, { v: number; vel: number }>();
   private prevBody = { y: 0, x: 0 };
   /** Vol mis en scène : trajectoire dans la scène. */
-  private flight: { t: number; dur: number; baseMirror: boolean } | null = null;
+  private flight: { t: number; dur: number; baseMirror: boolean; resolve?: () => void; dustUp?: boolean; dustDown?: boolean } | null = null;
+  /** Vol (LOT 4) : réglages du stade, effets sur le corps calculés à l'image précédente, demi-tour progressif. */
+  private fcfg: FlightConfig = flightConfig(undefined, 'adult', 'dragon');
+  private flightBody = { y: 0, rot: 0, sy: 1, sx: 1 };
+  private airborne = false;
+  private facing = 1;
+  private impact = { v: 0, vel: 0 };
+  private bob = 0;
   private lift = 0;
   /** Battement d'ailes : phase et durée d'un cycle (s). */
   private flapPhase = 0;
-  flapPeriod = 0.6;
+  private flapRate = 1;
   /** Appelé à chaque animation lancée (sons). */
   onClip: ((clip: string) => void) | null = null;
   /** Appelé quand un clip demande le changement de stade (animation EVOLUTION). */
@@ -225,6 +233,7 @@ export class DragonView {
     this.camTarget = { ...rig.camera };
     this.dcfg = dragonConfig(this.deps.visual, stage.id, variant);
     this.life.setPersonality(personalityFor(this.deps.visual as never, stage.id, variant));
+    this.fcfg = flightConfig(this.deps.visual as never, stage.id, variant);
     const sc = this.deps.visual?.scenes;
     this.backdrop.sceneOverrides = sc ? { ...sc.default, ...sc[stage.id] } : undefined;
     this.tints.clear();
@@ -350,7 +359,7 @@ export class DragonView {
   // ---------------- Animations ----------------
   /** Joue une animation ; un dragon « illustration entière » utilise sa variante <id>@sprite si elle existe. */
   play(id: string): Promise<void> {
-    if (id.startsWith('sleep') && this.flight) { this.mirrored = this.flight.baseMirror; this.flight = null; this.placement.x = this.placeTarget.x; }
+    if (id.startsWith('sleep') && this.flight) { this.mirrored = this.flight.baseMirror; this.flight.resolve?.(); this.flight = null; this.airborne = false; this.placement.x = this.placeTarget.x; }
     const clip = this.deps.library.get(this.clipFor(id));
     if (clip && !clip.loop) this.onClip?.(id.split('@')[0]);
     return this.animator.play(this.clipFor(id));
@@ -441,9 +450,16 @@ export class DragonView {
 
   /** Vol mis en scène : décolle, fait un tour de la scène en se retournant, se repose. */
   fly(): Promise<void> {
-    if ((this.animator.baseId ?? '').startsWith('sleep')) return Promise.resolve();
-    this.flight = { t: 0, dur: 3.4, baseMirror: this.mirrored };
-    return this.play('hover');
+    if ((this.animator.baseId ?? '').startsWith('sleep') || this.flight) return Promise.resolve();
+    const pv = this.poseViews;
+    if (!(pv.flyUp && pv.flyDown)) {
+      // pas de poses de vol peintes : ancienne animation
+      this.flight = { t: 0, dur: 3.4, baseMirror: this.mirrored };
+      return this.play('hover');
+    }
+    // vol entièrement procédural : accroupi → décollage → vol → descente → atterrissage
+    this.onClip?.('hover');
+    return new Promise(resolve => { this.flight = { t: 0, dur: this.fcfg.cruise, baseMirror: this.mirrored, resolve }; });
   }
 
   // ---------------- Boucle ----------------
@@ -525,6 +541,7 @@ export class DragonView {
     this.applyLook(dt, sk);
     this.lifeTick(dt, sk);
     this.applySprings(dt, sk);
+    this.applyFlightBody(dt, sk);
     sk.update(new Mat2D());
     this.skin?.update();
 
@@ -541,7 +558,10 @@ export class DragonView {
     this.placement.x = damp(this.placement.x, this.placeTarget.x, 2.2, dt);
     this.placement.scale = damp(this.placement.scale, this.placeTarget.scale, 2.2, dt);
     const s = s0 * this.placement.scale;
-    const sx = this.mirrored ? -s : s;
+    // demi-tour en vol : le dragon pivote (largeur qui passe par zéro) au lieu de se retourner d'un coup
+    const want = this.mirrored ? -1 : 1;
+    this.facing = this.flight ? damp(this.facing, want, 9, dt) : want;
+    const sx = s * this.facing;
     this.camM.a = sx; this.camM.b = 0; this.camM.c = 0; this.camM.d = s;
     this.camM.e = W / 2 - (this.cam.x + this.cam.w / 2) * sx + this.placement.x * W + shakeX;
     // le sol (y = 0) reste à la même hauteur quelle que soit la taille
@@ -569,7 +589,7 @@ export class DragonView {
     const pv = this.poseViews;
     const base = this.animator.baseId ?? '', act = this.animator.actionId ?? '';
     let wantSleep = pv.sleep && base.startsWith('sleep') && !act ? 1 : 0;
-    let wantFly = !wantSleep && pv.flyUp && pv.flyDown && (act.startsWith('fly_pose') || !!this.flight) ? 1 : 0;
+    let wantFly = !wantSleep && pv.flyUp && pv.flyDown && (act.startsWith('fly_pose') || this.airborne) ? 1 : 0;
     const dp = this.debugPose;
     if (dp) { wantSleep = dp === 'sleep' && pv.sleep ? 1 : 0; wantFly = dp !== 'sleep' && pv[dp] ? 1 : 0; }
     this.poseW.sleep = damp(this.poseW.sleep, wantSleep, 4, dt);
@@ -579,7 +599,7 @@ export class DragonView {
     if (this.poseW.sleep > 0.01 && pv.sleep) pv.sleep.renderPose(ctx, this, W, H, this.poseW.sleep);
     if (this.poseW.fly > 0.01 && pv.flyUp && pv.flyDown) {
       // battements : ailes hautes / ailes basses, presque nets avec un court fondu
-      this.flapPhase += dt / this.flapPeriod;
+      this.flapPhase += dt / (this.fcfg.flapPeriod * this.flapRate);
       let w3 = flapWeights(this.flapPhase, !!pv.flyMid);
       if (dp === 'flyUp') w3 = [1, 0, 0]; else if (dp === 'flyMid' && pv.flyMid) w3 = [0, 1, 0]; else if (dp === 'flyDown') w3 = [0, 0, 1];
       const frames: Array<DragonView | undefined> = [pv.flyUp, pv.flyMid, pv.flyDown];
@@ -881,23 +901,92 @@ export class DragonView {
     }
   }
 
-  /** Trajectoire du vol : il monte, file d'un côté, se retourne, revient et se pose. */
+  /**
+   * Vol (LOT 4), commun à toutes les évolutions, réglé par stade (data/visual.json → flight) :
+   * accroupi (anticipation) → impulsion + poussière → montée à grands battements → vol et demi-tour
+   * → descente plané → contact (écrasement léger, poussière, éventuelle secousse) → récupération.
+   */
   private flightTick(dt: number): void {
     const f = this.flight;
-    if (!f) { this.lift = damp(this.lift, 0, 4, dt); return; }
+    if (!f) {
+      this.lift = damp(this.lift, 0, 6, dt);
+      this.airborne = false;
+      this.flapRate = 1;
+      this.flightBody.y = 0; this.flightBody.rot = damp(this.flightBody.rot, 0, 6, dt);
+      return;
+    }
+    const legacy = !f.resolve;
     f.t += dt;
-    const u = Math.min(1, f.t / f.dur);
-    const ease = (x: number) => x * x * (3 - 2 * x);
-    const up = u < 0.2 ? ease(u / 0.2) : u > 0.82 ? ease((1 - u) / 0.18) : 1;
-    this.lift = 0.14 * up;
-    const cruise = u < 0.2 ? 0 : u > 0.82 ? 1 : (u - 0.2) / 0.62;
-    const x = 0.1 * Math.sin(cruise * Math.PI * 2);
-    const dx = Math.cos(cruise * Math.PI * 2);
+    if (legacy) {
+      const u = Math.min(1, f.t / f.dur);
+      const ease = (x: number) => x * x * (3 - 2 * x);
+      const up = u < 0.2 ? ease(u / 0.2) : u > 0.82 ? ease((1 - u) / 0.18) : 1;
+      this.lift = 0.14 * up;
+      const cruise = u < 0.2 ? 0 : u > 0.82 ? 1 : (u - 0.2) / 0.62;
+      this.placement.x = this.placeTarget.x + 0.1 * Math.sin(cruise * Math.PI * 2);
+      this.placement.scale = this.placeTarget.scale * (1 - 0.2 * up);
+      this.mirrored = u > 0.2 && u < 0.82 && Math.cos(cruise * Math.PI * 2) < 0 ? !f.baseMirror : f.baseMirror;
+      this.airborne = up > 0.3;
+      if (u >= 1) { this.flight = null; this.mirrored = f.baseMirror; }
+      return;
+    }
+    const c = this.fcfg;
+    const P = flightPhase(c, f.t);
+    const prevLift = this.lift;
+    this.airborne = P.airborne;
+    this.flapRate = P.flapRate;
+    // battement : le corps monte pendant la descente des ailes, retombe doucement à la remontée
+    const fp = this.flapPhase - Math.floor(this.flapPhase);
+    const push = fp < 0.35 ? Math.sin((fp / 0.35) * Math.PI / 2) : Math.cos(((fp - 0.35) / 0.65) * Math.PI / 2);
+    this.bob = damp(this.bob, P.airborne ? push - 0.5 : 0, 10, dt);
+    this.lift = c.height * P.height + c.bob * this.bob * P.height;
+    // trajectoire horizontale : aller, demi-tour, retour (pendant la phase de vol uniquement)
+    const x = c.travel * Math.sin(P.cruise * Math.PI * 2);
     this.placement.x = this.placeTarget.x + x;
-    // il s'éloigne un peu en volant (et reste dans l'écran)
-    this.placement.scale = this.placeTarget.scale * (1 - 0.2 * up);
-    this.mirrored = u > 0.2 && u < 0.82 && dx < 0 ? !f.baseMirror : f.baseMirror;
-    if (u >= 1) { this.flight = null; this.mirrored = f.baseMirror; }
+    this.placement.scale = this.placeTarget.scale * (1 - c.recede * P.height);
+    const goingLeft = P.cruise > 0 && P.cruise < 1 && Math.cos(P.cruise * Math.PI * 2) < 0;
+    this.mirrored = goingLeft ? !f.baseMirror : f.baseMirror;
+    // inclinaison : nez vers le haut en montée, vers le bas en descente, petite houle en vol
+    const vy = (this.lift - prevLift) / Math.max(1e-3, dt);
+    this.flightBody.rot = damp(this.flightBody.rot, Math.max(-c.tilt, Math.min(c.tilt, -vy * c.tilt * 2.5)), 5, dt);
+    // accroupi avant le saut (sur l'image debout) puis détente
+    this.flightBody.y = P.crouch * c.crouchDepth;
+    // poussière au décollage et à l'atterrissage
+    if (!f.dustUp && P.airborne) { f.dustUp = true; this.emit('dust', 'front_leg_anchor'); this.emit('dust', 'rear_leg_anchor'); }
+    if (!f.dustDown && P.touchdown) {
+      f.dustDown = true;
+      this.emit('dust', 'front_leg_anchor'); this.emit('dust', 'rear_leg_anchor');
+      if (c.landingDust > 1) this.emit('dust', 'body_center');
+      this.impact.vel -= c.impact * 14;           // écrasement léger à l'impact, amorti ensuite
+      if (c.shake > 0) this.shake = Math.max(this.shake, c.shake);
+    }
+    if (P.done) {
+      this.flight = null;
+      this.mirrored = f.baseMirror;
+      this.airborne = false;
+      this.placement.x = this.placeTarget.x;
+      f.resolve?.();
+    }
+  }
+
+  /** Effets du vol sur le corps (accroupi, inclinaison, écrasement à l'atterrissage), avant la déformation. */
+  private applyFlightBody(dt: number, sk: Skeleton): void {
+    const body = sk.bone('body');
+    if (!body) return;
+    // ressort de l'écrasement d'atterrissage (indépendant de la cadence)
+    const k = 260, cc = 16, h = 1 / 240;
+    for (let left = dt; left > 1e-6; left -= h) {
+      const st = Math.min(h, left);
+      this.impact.vel += (-k * this.impact.v - cc * this.impact.vel) * st;
+      this.impact.v += this.impact.vel * st;
+    }
+    const sq = Math.max(-0.06, Math.min(0.04, this.impact.v));
+    const fb = this.flightBody;
+    const unit = this.rig?.motionScale ?? 1;
+    body.offset.y += fb.y * unit;
+    body.offset.rot += fb.rot;
+    body.offset.sy *= 1 + sq - fb.y * 0.004;
+    body.offset.sx *= 1 - sq * 0.45;
   }
 
   /** Regard : s'ajoute à l'animation en cours (tête et cou), avec un retour progressif au repos. */

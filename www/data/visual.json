@@ -1,5 +1,5 @@
 {
-  "note": "Intégration du dragon dans le décor (LOT 2). Tout est générique : la lumière de la scène est mesurée sur l'image du décor (sans la modifier), puis combinée avec les réglages du dragon (par stade, éventuellement par variante « dragonne.adult ») et ceux de l'état (repos, sommeil, niveau…). Clés de stade : « default », puis l'identifiant du stade, puis « <variante>.<stade> ». Les valeurs absentes reprennent celles du niveau précédent. « personality » (LOT 3) : vie au repos — tempo, respiration, amplitudes des mouvements de fond, inertie, intervalle et poids des micro-comportements (blink à 0 : pas d’asset yeux fermés).",
+  "note": "Intégration du dragon dans le décor (LOT 2). Tout est générique : la lumière de la scène est mesurée sur l'image du décor (sans la modifier), puis combinée avec les réglages du dragon (par stade, éventuellement par variante « dragonne.adult ») et ceux de l'état (repos, sommeil, niveau…). Clés de stade : « default », puis l'identifiant du stade, puis « <variante>.<stade> ». Les valeurs absentes reprennent celles du niveau précédent. « personality » (LOT 3) : vie au repos — tempo, respiration, amplitudes des mouvements de fond, inertie, intervalle et poids des micro-comportements (blink à 0 : pas d’asset yeux fermés). « flight » (LOT 4) : durées accroupi/montée/vol/descente/récupération, hauteur, rebond par battement, inclinaison, durée d'un battement, impact, poussière et secousse à l'atterrissage.",
   "scenes": {
     "default": {
       "ambientMix": 0.16,
@@ -61,6 +61,25 @@
           "fly": 0.25,
           "blink": 0
         }
+      },
+      "flight": {
+        "crouch": 0.4,
+        "rise": 0.75,
+        "cruise": 3.2,
+        "descend": 0.9,
+        "recover": 0.6,
+        "crouchDepth": 9,
+        "height": 0.14,
+        "bob": 0.018,
+        "travel": 0.1,
+        "recede": 0.18,
+        "tilt": 7,
+        "flapPeriod": 0.6,
+        "riseFlap": 0.65,
+        "glideFlap": 1.5,
+        "impact": 0.035,
+        "landingDust": 1,
+        "shake": 0
       }
     },
     "baby": {
@@ -103,6 +122,19 @@
           "shift": 1,
           "fly": 0.15
         }
+      },
+      "flight": {
+        "crouch": 0.28,
+        "rise": 0.6,
+        "cruise": 2.8,
+        "descend": 0.75,
+        "recover": 0.45,
+        "crouchDepth": 6,
+        "height": 0.16,
+        "bob": 0.024,
+        "tilt": 9,
+        "flapPeriod": 0.42,
+        "impact": 0.025
       }
     },
     "young": {
@@ -133,6 +165,17 @@
           "wing_adjust": 2,
           "fly": 0.3
         }
+      },
+      "flight": {
+        "crouch": 0.34,
+        "rise": 0.7,
+        "cruise": 3.0,
+        "crouchDepth": 8,
+        "height": 0.15,
+        "bob": 0.021,
+        "tilt": 8,
+        "flapPeriod": 0.5,
+        "impact": 0.03
       }
     },
     "adult": {
@@ -171,6 +214,21 @@
           "stretch": 0.8,
           "yawn": 0.4
         }
+      },
+      "flight": {
+        "crouch": 0.46,
+        "rise": 0.85,
+        "cruise": 3.3,
+        "descend": 1.0,
+        "recover": 0.7,
+        "crouchDepth": 11,
+        "height": 0.13,
+        "bob": 0.016,
+        "tilt": 6,
+        "flapPeriod": 0.66,
+        "impact": 0.04,
+        "landingDust": 2,
+        "shake": 3
       }
     },
     "legendary": {
@@ -213,6 +271,21 @@
           "scratch": 0.3,
           "stretch": 0.9
         }
+      },
+      "flight": {
+        "crouch": 0.55,
+        "rise": 0.95,
+        "cruise": 3.5,
+        "descend": 1.1,
+        "recover": 0.8,
+        "crouchDepth": 13,
+        "height": 0.12,
+        "bob": 0.014,
+        "tilt": 5,
+        "flapPeriod": 0.74,
+        "impact": 0.045,
+        "landingDust": 2,
+        "shake": 5
       }
     },
     "dragonne.default": {
