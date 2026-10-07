@@ -32,13 +32,10 @@ interface BookData {
   badges: Record<string, number>;
   /** Titre affiché (id d'un badge débloqué). */
   title: string | null;
-  /** Sévérité des sanctions (réglée par les parents). */
+  /** Champs historiques conservés uniquement pour relire les anciennes sauvegardes. */
   severity: Severity;
-  /** Jours d'affilée avec au moins une mission oubliée. */
   missStreak: number;
-  /** Équipement confisqué (sanction stricte), rendu après une journée parfaite. */
   confiscated: { id: string; category: string } | null;
-  /** Dernier bilan de sanctions, affiché à l'ouverture. */
   lastPenalty: { date: string; missed: string[]; xp: number; gold: number } | null;
   /** Gemmes : monnaie des vraies récompenses. */
   gems: number;
@@ -644,14 +641,13 @@ export class ChildBook {
       c ? { name: c.name, line: (m, kind) => missionLine(m, kind) } : undefined, [...(c?.careNotifs() ?? []), ...this.eveningWarning(), ...this.weeklyRecap()]);
   }
 
-  /** À 20 h 30, s'il reste des missions : le dragon prévient de ce qu'elles coûteront si elles sont oubliées. */
+  /** À 20 h 30, s'il reste des missions : rappel positif, sans menace ni perte de progression. */
   private eveningWarning(): Array<{ key: string; at: Date; body: string }> {
     const cost = this.pendingCost();
     if (!cost.count) return [];
     const at = new Date(); at.setHours(20, 30, 0, 0);
-    const loss = [cost.xp ? `−${cost.xp} XP` : '', cost.gold ? `−${cost.gold} or` : ''].filter(Boolean).join(' et ');
     return [{ key: 'evening-' + todayKey(), at,
-      body: `Il te reste ${cost.count} mission${cost.count > 1 ? 's' : ''} aujourd’hui. Sinon demain : ${loss || 'je perds des forces'}… et je serai tout triste.` }];
+      body: `Il te reste ${cost.count} mission${cost.count > 1 ? 's' : ''} aujourd’hui. Encore un petit effort pour gagner tes récompenses et avancer avec ton dragon !` }];
   }
 }
 
