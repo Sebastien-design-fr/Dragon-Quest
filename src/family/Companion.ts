@@ -102,7 +102,7 @@ export class Companion {
       fav: (['meat', 'fish', 'fireFruit'] as FoodId[])[Math.floor(Math.random() * 3)], favKnown: false, morningDay: '', blanketDay: ''
     };
     const saved = readStore<Partial<Data>>(storageKey, {});
-    this.data = { ...defaults, ...saved, food: { ...defaults.food, ...(saved.food ?? {}) } };
+    this.data = { ...defaults, ...saved, sick: false, food: { ...defaults.food, ...(saved.food ?? {}) } };
     this.tick();
     if (!this.data.seenStage) this.data.seenStage = state.data.stage;
   }
@@ -283,8 +283,8 @@ export class Companion {
   /** Partie rejouée pour le plaisir : un peu de bonne humeur, sans récompense. */
   cheer(): void { this.tick(); this.data.mood = clamp(this.data.mood + 4); this.save(); }
 
-  /** Sanction : humeur en baisse (missions oubliées). */
-  punish(mood: number): void { this.tick(); this.data.mood = clamp(this.data.mood - mood); this.data.debris = Math.min(8, this.data.debris + 2); this.save(); }
+  /** Compatibilité anciennes versions : aucune sanction n'est appliquée. */
+  punish(_mood: number): void { /* progression positive depuis v0.18 */ }
 
   // ---------- Grotte ----------
   lair(): { owned: string[]; debris: number } { this.tick(); return { owned: this.data.decor, debris: this.data.debris }; }
@@ -309,11 +309,9 @@ export class Companion {
     this.save();
   }
 
-  setSick(on: boolean): void {
-    if (this.data.sick === on) return;
-    this.data.sick = on;
-    if (on) this.events.emit('toast', `${this.name} est tombé malade… une journée où toutes les missions sont faites le guérira.`);
-    else { this.data.mood = clamp(this.data.mood + 20); this.events.emit('react', { anim: 'happy', fx: 'hearts', say: 'cured' }); }
+  setSick(_on: boolean): void {
+    if (!this.data.sick) return;
+    this.data.sick = false;
     this.save();
   }
 
