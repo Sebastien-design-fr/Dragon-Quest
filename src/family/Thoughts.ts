@@ -74,7 +74,7 @@ export function thoughts(book: ChildBook | null, c: Companion, childName: string
   if (!d.played && book && book.today().some(t => t.status === 'done')) out.push({ id: 'play', text: 'On joue à attraper les gemmes ? J’ai trop envie !', action: 'play', priority: 35 });
   const h = now.getHours();
   if (h >= 6 && h < 10) out.push({ id: 'morning', text: `Bonjour${who ? ' ' + who : ''} ! Bien dormi ? Moi j’ai rêvé de montagnes.`, action: null, priority: 20 });
-  if (now.getDay() === 3 && h >= 12 && h < 18) out.push({ id: 'wednesday', text: 'Mercredi après-midi… on en profite pour avancer les missions ?', action: 'missions', priority: 22 });
+  if (book && now.getDay() === 3 && h >= 12 && h < 18) out.push({ id: 'wednesday', text: 'Mercredi après-midi… on en profite pour avancer les missions ?', action: 'missions', priority: 22 });
   out.push(...[
     'Tu sais que les dragons n’oublient jamais un ami ?',
     'Un jour, je volerai assez haut pour toucher les nuages.',
@@ -90,7 +90,16 @@ export function thoughts(book: ChildBook | null, c: Companion, childName: string
 /** Réponses ponctuelles du dragon à une action. */
 export const REACTIONS: Record<string, string[]> = {
   'thanks-food': ['Miam ! Merci !', 'Délicieux !', 'Ça fait du bien…'],
-  yum: ['C’est mon préféré !!', 'Wouah, quel régal !'],
+  yum: ['Wouah, quel régal !', 'Trop bon !!'],
+  fav: ['C’est mon plat préféré !!', 'Mon préféré ! Tu me connais trop bien !'],
+  tickle: ['Hihi ! Ça chatouille !', 'Arrête… hihihi !', 'Pas le ventre ! Hihi !'],
+  tail: ['Ma queue ! Reviens ici !', 'Je vais l’attraper… presque !', 'Elle me suit partout, celle-là !'],
+  purr: ['Rrrrrrr…', 'Encore… juste derrière les cornes…', 'Mmmh, c’est trop bien…'],
+  dizzy: ['Oh là là… tout tourne…', 'Hé ! Doucement !'],
+  shakeAwake: ['Hein ? Quoi ? Un tremblement de terre ?!', 'Grmbl… qui me secoue ?'],
+  morning: ['Bonjour ! Quelle lumière…', 'Mmmh… déjà le matin ?'],
+  blanket: ['Qu’elle est douce… bonne nuit.', 'Merci pour la couverture… à demain.'],
+  blow: ['Woooosh ! Tu as vu ces flammes ?!', 'On a soufflé ensemble !'],
   full: ['Je n’ai plus faim, merci !', 'Mon ventre est plein comme une outre.'],
   clean: ['Je brille comme un trésor !', 'Tout propre ! Merci !'],
   bond: ['Tu es mon meilleur ami.', 'Je crois que je t’aime bien… beaucoup.'],

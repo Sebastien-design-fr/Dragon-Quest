@@ -5,7 +5,13 @@ import type { ChildBook } from '../family/ChildBook.js';
 import { isNight, type Companion } from '../family/Companion.js';
 import { Sound } from '../engine/Sound.js';
 import type { Duo } from '../family/Duo.js';
+import type { Training } from '../family/Training.js';
 import { VisitScene } from './VisitScene.js';
+import { StageHud } from './StageHud.js';
+import { installSurprises } from './SurprisesUI.js';
+import { installShake } from './Sensors.js';
+import { hideDrape, morningCurtain, nightKey, openBlanket } from './Rituals.js';
+import { todayKey } from '../family/model.js';
 import { sayFor, thoughts, type Thought, type ThoughtAction } from '../family/Thoughts.js';
 import type { ParentHub } from '../family/ParentHub.js';
 import type { Reminders } from '../family/Reminders.js';
@@ -15,11 +21,10 @@ import { SimTransport, type LinkState, type Transport } from '../link/Transport.
 import { ICONS, clear, h, icon, put } from './dom.js';
 import { DragonScreen } from './screens/DragonScreen.js';
 import { FamilyScreen } from './screens/FamilyScreen.js';
-import { InventoryScreen } from './screens/InventoryScreen.js';
 import { MissionsScreen } from './screens/MissionsScreen.js';
 import { ParentMissionsScreen } from './screens/ParentMissionsScreen.js';
-import { SettingsScreen } from './screens/SettingsScreen.js';
-import { ShopScreen } from './screens/ShopScreen.js';
+import { ProfileScreen } from './screens/ProfileScreen.js';
+import { ChestScreen, type ChestSegment } from './screens/ChestScreen.js';
 import { ValidationsScreen } from './screens/ValidationsScreen.js';
 
 export interface Screen { id: string; label: string; icon: string; hidden?: boolean; mount(el: HTMLElement): void; unmount?(): void; refresh?(): void; badge?(): number }
@@ -35,9 +40,11 @@ export interface FamilyContext {
   hub: ParentHub | null;
   companion: Companion | null;
   duo: Duo | null;
+  /** Entraînement par les mini-jeux (caractéristiques et tours spéciaux). */
+  training: Training | null;
 }
 
-export const APP_VERSION = '0.11.0';
+export const APP_VERSION = '0.12.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -52,6 +59,7 @@ export class App {
   selectedChild: string | null = null;
 
   private screens: Screen[];
+  private chest: ChestScreen;
   private current: Screen | null = null;
   private screenEl: HTMLElement;
   private hud: HTMLElement;
@@ -66,9 +74,12 @@ export class App {
   private bubbleAction: ThoughtAction = null;
   private shownAt = new Map<string, number>();
   private remindTimer = 0;
-  private stroke: { x: number; y: number; dist: number; moved: number; pets: number } | null = null;
+  private stroke: { x: number; y: number; sx: number; sy: number; t: number; dist: number; moved: number; pets: number; zone: 'head' | 'belly' | 'tail' | 'body'; purring: boolean } | null = null;
   /** Visites de l'autre dragon de la famille. */
   readonly visits = new VisitScene(this);
+  /** Jauges, barre d'actions, plateau de nourriture et menu rond posés sur la scène. */
+  stageHud!: StageHud;
+  private surprises: { stop(): void; tryGiftNow(): void } | null = null;
 
   constructor(readonly root: HTMLElement, readonly catalog: Catalog, readonly state: GameState, readonly view: DragonView, readonly family: FamilyContext) {
     this.hud = root.querySelector('#hud')!;
@@ -77,11 +88,10 @@ export class App {
     this.tabs = root.querySelector('#tabs')!;
     this.tray = document.querySelector('#sim-tray')!;
 
-    const inventory = new InventoryScreen(this);
-    if (this.isParent) inventory.hidden = true;
+    this.chest = new ChestScreen(this);
     this.screens = this.isParent
-      ? [new ValidationsScreen(this), new ParentMissionsScreen(this), new DragonScreen(this), new ShopScreen(this), new FamilyScreen(this), inventory]
-      : [new DragonScreen(this), new MissionsScreen(this), new ShopScreen(this), new InventoryScreen(this), new SettingsScreen(this)];
+      ? [new ValidationsScreen(this), new ParentMissionsScreen(this), new DragonScreen(this), this.chest, new FamilyScreen(this)]
+      : [new DragonScreen(this), new MissionsScreen(this), this.chest, new ProfileScreen(this)];
     this.buildTabs();
 
     // Sons : réglages, animations, or et gemmes gagnés.
@@ -138,6 +148,7 @@ export class App {
     // Gestes sur le dragon : la tête suit le doigt ; frotter = caresser ou laver.
     this.bubble = h('button', { class: 'bubble', onclick: () => this.bubbleTap() });
     root.querySelector('.stage-view')?.append(this.bubble);
+    this.stageHud = new StageHud(this);
     const cv = view.canvas;
     cv.addEventListener('pointerdown', e => this.pointer(e, 'down'));
     cv.addEventListener('pointermove', e => this.pointer(e, 'move'));
@@ -156,6 +167,9 @@ export class App {
         if (r.say) this.say(sayFor(r.say), null, 4000);
       });
       if (isNight() && comp.data.tucked) this.sleeping = true; // déjà couché ce soir
+      // couché hier soir et personne n'a encore ouvert ses rideaux ce matin : il dort encore
+      const hr = new Date().getHours();
+      if (comp.data.blanketDay === nightKey() && (hr >= 20 || hr < 12) && comp.data.morningDay !== todayKey()) this.sleeping = true;
       this.applyCare();
       if (this.showingOwn) void view.play(this.sleeping ? 'sleep' : this.baseLoop());
       const away = comp.greet();
@@ -167,6 +181,18 @@ export class App {
       // Malade : il éternue de petits nuages de fumée.
       window.setInterval(() => { if (this.showingOwn && comp.data.sick && !this.sleeping) view.emit('sneeze', 'mouth_anchor'); }, 9000);
       document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(() => this.think(true), 1200); });
+    }
+
+    if (comp) {
+      this.surprises = installSurprises(this);
+      installShake(this);
+      family.training?.events.on('levelUp', ({ stat, level, tricks }) => {
+        const label = { agilite: 'Agilité', vitesse: 'Vitesse', feu: 'Feu', sagesse: 'Sagesse' }[stat];
+        this.toast(`${label} niveau ${level} !`);
+        if (tricks.length) setTimeout(() => this.say(`J’ai appris un nouveau tour : ${tricks.map(t => t.label.toLowerCase()).join(', ')} !`, null, 6000), 2500);
+      });
+      // Matin : rideaux tirés ; soir : couverture déjà posée.
+      setTimeout(() => this.morningCheck(), 1200);
     }
 
     const duo = family.duo;
@@ -222,11 +248,21 @@ export class App {
     if (this.isParent && wasOwn !== this.showingOwn) void this.switchDragon();
     next.mount(this.screenEl);
     this.screenEl.scrollTop = 0;
+    this.root.classList.toggle('stage-tall', next.id === 'dragon');
+    this.root.classList.toggle('stage-compact', next.id !== 'dragon');
+    this.stageHud.show(next.id === 'dragon' && this.showingOwn && !!this.family.companion);
+    if (!this.showingOwn) { hideDrape(); this.root.querySelectorAll('.rt-curtain,.rt-blanket').forEach(e => e.remove()); }
+    else setTimeout(() => this.morningCheck(), 600);
     this.buildTabs();
+    window.dispatchEvent(new Event('resize'));
   }
+
+  /** Ouvre le coffre sur un onglet précis (boutique, objets, récompenses). */
+  openChest(seg: ChestSegment): void { this.chest.openSegment(seg); this.show('shop'); }
 
   refresh(): void {
     this.renderHud();
+    this.stageHud?.render();
     this.current?.refresh?.();
     this.buildTabs();
   }
@@ -287,6 +323,34 @@ export class App {
     await this.view.play(anim);
   }
 
+  /** Bouton dodo : réveiller, ou le soir la couverture, ou une sieste. */
+  sleepButton(): void {
+    if (this.sleeping) { this.wakeUp(false); return; }
+    const evening = isNight() || new Date().getHours() >= 20;
+    if (evening && this.family.companion) openBlanket(this);
+    else this.toggleSleep(true);
+  }
+
+  /** Réveil (bouton, rideaux du matin, téléphone secoué). */
+  wakeUp(stretch: boolean): void {
+    hideDrape();
+    this.wokenAt = Date.now();
+    this.view.backdrop.night = isNight() ? 1 : 0;
+    this.toggleSleep(false);
+    void this.view.play('wake').then(() => { if (stretch) void this.view.play('stretch'); });
+  }
+
+  /** Après un soin : il a peut-être trouvé quelque chose pour toi. */
+  surprisesGift(): void { this.surprises?.tryGiftNow(); }
+
+  /** Le matin, s'il dort encore : rideaux à ouvrir. Le soir, la couverture reste sur lui. */
+  private morningCheck(): void {
+    const comp = this.family.companion;
+    if (!comp || !this.showingOwn || this.current?.id !== 'dragon') return;
+    const hr = new Date().getHours();
+    if (this.sleeping && hr >= 6 && hr < 12 && comp.data.morningDay !== todayKey()) { morningCurtain(this); return; }
+  }
+
   toggleSleep(force?: boolean): void {
     const was = this.sleeping;
     this.sleeping = force ?? !this.sleeping;
@@ -300,6 +364,8 @@ export class App {
       void this.view.play('wake');
       if (isNight()) this.say(sayFor('wake'), null, 4000);
     }
+    if (!this.sleeping) { hideDrape(); this.view.backdrop.night = isNight() ? 1 : 0; this.careMode = 'pet'; }
+    this.stageHud?.render();
     this.current?.refresh?.();
   }
 
@@ -311,12 +377,21 @@ export class App {
     if (!this.showingOwn || this.visits.active || this.evolving) return;
     const h = new Date().getHours() + new Date().getMinutes() / 60;
     const night = h >= 21.5 || h < 7;
-    if (night && !this.sleeping && Date.now() - this.wokenAt > 30 * 60000) {
+    const wokeThisMorning = h < 12 && this.family.companion?.data.morningDay === todayKey();
+    if (night && !this.sleeping && !wokeThisMorning && Date.now() - this.wokenAt > 30 * 60000) {
       void this.view.play('yawn');
-      setTimeout(() => { if (!this.sleeping) { this.autoSlept = true; this.sleeping = true; void this.view.play('sleep'); this.current?.refresh?.(); } }, 2600);
-    } else if (!night && this.sleeping && this.autoSlept) {
-      this.toggleSleep(false);
-      void this.view.play('wake').then(() => this.view.play('stretch'));
+      setTimeout(() => {
+        if (this.sleeping) return;
+        this.autoSlept = true; this.sleeping = true;
+        const c = this.family.companion;
+        if (c) { c.data.blanketDay = nightKey(); c.save(); }
+        void this.view.play('sleep'); this.stageHud?.render(); this.current?.refresh?.();
+      }, 2600);
+    } else if (h >= 6 && h < 12 && this.sleeping && (this.autoSlept || this.family.companion?.data.blanketDay === nightKey())) {
+      // le matin, on attend qu'on ouvre ses rideaux (jusqu'à 11 h), puis il se lève tout seul
+      if (h < 11) { this.morningCheck(); return; }
+      this.autoSlept = false;
+      this.wakeUp(true);
     }
   }
 
@@ -394,30 +469,63 @@ export class App {
   }
 
   // ----- Gestes -----
+  // Toucher la tête : il se frotte et ronronne ; le ventre : chatouilles ; la queue : il court après ;
+  // glisser vers le haut : il s'envole ; appui long : menu rond des actions ; mode lavage : frotter les écailles.
+  private pressTimer = 0;
+  private zoneAt(x: number, y: number): 'head' | 'belly' | 'tail' | 'body' {
+    const v = this.view;
+    const r = v.canvas.getBoundingClientRect();
+    const px = x - r.left, py = y - r.top;
+    const head = v.screenPos('head_anchor'), tail = v.screenPos('tail_anchor'), tip = v.screenPos('tail_tip_anchor');
+    const chest = v.screenPos('chest_anchor'), body = v.screenPos('body_center');
+    if (!head || !tail || !body) return 'body';
+    const size = Math.hypot(head.x - tail.x, head.y - tail.y) || 200;
+    const d = (p: { x: number; y: number } | null) => (p ? Math.hypot(px - p.x, py - p.y) / size : 9);
+    const cand: Array<['head' | 'belly' | 'tail', number]> = [
+      ['head', d(head) / 0.22],
+      ['tail', Math.min(d(tail), d(tip)) / 0.2],
+      ['belly', py > body.y - size * 0.02 ? Math.min(d(chest), d(body)) / 0.24 : 9]
+    ];
+    cand.sort((a, b) => a[1] - b[1]);
+    return cand[0][1] < 1 ? cand[0][0] : 'body';
+  }
+
   private pointer(e: PointerEvent, kind: 'down' | 'move' | 'up'): void {
     const view = this.view;
     if (kind !== 'up') view.lookAt(e.clientX, e.clientY);
     const comp = this.family.companion;
-    if (!comp || !this.showingOwn) return;
+    if (!comp || !this.showingOwn || this.visits.active) return;
     if (kind === 'down') {
-      if (view.hitTest(e.clientX, e.clientY)) this.stroke = { x: e.clientX, y: e.clientY, dist: 0, moved: 0, pets: 0 };
+      if (!view.hitTest(e.clientX, e.clientY)) return;
+      this.stroke = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), dist: 0, moved: 0, pets: 0, zone: this.careMode === 'wash' ? 'body' : this.zoneAt(e.clientX, e.clientY), purring: false };
+      clearTimeout(this.pressTimer);
+      if (this.current?.id === 'dragon' && this.careMode !== 'wash') this.pressTimer = window.setTimeout(() => {
+        const st = this.stroke;
+        if (!st || st.moved > 12) return;
+        this.stroke = null;
+        this.bubble.classList.remove('show');
+        this.stageHud.openRadial(st.x, st.y);
+      }, 560);
       return;
     }
     const st = this.stroke;
     if (!st) return;
     if (kind === 'up') {
-      if (st.moved < 12 && !this.sleeping) {
-        // Simple toucher : il réagit et dit quelque chose.
-        view.burstAt(e.clientX, e.clientY, this.careMode === 'wash' ? 'bubbles' : 'hearts');
-        if (this.careMode === 'pet') { comp.pet(); if (!this.view.animator.actionId) void this.act('pet'); }
-        this.think(true);
-      }
+      clearTimeout(this.pressTimer);
+      if (st.moved < 12) this.tap(e, st.zone);
       this.endStroke();
       return;
     }
     const d = Math.hypot(e.clientX - st.x, e.clientY - st.y);
     st.x = e.clientX; st.y = e.clientY;
     st.moved += d;
+    if (st.moved > 12) clearTimeout(this.pressTimer);
+    // glisser vers le haut, vite : il s'envole
+    if (this.careMode !== 'wash' && !this.sleeping && st.sy - e.clientY > 90 && Math.abs(e.clientX - st.sx) < 80 && performance.now() - st.t < 700) {
+      this.endStroke();
+      void this.act('hover');
+      return;
+    }
     if (!view.hitTest(e.clientX, e.clientY)) return;
     st.dist += d;
     if (this.careMode === 'wash') {
@@ -426,20 +534,51 @@ export class App {
       view.burstAt(e.clientX, e.clientY, 'bubbles');
       const done = comp.scrub(0.14);
       view.dirt = Math.max(0, Math.min(1, (70 - comp.data.clean) / 70));
-      if (done) { this.careMode = 'pet'; this.current?.refresh?.(); }
+      if (done) { this.careMode = 'pet'; this.stageHud.render(); this.current?.refresh?.(); this.surprisesGift(); }
+      return;
+    }
+    if (st.dist < 45) return;
+    st.dist = 0;
+    st.pets++;
+    comp.pet();
+    view.burstAt(e.clientX, e.clientY, 'hearts');
+    if (this.sleeping) return;
+    const idle = !view.animator.actionId;
+    if (st.zone === 'head') {
+      // il ronronne et le téléphone vibre doucement
+      navigator.vibrate?.(12);
+      if (!st.purring && idle) { st.purring = true; void this.act('purr'); }
+      if (st.pets === 5) this.say(sayFor('purr'), null, 2500);
+      if (st.pets % 6 === 0) st.purring = false;
+    } else if (st.zone === 'belly') {
+      if (st.pets % 3 === 1 && idle) { void this.act('giggle'); navigator.vibrate?.([15, 40, 15]); }
+      if (st.pets === 2) this.say(sayFor('tickle'), null, 2500);
+    } else if (st.zone === 'tail') {
+      if (st.pets === 2 && idle) { void this.act('tail_chase'); this.say(sayFor('tail'), null, 2800); }
     } else {
-      if (st.dist < 45) return;
-      st.dist = 0;
-      st.pets++;
-      comp.pet();
-      view.burstAt(e.clientX, e.clientY, 'hearts');
-      if (this.sleeping) return;
-      if (st.pets % 4 === 1 && !view.animator.actionId) void this.act('pet');
+      if (st.pets % 4 === 1 && idle) void this.act('pet');
       if (st.pets === 6) this.say(sayFor('pet'), null, 2500);
     }
   }
 
+  /** Simple toucher selon l'endroit. */
+  private tap(e: PointerEvent, zone: 'head' | 'belly' | 'tail' | 'body'): void {
+    const comp = this.family.companion!;
+    const view = this.view;
+    if (this.sleeping) { view.burstAt(e.clientX, e.clientY, 'hearts'); this.say('Zzz…', null, 1500); return; }
+    if (this.careMode === 'wash') { view.burstAt(e.clientX, e.clientY, 'bubbles'); return; }
+    view.burstAt(e.clientX, e.clientY, 'hearts');
+    comp.pet();
+    if (view.animator.actionId) return;
+    if (zone === 'head') { void this.act('purr'); navigator.vibrate?.(20); }
+    else if (zone === 'belly') { void this.act('giggle'); this.say(sayFor('tickle'), null, 2500); navigator.vibrate?.([15, 40, 15]); }
+    else if (zone === 'tail') { void this.act('tail_chase'); this.say(sayFor('tail'), null, 2800); }
+    else { void this.act('pet'); this.think(true); }
+    comp.save();
+  }
+
   private endStroke(): void {
+    clearTimeout(this.pressTimer);
     if (this.stroke) { this.stroke = null; this.family.companion?.save(); }
   }
 

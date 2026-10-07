@@ -1,0 +1,50 @@
+/* ---------- Mini-jeux supplémentaires (course, tir de feu, mémoire des runes) ---------- */
+.game-cave { background: #120d16; }
+.game-arena { background: #0f0b18; }
+.game-hud { z-index: 2; align-items: center; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
+.game-intro { z-index: 5; box-shadow: 0 12px 40px rgba(0,0,0,.6), 0 0 0 1px rgba(217,168,74,.15) inset; }
+.game-intro p { margin: 0; line-height: 1.45; }
+.game-intro h2 { color: var(--gold-soft); }
+.game-rules { font-size: 13px; color: var(--muted); }
+.game-end h2 { font-size: 30px; }
+.game-end { animation: game-end-in .35s ease-out; }
+@keyframes game-end-in { from { opacity: 0; transform: translate(-50%, -44%) scale(.94); } to { opacity: 1; transform: translate(-50%, -50%); } }
+
+.game-hearts { display: flex; gap: 4px; font-size: 26px; color: #ff5a4a; text-shadow: 0 0 8px rgba(255,90,74,.6); }
+.game-heart { transition: transform .25s, opacity .25s, color .25s; }
+.game-heart.lost { color: #3a2c30; text-shadow: none; transform: scale(.8); }
+.game-time-low { color: #ff8a6a; animation: game-pulse .8s infinite; }
+@keyframes game-pulse { 50% { transform: scale(1.12); } }
+
+/* ---------- Mémoire des runes ---------- */
+.game-runes { background: radial-gradient(ellipse at 50% 35%, #2b2230, #120f14 60%, #070608); }
+.rune-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding-top: 40px; pointer-events: none; }
+.rune-board { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 10px; perspective: 900px; pointer-events: auto; }
+.rune-status { font-family: var(--display); color: var(--gold-soft); font-size: 17px; letter-spacing: .05em; min-height: 24px; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
+.rune-tile { position: relative; cursor: pointer; touch-action: none; }
+.rune-inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .38s cubic-bezier(.3,.7,.3,1.2); }
+.rune-tile.flipped .rune-inner { transform: rotateY(180deg); }
+.rune-face { position: absolute; inset: 0; border-radius: 12px; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.rune-back {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.10), transparent 45%),
+    radial-gradient(circle at 70% 80%, rgba(0,0,0,.35), transparent 50%),
+    linear-gradient(145deg, #5a5258, #3a343b 55%, #26222a);
+  border: 1px solid #1a171c;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.12), inset 0 -3px 6px rgba(0,0,0,.45), 0 4px 10px rgba(0,0,0,.5);
+}
+.rune-knot { width: 42%; height: 42%; border: 2px solid rgba(20,16,22,.55); border-radius: 4px; transform: rotate(45deg); box-shadow: 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 5px rgba(0,0,0,.08); position: relative; }
+.rune-knot::after { content: ''; position: absolute; inset: 30%; border: 2px solid rgba(20,16,22,.5); border-radius: 50%; }
+.rune-front {
+  transform: rotateY(180deg);
+  background: radial-gradient(circle at 50% 45%, #3a2e2a, #1c1719 75%);
+  border: 1px solid #5a4630;
+  box-shadow: inset 0 0 14px rgba(0,0,0,.7), 0 4px 10px rgba(0,0,0,.5);
+}
+.rune-glyph { width: 100%; height: 100%; }
+.rune-tile.found .rune-front { border-color: var(--gold); animation: rune-glow 1.6s ease-in-out infinite; }
+.rune-tile.miss .rune-front { border-color: #a04a40; box-shadow: inset 0 0 14px rgba(0,0,0,.7), 0 0 10px rgba(208,88,76,.6); }
+@keyframes rune-glow { 0%, 100% { box-shadow: inset 0 0 14px rgba(0,0,0,.6), 0 0 8px rgba(217,168,74,.45); } 50% { box-shadow: inset 0 0 10px rgba(217,168,74,.25), 0 0 18px rgba(242,212,138,.7); } }
+.rune-pop { position: absolute; left: 50%; top: 10%; transform: translateX(-50%); font: bold 22px system-ui, sans-serif; color: #ffd76a; text-shadow: 0 2px 6px rgba(0,0,0,.8); pointer-events: none; animation: rune-pop .9s ease-out forwards; z-index: 3; }
+@keyframes rune-pop { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, -40px); } }
+.rune-tile.unsolved .rune-front { opacity: .4; filter: grayscale(.6); transition: opacity .4s; }

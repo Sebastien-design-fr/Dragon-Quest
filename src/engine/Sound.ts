@@ -81,7 +81,14 @@ class SoundManager {
       wake: () => void this.play('grumble', { user: true, rate: pitch }),
       hover: () => void this.play('wings', { user: true }),
       dance: () => void this.play('wings', { user: true, gain: 0.6 }),
-      shake: () => void this.play('wings', { user: true, gain: 0.5, rate: 1.3 })
+      shake: () => void this.play('wings', { user: true, gain: 0.5, rate: 1.3 }),
+      giggle: () => { void this.play(voice, { user: true, rate: pitch * 1.25 }); setTimeout(() => void this.play(voice, { user: true, rate: pitch * 1.35, gain: 0.7 }), 380); },
+      tail_chase: () => void this.play(voice, { user: true, rate: pitch * 1.15 }),
+      purr: () => void this.play('purr', { once: true, user: true, rate: pitch }),
+      dizzy: () => void this.play('grumble', { user: true, rate: pitch * 1.2 }),
+      catch: () => void this.play('eat', { user: true, rate: pitch * 1.2, gain: 0.6 }),
+      stretch: () => void this.play('grumble', { user: true, rate: pitch * 0.9, gain: 0.5 }),
+      yawn: () => void this.play('grumble', { user: true, rate: pitch * 0.8, gain: 0.6 })
     };
     map[clip]?.();
   }

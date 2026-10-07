@@ -23,10 +23,10 @@ export const TRICKS: TrickDef[] = [
   { id: 'fire', label: 'Souffle de feu', anim: 'fire', level: 1 },
   { id: 'attack', label: 'Coup de griffe', anim: 'attack', level: 1 },
   { id: 'bow', label: 'La révérence', anim: 'bow', level: 2 },
-  { id: 'dance', label: 'La danse', anim: 'dance', level: 3 },
-  { id: 'ring', label: 'Anneau de feu', anim: 'ring', level: 4 },
-  { id: 'roar', label: 'Le rugissement', anim: 'roar', level: 5 },
-  { id: 'hover', label: 'Vol sur place', anim: 'hover', level: 6 }
+  { id: 'hover', label: 'Le vol', anim: 'hover', level: 3 },
+  { id: 'dance', label: 'La danse', anim: 'dance', level: 4 },
+  { id: 'ring', label: 'Anneau de feu', anim: 'ring', level: 5 },
+  { id: 'roar', label: 'Le rugissement', anim: 'roar', level: 6 }
 ];
 
 /** Niveaux d'amitié : points de lien nécessaires. */
@@ -68,6 +68,12 @@ interface Data {
   tidied: number;
   /** Mode parent (tamagotchi) : XP gagné par les soins aujourd'hui. */
   careXp: number;
+  /** Son plat préféré (à découvrir en le nourrissant). */
+  fav: FoodId;
+  favKnown: boolean;
+  /** Rituels : rideau ouvert ce matin, couverture ce soir. */
+  morningDay: string;
+  blanketDay: string;
 }
 
 const KEY = 'quete-du-dragon:companion';
@@ -92,7 +98,8 @@ export class Companion {
     const defaults: Data = {
       name: null, hunger: 80, clean: 85, mood: 75, bond: 0, updatedAt: now,
       food: { ration: 3, meat: 0, fish: 1, fireFruit: 0, treat: 0 },
-      day: todayKey(), pets: 0, petBond: 0, played: false, tucked: false, album: [], lastOpen: now, seenStage: null, sick: false, decor: [], debris: 2, lairDay: todayKey(), tidied: 0, careXp: 0
+      day: todayKey(), pets: 0, petBond: 0, played: false, tucked: false, album: [], lastOpen: now, seenStage: null, sick: false, decor: [], debris: 2, lairDay: todayKey(), tidied: 0, careXp: 0,
+      fav: (['meat', 'fish', 'fireFruit'] as FoodId[])[Math.floor(Math.random() * 3)], favKnown: false, morningDay: '', blanketDay: ''
     };
     const saved = readStore<Partial<Data>>(storageKey, {});
     this.data = { ...defaults, ...saved, food: { ...defaults.food, ...(saved.food ?? {}) } };
@@ -198,11 +205,17 @@ export class Companion {
     if (d.hunger >= 95) { this.events.emit('react', { say: 'full' }); return 'full'; }
     d.food[id]--;
     const wasHungry = d.hunger < 60;
+    const fav = id === d.fav;
     d.hunger = clamp(d.hunger + f.hunger);
-    d.mood = clamp(d.mood + f.mood);
-    this.addBond(f.bond + (wasHungry ? 1 : 0));
+    d.mood = clamp(d.mood + f.mood + (fav ? 10 : 0));
+    this.addBond(f.bond + (wasHungry ? 1 : 0) + (fav ? 1 : 0));
     if (wasHungry) this.careXp(12);
-    this.events.emit('react', { anim: 'eat', say: id === 'fireFruit' || id === 'treat' ? 'yum' : 'thanks-food' });
+    if (fav && !d.favKnown) {
+      d.favKnown = true;
+      this.remember('fav', `Son plat préféré : ${f.label.toLowerCase()}`, `Tu as découvert ce que ${this.name} adore manger.`);
+      this.events.emit('toast', `Découverte : le plat préféré de ${this.name} est ${f.label.toLowerCase()} !`);
+    }
+    this.events.emit('react', { anim: 'eat', fx: fav ? 'hearts' : undefined, say: fav ? 'fav' : id === 'fireFruit' || id === 'treat' ? 'yum' : 'thanks-food' });
     this.save();
     return 'ok';
   }
@@ -255,8 +268,9 @@ export class Companion {
     return missionsDoneToday > 0 ? 'ok' : 'locked';
   }
 
-  finishGame(score: number): number {
-    const gold = Math.min(40, Math.round(score * 1.5));
+  /** Fin de partie récompensée. factor : 1 pour le premier jeu du jour, 0.5 pour les suivants. */
+  finishGame(score: number, factor = 1): number {
+    const gold = Math.round(Math.min(40, Math.round(score * 1.5)) * factor);
     this.data.played = true;
     this.careXp(25);
     this.data.mood = clamp(this.data.mood + 20);
@@ -265,6 +279,9 @@ export class Companion {
     this.save();
     return gold;
   }
+
+  /** Partie rejouée pour le plaisir : un peu de bonne humeur, sans récompense. */
+  cheer(): void { this.tick(); this.data.mood = clamp(this.data.mood + 4); this.save(); }
 
   /** Sanction : humeur en baisse (missions oubliées). */
   punish(mood: number): void { this.tick(); this.data.mood = clamp(this.data.mood - mood); this.data.debris = Math.min(8, this.data.debris + 2); this.save(); }

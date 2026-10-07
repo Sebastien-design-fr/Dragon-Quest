@@ -7,9 +7,40 @@ import { readStore, writeStore } from '../platform/storage.js';
 import type { Companion, FoodId } from './Companion.js';
 import { FOODS } from './Companion.js';
 import { todayKey } from './model.js';
+import { weekKey } from './Expedition.js';
+import type { ChildBook } from './ChildBook.js';
 
 /** Ce qu'on sait du dragon de l'autre (pour l'afficher pendant une visite). */
-export interface DragonProfile { id: string; owner: string; name: string; variant: 'dragon' | 'dragonne'; stage: string; level: number; equipped: string[]; owned: string[] }
+export interface DragonProfile {
+  id: string; owner: string; name: string; variant: 'dragon' | 'dragonne'; stage: string; level: number; equipped: string[]; owned: string[];
+  /** Quête de famille : contribution de cet appareil cette semaine (et son objectif). */
+  quest?: { week: string; mine: number; goal?: number };
+}
+
+/** Quête de famille de la semaine : l'enfant fait des missions, le parent des soins, ensemble ils réussissent. */
+export const QUEST_TITLES = [
+  'Le festin des deux dragons', 'La grande migration', 'Le trésor des cimes', 'La fête des lanternes',
+  'Le chant des étoiles filantes', 'La forge des anciens', 'Le jardin de cristal', 'La course des nuages'
+];
+/** Objectifs par défaut (missions pour l'enfant, soins pour le parent). */
+export const QUEST_GOALS = { child: 20, parent: 15 };
+export const QUEST_REWARD = { gold: 100 };
+
+export interface QuestState {
+  title: string; week: string; mine: number; mineGoal: number; theirs: number; theirsGoal: number;
+  done: boolean; claimed: boolean; friendName: string | null;
+}
+
+interface QuestData {
+  week: string;
+  mine: number;
+  claimed: boolean;
+  /** Dernier total de missions vu dans le carnet (côté enfant) : on ne compte que les nouvelles. */
+  lastTotal?: number;
+  /** Côté parent : soins « une fois par jour » déjà comptés (jeu, coucher). */
+  playedDay?: string;
+  tuckedDay?: string;
+}
 
 export interface VisitGift { food?: FoodId; item?: string }
 export interface Visit { id: string; from: DragonProfile; message?: string; gift?: VisitGift; fp: number; at: number }
@@ -35,6 +66,7 @@ interface Data {
   sentDay: string;
   sentToday: number;
   pending: Visit[];
+  quest: QuestData;
 }
 
 const KEY = 'quete-du-dragon:duo';
@@ -47,9 +79,97 @@ export class Duo {
 
   constructor(private link: Transport, private state: GameState, private companion: Companion, private selfId: string,
     private ownerName: string, private role: 'child' | 'parent') {
-    this.data = { friends: {}, friendship: 0, sentDay: todayKey(), sentToday: 0, pending: [], ...readStore<Partial<Data>>(KEY, {}) };
+    this.data = { friends: {}, friendship: 0, sentDay: todayKey(), sentToday: 0, pending: [], quest: { week: weekKey(), mine: 0, claimed: false }, ...readStore<Partial<Data>>(KEY, {}) };
     state.events.on('change', () => this.queueProfile());
-    companion.events.on('change', () => this.queueProfile());
+    companion.events.on('change', () => { this.watchCareFlags(); this.queueProfile(); });
+    // Parent : chaque soin compte pour la quête de famille (repas, bain terminé ; jeu et coucher via 'change').
+    companion.events.on('react', r => { if (this.role === 'parent' && (r.anim === 'eat' || r.anim === 'shake')) this.addQuest(1); });
+  }
+
+  /** Objectifs de la quête (modifiables pour les essais : duo.questGoals.child = 2). */
+  questGoals = { ...QUEST_GOALS };
+  private book: ChildBook | null = null;
+
+  /** Enfant : branche le carnet de missions pour compter les missions faites dans la semaine. */
+  attachBook(book: ChildBook): void {
+    if (this.book === book) return;
+    this.book = book;
+    this.rollQuest();
+    const q = this.data.quest;
+    if (q.lastTotal === undefined) {
+      // Premier branchement : on reprend les missions déjà faites cette semaine.
+      if (book.data.week?.key === q.week) q.mine = Math.max(q.mine, book.data.week.missions);
+      q.lastTotal = book.data.stats.total;
+      this.save();
+    }
+    book.events.on('change', () => {
+      const total = book.data.stats.total;
+      const last = this.data.quest.lastTotal ?? total;
+      this.data.quest.lastTotal = total;
+      if (total > last) this.addQuest(total - last);
+      else if (total !== last) writeStore(KEY, this.data);
+    });
+  }
+
+  private rollQuest(): void {
+    const w = weekKey();
+    if (this.data.quest?.week !== w) this.data.quest = { week: w, mine: 0, claimed: false, lastTotal: this.data.quest?.lastTotal };
+  }
+
+  private addQuest(n: number): void {
+    if (this.role === 'child' && !this.book) return;
+    this.rollQuest();
+    const before = this.questState();
+    this.data.quest.mine += n;
+    const after = this.questState();
+    if (!before.done && after.done) this.events.emit('toast', `Quête de famille « ${after.title} » réussie ! Ta récompense t’attend.`);
+    this.save();
+    this.queueProfile(800);
+  }
+
+  /** Parent : jouer et border comptent une fois par jour (ces soins n'émettent pas de 'react'). */
+  private watchCareFlags(): void {
+    if (this.role !== 'parent') return;
+    const c = this.companion.data, day = todayKey(), q = this.data.quest;
+    if (!q) return;
+    let n = 0;
+    if (c.played && c.day === day && q.playedDay !== day) { q.playedDay = day; n++; }
+    if (c.tucked && c.day === day && q.tuckedDay !== day) { q.tuckedDay = day; n++; }
+    if (n) this.addQuest(n);
+  }
+
+  questTitle(week = weekKey()): string {
+    const [y, m, d] = week.split('-').map(Number);
+    const n = Math.round(Date.UTC(y, m - 1, d) / (7 * 86400000));
+    return QUEST_TITLES[((n % QUEST_TITLES.length) + QUEST_TITLES.length) % QUEST_TITLES.length];
+  }
+
+  questState(): QuestState {
+    this.rollQuest();
+    const q = this.data.quest, f = this.friend();
+    const fq = f?.quest && f.quest.week === q.week ? f.quest : null;
+    const otherRole = this.role === 'child' ? 'parent' : 'child';
+    const mineGoal = Math.max(1, this.questGoals[this.role]);
+    const theirsGoal = Math.max(1, Number(fq?.goal) || this.questGoals[otherRole]);
+    const mine = q.mine, theirs = Math.max(0, Number(fq?.mine) || 0);
+    return { title: this.questTitle(q.week), week: q.week, mine, mineGoal, theirs, theirsGoal, done: !!f && mine >= mineGoal && theirs >= theirsGoal, claimed: q.claimed, friendName: f?.name ?? null };
+  }
+
+  /** Récompense de la quête de famille (une fois par semaine, quand les deux parts sont faites). */
+  claimQuest(): boolean {
+    const s = this.questState();
+    if (!s.done || s.claimed) return false;
+    this.data.quest.claimed = true;
+    this.state.addGold(QUEST_REWARD.gold);
+    const c = this.companion;
+    c.data.food.fireFruit = (c.data.food.fireFruit ?? 0) + 1;
+    c.remember('duo-quest-' + s.week, `Nous deux : ${s.title}`,
+      `${c.name} et ${s.friendName ?? 'son ami'} ont réussi ensemble la quête de famille (${s.mine} + ${s.theirs}).`);
+    c.save();
+    this.gain(5);
+    this.save();
+    this.events.emit('toast', `${s.title} : +${QUEST_REWARD.gold} or et un fruit de feu !`);
+    return true;
   }
 
   private save(): void { writeStore(KEY, this.data); this.events.emit('change', undefined); }
@@ -61,7 +181,8 @@ export class Duo {
     const d = this.state.data;
     return {
       id: this.selfId, owner: this.ownerName, name: this.companion.name, variant: this.role === 'child' ? 'dragon' : 'dragonne',
-      stage: d.stage, level: d.level, equipped: Object.values(d.equipped), owned: d.owned
+      stage: d.stage, level: d.level, equipped: Object.values(d.equipped), owned: d.owned,
+      quest: { week: this.questState().week, mine: this.data.quest.mine, goal: this.questGoals[this.role] }
     };
   }
 
@@ -132,7 +253,10 @@ export class Duo {
     const p = msg.payload ?? {};
     if (msg.type === 'duo.profile') {
       if (!p.id || !p.name) return false;
+      const wasDone = this.questState().done;
       this.data.friends[msg.from] = p as DragonProfile;
+      const q = this.questState();
+      if (!wasDone && q.done && !q.claimed) this.events.emit('toast', `Quête de famille « ${q.title} » réussie ! Ta récompense t’attend.`);
       this.save();
       return true;
     }

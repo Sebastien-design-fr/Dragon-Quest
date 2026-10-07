@@ -503,7 +503,7 @@ export class DragonView {
     for (const [anchor, dx, dy, r, a] of DIRT_SPOTS) {
       if (!this.anchorWorld(anchor, m)) continue;
       const p = this.camM.point(m.e + dx * k, m.f + dy * k);
-      const rad = r * k * this.camM.a;
+      const rad = Math.abs(r * k * this.camM.a);
       const alpha = Math.min(0.7, this.dirt * a * 0.85);
       const grd = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad);
       grd.addColorStop(0, `rgba(168,146,112,${alpha})`);
@@ -528,9 +528,18 @@ export class DragonView {
   }
 
   /** Coordonnées CSS (relatives au canvas) d'un ancrage, pour placer une bulle. */
+  /** Vue réellement visible : la pose peinte (couché, en vol) quand elle a pris le dessus. */
+  private visible(): DragonView {
+    const pv = this.poseViews;
+    if (this.poseW.sleep > 0.5 && pv.sleep?.skeleton) return pv.sleep;
+    if (this.poseW.fly > 0.5 && pv.flyUp?.skeleton) return pv.flyUp;
+    return this;
+  }
+
   screenPos(anchor: string): { x: number; y: number } | null {
     const m = new Mat2D();
-    if (!this.anchorWorld(anchor, m)) return null;
+    const v = this.visible();
+    if (!(v === this ? this.anchorWorld(anchor, m) : v.skeleton?.anchorWorld(anchor, m))) return null;
     const p = this.camM.point(m.e, m.f);
     return { x: p.x / this.dpr, y: p.y / this.dpr };
   }
@@ -540,6 +549,8 @@ export class DragonView {
     const r = this.canvas.getBoundingClientRect();
     const inv = this.camM.invert();
     const w = inv.point((clientX - r.left) * this.dpr, (clientY - r.top) * this.dpr);
+    const v = this.visible();
+    if (v !== this && v.skin) return v.skin.contains(w.x, w.y);
     if (this.skin) return this.skin.contains(w.x, w.y);
     const b = this.rig?.bounds;
     return !!b && w.x >= b.x && w.x <= b.x + b.w && w.y >= b.y && w.y <= b.y + b.h;

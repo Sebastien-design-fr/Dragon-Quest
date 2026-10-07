@@ -373,6 +373,14 @@ export class ChildBook {
     return loot;
   }
 
+  /** Gemmes gagnées hors missions (coffre du jour, trouvailles du dragon…). */
+  addGems(n: number, reason: string): void {
+    if (n <= 0) return;
+    this.data.gems += n;
+    this.log(`${reason} : +${n} gemme${n > 1 ? 's' : ''}`);
+    this.save();
+  }
+
   /** Demande d'une vraie récompense : les gemmes sont réservées, rendues si les parents refusent. */
   async requestReward(r: Reward): Promise<boolean> {
     if (this.data.gems < r.cost) return false;
@@ -650,8 +658,33 @@ export class ChildBook {
       severity: this.data.severity, missStreak: this.data.missStreak, sick: this.companion?.data.sick ?? false,
       confiscated: this.data.confiscated?.id ?? null,
       gems: this.data.gems, rewards: this.data.rewards, shields: this.data.shields,
-      expedition: { title: journeyFor(this.data.expedition.week).title, steps: this.data.expedition.steps, goal: this.expeditionGoal(), opened: this.data.expedition.opened }
+      expedition: { title: journeyFor(this.data.expedition.week).title, steps: this.data.expedition.steps, goal: this.expeditionGoal(), opened: this.data.expedition.opened },
+      week: this.weekStats()
     };
+  }
+
+  /** Bilan des 7 derniers jours (le plus ancien d'abord, aujourd'hui compris) : missions faites / prévues.
+   *  Reconstitué à partir des dernières traces de chaque mission, des demandes de validation et des journées parfaites. */
+  private weekStats(): Array<{ date: string; done: number; total: number }> {
+    const perfect = new Set(this.data.streakDays);
+    const reqs = Object.values(this.data.requests);
+    const out: Array<{ date: string; done: number; total: number }> = [];
+    const d = new Date(); d.setDate(d.getDate() - 6);
+    for (let i = 0; i < 7; i++) {
+      const key = todayKey(d);
+      const due = this.data.missions.filter(m => !m.once && !m.optional && appliesOn(m, d));
+      let done = 0;
+      for (const m of due) {
+        const r = this.data.records[m.id];
+        const ok = (r && r.date === key && (r.status === 'done' || r.status === 'pending'))
+          || reqs.some(q => q.missionId === m.id && q.date === key && (q.status === 'approved' || q.status === 'pending'));
+        if (ok) done++;
+      }
+      if (perfect.has(key) && due.length) done = due.length;
+      out.push({ date: key, done, total: due.length });
+      d.setDate(d.getDate() + 1);
+    }
+    return out;
   }
 
   queueStatus(delay = 1500): void {

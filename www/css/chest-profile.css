@@ -1,0 +1,103 @@
+/* ---------- Coffre (boutique + armoire + récompenses) et Profil ---------- */
+
+/* Onglets du coffre */
+.cp-seg { position: sticky; top: -14px; z-index: 5; margin: -14px -14px 0; border-radius: 0; padding: 8px 10px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.cp-seg button { display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 42px; font-size: 13px; white-space: nowrap; padding: 0 4px; }
+.cp-seg button svg { flex: none; }
+.cp-seg-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.25); font-size: 11px; line-height: 18px; }
+.cp-seg button:not(.active) .cp-seg-count { background: var(--panel-2); color: var(--gold-soft); }
+
+
+/* Grille d'objets (boutique et armoire) */
+.cp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 10px; }
+.cp-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px 10px; border-radius: 16px;
+  border: 1px solid var(--line); background: linear-gradient(180deg, var(--panel-2), var(--panel)); cursor: pointer; text-align: center; color: inherit; }
+button.cp-item:active { transform: scale(.97); }
+.cp-item .thumb { border-radius: 14px; background: radial-gradient(circle at 50% 40%, #221d27, #0f0d12 70%); }
+.cp-item.selected { border-color: var(--rarity); box-shadow: 0 0 0 2px var(--rarity) inset, 0 0 18px -6px var(--rarity); }
+.cp-item.worn { border-color: #4fbf8a; }
+.cp-worn, .cp-owned { position: absolute; top: 6px; right: 6px; z-index: 1; display: inline-flex; align-items: center; gap: 2px; font-size: 10px; font-weight: 800;
+  letter-spacing: .03em; text-transform: uppercase; padding: 2px 6px; border-radius: 999px; }
+.cp-worn { background: #4fbf8a; color: #08140e; }
+.cp-owned { background: var(--panel); color: var(--gold-soft); border: 1px solid var(--line); }
+.cp-price { display: flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 700; color: var(--gold); }
+.cp-price.short { color: var(--muted); }
+.cp-price.muted { color: var(--muted); font-weight: 600; font-size: 12px; }
+.cp-meta { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.cp-act { width: 100%; min-height: 38px; padding: 0 8px; margin-top: auto; font-size: 13px; }
+.cp-owned-item { cursor: default; }
+
+/* Panneau d'essai (bas d'écran) */
+.cp-detail { gap: 8px; }
+.cp-detail .detail-head { align-items: flex-start; }
+.cp-trying { color: var(--rarity, var(--gold)); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: 11px; }
+.cp-detail h3 { margin: 2px 0 4px; }
+.cp-close { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; }
+.cp-main { width: 100%; min-height: 50px; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+
+/* Armoire : un emplacement par catégorie */
+.cp-armoire { background: linear-gradient(180deg, #1d1820, var(--panel)); }
+.cp-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.cp-slot { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 8px 2px 6px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--muted); cursor: pointer; }
+.cp-slot.filled { color: var(--gold-soft); }
+.cp-slot.active { border-color: var(--gold); background: #231d17; box-shadow: 0 0 0 1px var(--gold) inset; }
+.cp-slot-empty { width: 54px; height: 54px; border-radius: 12px; border: 2px dashed #3a3440; display: grid; place-items: center; color: #5d5560; }
+.cp-slot-label { font-size: 11px; font-weight: 700; }
+.cp-slot-count { position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--panel-2);
+  border: 1px solid var(--line); color: var(--muted); font-size: 10px; line-height: 14px; font-weight: 700; }
+.cp-empty svg { color: #5d5560; }
+
+/* ---------- Profil ---------- */
+.cp-hero { gap: 12px; background: radial-gradient(130% 120% at 0% 0%, #2a2030 0%, var(--panel) 60%); border-color: #3a3040; }
+.cp-hero-top { display: flex; gap: 12px; align-items: center; }
+.cp-avatar { flex: none; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; color: var(--gold-soft);
+  background: radial-gradient(circle at 40% 35%, #3a2c22, #15121a); border: 2px solid var(--gold); box-shadow: 0 0 16px -4px var(--gold); }
+.cp-name { font-family: var(--display); font-size: 26px; line-height: 1.1; overflow-wrap: anywhere; }
+.cp-title { display: inline-flex; align-items: center; margin-top: 6px; }
+.cp-bond .row { color: var(--gold-soft); font-size: 14px; font-weight: 700; flex-wrap: nowrap; }
+.cp-bond .bar { height: 8px; margin-top: 6px; }
+.cp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; }
+.cp-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); color: var(--gold); text-align: center; }
+.cp-stat strong { font-size: 20px; color: var(--text); font-variant-numeric: tabular-nums; }
+.cp-stat span { font-size: 11px; color: var(--muted); line-height: 1.2; }
+
+.cp-train { display: flex; gap: 12px; align-items: center; }
+.cp-train-icon { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--bg); border: 1px solid var(--line); color: var(--c); }
+.cp-train-head { flex-wrap: nowrap; }
+.cp-lv { font-size: 12px; font-weight: 800; color: var(--c); }
+.cp-train-bar { margin: 5px 0 3px; }
+.cp-train-bar .fill { background: var(--c); }
+.cp-agilite { --c: #6fd29a; }
+.cp-vitesse { --c: #7fc4ff; }
+.cp-feu { --c: #ff8a4c; }
+.cp-sagesse { --c: #c39bff; }
+.cp-sub { margin-top: 4px; }
+.cp-sub h4 { margin: 0; }
+.cp-tricks { display: flex; flex-direction: column; gap: 6px; }
+.cp-trick { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); font-size: 14px; }
+.cp-trick.on { color: var(--gold-soft); border-color: #5a4a2a; }
+.cp-trick.on .small { color: #4fbf8a; font-weight: 700; }
+
+.cp-album .album-row { background: var(--panel-2); }
+.cp-settings { display: flex; flex-direction: column; gap: 14px; }
+.cp-section-title { display: flex; align-items: center; gap: 6px; margin: 10px 2px 0; color: var(--muted); font-size: 15px; }
+
+@media (max-width: 360px) {
+  .cp-seg button svg { display: none; }
+  .cp-slots { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .cp-slot-empty, .cp-slot .thumb { width: 44px !important; height: 44px !important; }
+}
+
+/* L'écran est une colonne flexible qui défile : rien ne doit s'écraser. */
+.cp-seg ~ *, .cp-hero, .cp-hero ~ * { flex-shrink: 0; }
+.cp-hint { display: flex; align-items: center; gap: 4px; }
+.cp-desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cp-detail { padding: 12px; }
+.cp-detail .cp-main { min-height: 46px; }
+.cp-owned-head { align-items: center; margin-bottom: -4px; }
+.cp-owned-head h3 { font-size: 15px; }
+.cp-slot { padding: 6px 2px 5px; gap: 3px; }
+.cp-slot-empty { width: 48px; height: 48px; }
+.cp-title { gap: 3px; }
+.cp-small { min-height: 34px; padding: 0 12px; font-size: 13px; color: var(--gold-soft); }

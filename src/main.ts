@@ -1,4 +1,5 @@
 // Point d'entrée : charge les données, la sauvegarde, le lien maison, puis assemble moteur + interface.
+import { Training } from './family/Training.js';
 import { AnimationLibrary } from './engine/Animator.js';
 import { Assets } from './engine/AssetManager.js';
 import { DragonView } from './engine/DragonView.js';
@@ -72,6 +73,7 @@ async function boot(): Promise<void> {
     book.companion = companion;
     duo = new Duo(link, state, companion, linkState.deviceId, linkState.deviceName, 'child');
     book.onOther = m => duo!.handle(m);
+    duo.attachBook(book);
     await book.init();
     link.onInbox(() => void book!.sync());
   }
@@ -82,7 +84,8 @@ async function boot(): Promise<void> {
     void (book ?? hub)?.sync();
   });
 
-  new App(root, catalog, state, view, { link, linkState, reminders, book, hub, companion, duo });
+  const training = new Training();
+  new App(root, catalog, state, view, { link, linkState, reminders, book, hub, companion, duo, training });
   duo?.hello();
 }
 

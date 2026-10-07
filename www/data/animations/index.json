@@ -34,6 +34,11 @@
     "sniff@sprite.json",
     "tail_swish@sprite.json",
     "sleep_pose@sprite.json",
-    "fly_pose@sprite.json"
+    "fly_pose@sprite.json",
+    "catch@sprite.json",
+    "giggle@sprite.json",
+    "tail_chase@sprite.json",
+    "purr@sprite.json",
+    "dizzy@sprite.json"
   ]
 }
