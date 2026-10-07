@@ -1,1 +1,49 @@
-{ "note": "Poses peintes disponibles (générées par scripts/import-poses.py) : variante -> stade -> poses.", "poses": {} }
+{
+ "note": "Poses peintes disponibles (variante -> stade -> poses). Généré par scripts/build-pose-rigs.py",
+ "poses": {
+  "dragon": {
+   "baby": [
+    "sleep",
+    "flyUp",
+    "flyDown"
+   ],
+   "young": [
+    "sleep",
+    "flyUp",
+    "flyDown"
+   ],
+   "adult": [
+    "sleep",
+    "flyUp",
+    "flyDown"
+   ],
+   "legendary": [
+    "sleep",
+    "flyUp",
+    "flyDown"
+   ]
+  },
+  "dragonne": {
+   "baby": [
+    "sleep",
+    "flyUp",
+    "flyDown"
+   ],
+   "young": [
+    "sleep",
+    "flyUp",
+    "flyDown"
+   ],
+   "adult": [
+    "sleep",
+    "flyUp",
+    "flyDown"
+   ],
+   "legendary": [
+    "sleep",
+    "flyUp",
+    "flyDown"
+   ]
+  }
+ }
+}

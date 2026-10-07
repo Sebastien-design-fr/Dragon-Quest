@@ -1,0 +1,304 @@
+{
+ "id": "legendary",
+ "version": 2,
+ "kind": "sprite",
+ "pose": "flyDown",
+ "note": "Généré par scripts/build-pose-rigs.py",
+ "scale": 1.184,
+ "motionScale": 2.756,
+ "fxScale": 2.438,
+ "params": {
+  "horn": 1,
+  "spikes": 1,
+  "gold": 1
+ },
+ "palette": {
+  "base": "#141318",
+  "mid": "#211f27",
+  "edge": "#3a3541",
+  "belly": "#3d3227",
+  "bellyLine": "#6b5434",
+  "membrane": "#18161c",
+  "membraneEdge": "#2e2a33",
+  "horn": "#1c1a1f",
+  "hornTip": "#6a5e50",
+  "claw": "#b9ad99",
+  "eye": "#f2a33a",
+  "eyeGlow": "#ffb84a",
+  "gold": "#e8b64c"
+ },
+ "bounds": {
+  "x": -868.9,
+  "y": -721.9,
+  "w": 1527.4,
+  "h": 677.3
+ },
+ "camera": {
+  "x": -939.7,
+  "y": -1125.8,
+  "w": 1503.5,
+  "h": 1211.2
+ },
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "scaleX": 1,
+   "scaleY": 1,
+   "length": 0,
+   "part": null
+  },
+  {
+   "name": "body",
+   "parent": "root",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "scaleX": 2.0585,
+   "scaleY": 2.0585,
+   "length": 0,
+   "part": {
+    "key": "flyDown",
+    "shape": "sprite",
+    "w": 742,
+    "h": 329,
+    "pivot": [
+     0.5689,
+     1.066
+    ],
+    "z": 20
+   }
+  },
+  {
+   "name": "ground",
+   "parent": "root",
+   "x": 0,
+   "y": 0,
+   "rotation": 0,
+   "scaleX": 2.0585,
+   "scaleY": 2.0585,
+   "length": 0,
+   "part": null
+  },
+  {
+   "name": "spine",
+   "parent": "body",
+   "x": -88.2,
+   "y": -225.7,
+   "rotation": -2.8,
+   "scaleX": 1,
+   "scaleY": 1,
+   "length": 200.6,
+   "radius": 111.3,
+   "part": null
+  },
+  {
+   "name": "neck1",
+   "parent": "body",
+   "x": 112.1,
+   "y": -238.8,
+   "rotation": -12.5,
+   "scaleX": 1,
+   "scaleY": 1,
+   "length": 60.8,
+   "radius": 44.5,
+   "part": null
+  },
+  {
+   "name": "neck2",
+   "parent": "neck1",
+   "x": 60.8,
+   "y": 0.0,
+   "rotation": -4.0,
+   "scaleX": 1,
+   "scaleY": 1,
+   "length": 46.4,
+   "radius": 44.5,
+   "part": null
+  },
+  {
+   "name": "head",
+   "parent": "neck2",
+   "x": 46.4,
+   "y": 0.0,
+   "rotation": 42.0,
+   "scaleX": 1,
+   "scaleY": 1,
+   "length": 106.9,
+   "radius": 66.8,
+   "part": null
+  },
+  {
+   "name": "tail1",
+   "parent": "body",
+   "x": -88.2,
+   "y": -219.1,
+   "rotation": 176.1,
+   "scaleX": 1,
+   "scaleY": 1,
+   "length": 96.7,
+   "radius": 40.8,
+   "part": null
+  },
+  {
+   "name": "tail2",
+   "parent": "tail1",
+   "x": 96.7,
+   "y": -0.0,
+   "rotation": -352.5,
+   "scaleX": 1,
+   "scaleY": 1,
+   "length": 104.1,
+   "radius": 40.8,
+   "part": null
+  },
+  {
+   "name": "tail3",
+   "parent": "tail2",
+   "x": 104.1,
+   "y": 0.0,
+   "rotation": 16.7,
+   "scaleX": 1,
+   "scaleY": 1,
+   "length": 94.9,
+   "radius": 40.8,
+   "part": null
+  },
+  {
+   "name": "tail4",
+   "parent": "tail3",
+   "x": 94.9,
+   "y": 0.0,
+   "rotation": 53.0,
+   "scaleX": 1,
+   "scaleY": 1,
+   "length": 51.5,
+   "radius": 40.8,
+   "part": null
+  },
+  {
+   "name": "tail5",
+   "parent": "tail4",
+   "x": 51.5,
+   "y": 0.0,
+   "rotation": 77.7,
+   "scaleX": 1,
+   "scaleY": 1,
+   "length": 67.9,
+   "radius": 40.8,
+   "part": null
+  }
+ ],
+ "skin": {
+  "grid": 26
+ },
+ "anchors": [
+  {
+   "name": "head_anchor",
+   "bone": "body",
+   "x": 230.9,
+   "y": -271.7,
+   "rotation": 0,
+   "z": 34
+  },
+  {
+   "name": "mouth_anchor",
+   "bone": "body",
+   "x": 312.5,
+   "y": -219.1,
+   "rotation": 0,
+   "z": 35
+  },
+  {
+   "name": "neck_anchor",
+   "bone": "body",
+   "x": 156.7,
+   "y": -245.4,
+   "rotation": 0,
+   "z": 30
+  },
+  {
+   "name": "chest_anchor",
+   "bone": "body",
+   "x": 97.3,
+   "y": -212.5,
+   "rotation": 0,
+   "z": 28
+  },
+  {
+   "name": "front_leg_anchor",
+   "bone": "body",
+   "x": -6.6,
+   "y": -186.2,
+   "rotation": 0,
+   "z": 42
+  },
+  {
+   "name": "rear_leg_anchor",
+   "bone": "body",
+   "x": -95.6,
+   "y": -192.8,
+   "rotation": 0,
+   "z": 42
+  },
+  {
+   "name": "front_leg_far_anchor",
+   "bone": "body",
+   "x": 23.1,
+   "y": -186.2,
+   "rotation": 0,
+   "z": 22
+  },
+  {
+   "name": "rear_leg_far_anchor",
+   "bone": "body",
+   "x": -65.9,
+   "y": -192.8,
+   "rotation": 0,
+   "z": 22
+  },
+  {
+   "name": "left_wing_anchor",
+   "bone": "body",
+   "x": 112.1,
+   "y": -202.7,
+   "rotation": -10,
+   "z": 22
+  },
+  {
+   "name": "right_wing_anchor",
+   "bone": "body",
+   "x": 23.1,
+   "y": -186.2,
+   "rotation": -5,
+   "z": 38
+  },
+  {
+   "name": "tail_anchor",
+   "bone": "body",
+   "x": -236.6,
+   "y": -219.1,
+   "rotation": 0,
+   "z": 26
+  },
+  {
+   "name": "tail_tip_anchor",
+   "bone": "body",
+   "x": -385.0,
+   "y": -317.8,
+   "rotation": 0,
+   "z": 26
+  },
+  {
+   "name": "body_center",
+   "bone": "body",
+   "x": -36.3,
+   "y": -225.7,
+   "rotation": 0,
+   "z": 0
+  }
+ ]
+}

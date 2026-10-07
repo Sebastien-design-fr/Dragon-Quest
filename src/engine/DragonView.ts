@@ -251,7 +251,8 @@ export class DragonView {
   /** Placement d'un objet : catégorie puis objet ; "*" puis stade ; puis ancrage précis. */
   private fitFor(def: EquipmentDef, anchor: string): EquipFit {
     const st = this.stage!.id;
-    const keys = ['*', st, `*:${anchor}`, `${st}:${anchor}`];
+    const pose = this.rig?.pose;
+    const keys = ['*', st, `*:${anchor}`, `${st}:${anchor}`, ...(pose ? [pose, `${pose}:${anchor}`] : [])];
     const out: EquipFit = {};
     for (const table of [this.deps.fits?.categories[def.category], this.deps.fits?.items[def.id]]) {
       if (!table) continue;
@@ -282,6 +283,7 @@ export class DragonView {
   // ---------------- Animations ----------------
   /** Joue une animation ; un dragon « illustration entière » utilise sa variante <id>@sprite si elle existe. */
   play(id: string): Promise<void> {
+    if (id.startsWith('sleep') && this.flight) { this.mirrored = this.flight.baseMirror; this.flight = null; this.placement.x = this.placeTarget.x; }
     const clip = this.deps.library.get(this.clipFor(id));
     if (clip && !clip.loop) this.onClip?.(id.split('@')[0]);
     return this.animator.play(this.clipFor(id));
@@ -372,6 +374,7 @@ export class DragonView {
 
   /** Vol mis en scène : décolle, fait un tour de la scène en se retournant, se repose. */
   fly(): Promise<void> {
+    if ((this.animator.baseId ?? '').startsWith('sleep')) return Promise.resolve();
     this.flight = { t: 0, dur: 3.4, baseMirror: this.mirrored };
     return this.play('hover');
   }
@@ -458,7 +461,7 @@ export class DragonView {
     const pv = this.poseViews;
     const base = this.animator.baseId ?? '', act = this.animator.actionId ?? '';
     const wantSleep = pv.sleep && base.startsWith('sleep') && !act ? 1 : 0;
-    const wantFly = pv.flyUp && pv.flyDown && (act.startsWith('fly_pose') || !!this.flight) ? 1 : 0;
+    const wantFly = !wantSleep && pv.flyUp && pv.flyDown && (act.startsWith('fly_pose') || !!this.flight) ? 1 : 0;
     const kw = Math.min(1, dt * 4);
     this.poseW.sleep = lerp(this.poseW.sleep, wantSleep, kw);
     this.poseW.fly = lerp(this.poseW.fly, wantFly, kw * 1.5);
@@ -467,7 +470,7 @@ export class DragonView {
     if (this.poseW.sleep > 0.01 && pv.sleep) pv.sleep.renderPose(ctx, this, W, H, this.poseW.sleep);
     if (this.poseW.fly > 0.01 && pv.flyUp && pv.flyDown) {
       // battements : ailes hautes / ailes basses, presque nets avec un court fondu
-      const ph = Math.min(1, Math.max(0, (Math.sin(this.time * Math.PI * 4) + 1) / 2 * 3 - 1));
+      const ph = Math.min(1, Math.max(0, (Math.sin(this.time * Math.PI * 4) + 1) / 2 * 5 - 2));
       if (1 - ph > 0.01) pv.flyUp.renderPose(ctx, this, W, H, this.poseW.fly * (1 - ph));
       if (ph > 0.01) pv.flyDown.renderPose(ctx, this, W, H, this.poseW.fly * ph);
     }
@@ -667,9 +670,11 @@ export class DragonView {
     const up = u < 0.2 ? ease(u / 0.2) : u > 0.82 ? ease((1 - u) / 0.18) : 1;
     this.lift = 0.14 * up;
     const cruise = u < 0.2 ? 0 : u > 0.82 ? 1 : (u - 0.2) / 0.62;
-    const x = 0.15 * Math.sin(cruise * Math.PI * 2);
+    const x = 0.1 * Math.sin(cruise * Math.PI * 2);
     const dx = Math.cos(cruise * Math.PI * 2);
     this.placement.x = this.placeTarget.x + x;
+    // il s'éloigne un peu en volant (et reste dans l'écran)
+    this.placement.scale = this.placeTarget.scale * (1 - 0.2 * up);
     this.mirrored = u > 0.2 && u < 0.82 && dx < 0 ? !f.baseMirror : f.baseMirror;
     if (u >= 1) { this.flight = null; this.mirrored = f.baseMirror; }
   }

@@ -46,6 +46,8 @@ export interface RigDef {
   scale: number;
   /** Échelle des déplacements des animations (défaut : scale). */
   motionScale?: number;
+  /** Pose peinte (sleep, flyUp, flyDown) : clés de placement « <pose> » et « <pose>:<ancrage> » dans fits.json. */
+  pose?: string;
   /** Échelle des particules et de l'ombre (défaut : scale). */
   fxScale?: number;
   params: { horn: number; spikes: number; gold: number };
