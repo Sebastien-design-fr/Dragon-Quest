@@ -12,7 +12,10 @@ export function runSetup(root: HTMLElement, link: Transport, reminders: Reminder
   root.classList.add('setup');
   clear(tabs);
   clear(hud);
-  hud.append(h('div', { class: 'hud-id' }, h('div', { class: 'hud-stage' }, 'Quête du Dragon'), h('div', { class: 'hud-level' }, 'Bienvenue')));
+  hud.append(
+    h('img', { class: 'brand-mark', src: 'assets/brand/dragon-mission-logo.png', alt: 'Dragon Mission' }),
+    h('div', { class: 'hud-id' }, h('div', { class: 'hud-stage' }, 'Dragon Mission'), h('div', { class: 'hud-level' }, 'Bienvenue'))
+  );
 
   let step: Step = 'role';
   let role: Role = 'child';
@@ -29,13 +32,16 @@ export function runSetup(root: HTMLElement, link: Transport, reminders: Reminder
 
       if (step === 'role') {
         card.append(
-          h('h2', null, 'Qui utilise ce téléphone ?'),
+          h('div', { class: 'setup-brand' },
+            h('img', { src: 'assets/brand/dragon-mission-logo.png', alt: 'Dragon Mission' }),
+            h('div', null, h('h2', null, 'Dragon Mission'), h('p', { class: 'muted' }, 'Des missions réelles. Un dragon qui grandit avec toi.'))),
+          h('h3', null, 'Qui utilise ce téléphone ?'),
           h('p', { class: 'muted' }, 'Chaque téléphone de la maison a un rôle. Ce choix est définitif (sauf réinstallation).'),
           h('div', { class: 'role-grid' },
             h('button', { class: 'role-btn', onclick: () => { role = 'child'; step = 'join'; render(); } },
               icon(ICONS.dragon, 34), h('strong', null, 'Enfant'), h('span', { class: 'small muted' }, 'Je fais grandir mon dragon')),
             h('button', { class: 'role-btn', onclick: () => { role = 'parent'; step = 'parent'; render(); } },
-              icon(ICONS.shield, 34), h('strong', null, 'Parent'), h('span', { class: 'small muted' }, 'Je donne les missions et je valide'))));
+              icon(ICONS.shield, 34), h('strong', null, 'Parent'), h('span', { class: 'small muted' }, 'Je donne les missions et je prends soin de ma dragonne'))));
         return;
       }
 
