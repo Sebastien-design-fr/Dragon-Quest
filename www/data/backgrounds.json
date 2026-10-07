@@ -1,133 +1,133 @@
 {
-  "note": "Décor derrière le dragon, par stade. Image : assets/backgrounds/bg_<stade>.(webp|jpg|png) — sinon décor dessiné par l'appli. floor = hauteur du sol dans l'image (0 haut, 1 bas), là où se posent les pattes. lights = lueurs animées (positions relatives à l'image). ambient = particules d'ambiance.",
+  "note": "Décors Dragon Mission 0.19.2 : palette bleu nuit/cyan/violet, distincte de Quête du Dragon. Le décor principal est rendu de façon procédurale et responsive.",
   "stages": {
     "baby": {
       "floor": 0.74,
       "ambient": "motes",
-      "warm": "#8a5a32",
-      "cool": "#2a2a40",
+      "warm": "#315f8a",
+      "cool": "#15294f",
       "lights": [
         {
-          "x": 0.05,
-          "y": 0.45,
-          "r": 0.25,
-          "color": "255,200,120",
-          "flicker": 0.3
+          "x": 0.08,
+          "y": 0.34,
+          "r": 0.3,
+          "color": "100,220,255",
+          "flicker": 0.18
         },
         {
-          "x": 0.93,
-          "y": 0.66,
-          "r": 0.2,
-          "color": "255,200,120",
-          "flicker": 0.3
+          "x": 0.9,
+          "y": 0.62,
+          "r": 0.25,
+          "color": "150,130,255",
+          "flicker": 0.12
         },
         {
           "x": 0.5,
-          "y": 0.7,
-          "r": 0.4,
-          "color": "255,190,110",
-          "flicker": 0.12
+          "y": 0.72,
+          "r": 0.38,
+          "color": "90,200,225",
+          "flicker": 0.08
         }
       ]
     },
     "young": {
       "floor": 0.78,
       "ambient": "crystals",
-      "warm": "#6a4a3a",
-      "cool": "#2c3a66",
+      "warm": "#345a91",
+      "cool": "#202a61",
       "lights": [
         {
-          "x": 0.13,
-          "y": 0.2,
-          "r": 0.3,
-          "color": "255,160,60",
-          "flicker": 0.4
+          "x": 0.12,
+          "y": 0.25,
+          "r": 0.28,
+          "color": "95,210,255",
+          "flicker": 0.12
         },
         {
-          "x": 0.17,
-          "y": 0.45,
+          "x": 0.22,
+          "y": 0.48,
           "r": 0.22,
-          "color": "110,150,255",
-          "flicker": 0.08
+          "color": "126,169,255",
+          "flicker": 0.07
         },
         {
-          "x": 0.9,
-          "y": 0.42,
-          "r": 0.25,
-          "color": "140,120,255",
-          "flicker": 0.08
+          "x": 0.88,
+          "y": 0.4,
+          "r": 0.27,
+          "color": "170,130,255",
+          "flicker": 0.07
         }
       ]
     },
     "adult": {
       "floor": 0.8,
-      "ambient": "embers",
-      "warm": "#8a4a22",
-      "cool": "#2a2230",
+      "ambient": "crystals",
+      "warm": "#3b5687",
+      "cool": "#23214f",
       "lights": [
         {
-          "x": 0.07,
-          "y": 0.2,
-          "r": 0.25,
-          "color": "255,150,50",
-          "flicker": 0.45
+          "x": 0.08,
+          "y": 0.24,
+          "r": 0.24,
+          "color": "100,225,240",
+          "flicker": 0.14
         },
         {
-          "x": 0.27,
-          "y": 0.42,
-          "r": 0.2,
-          "color": "255,150,50",
-          "flicker": 0.45
-        },
-        {
-          "x": 0.89,
-          "y": 0.37,
+          "x": 0.28,
+          "y": 0.46,
           "r": 0.22,
-          "color": "255,150,50",
-          "flicker": 0.45
+          "color": "120,170,255",
+          "flicker": 0.1
         },
         {
-          "x": 0.42,
+          "x": 0.88,
+          "y": 0.38,
+          "r": 0.24,
+          "color": "175,125,255",
+          "flicker": 0.1
+        },
+        {
+          "x": 0.55,
           "y": 0.5,
-          "r": 0.15,
-          "color": "255,160,60",
-          "flicker": 0.4
+          "r": 0.18,
+          "color": "95,205,235",
+          "flicker": 0.08
         }
       ]
     },
     "legendary": {
       "floor": 0.8,
       "ambient": "gold",
-      "warm": "#a0581c",
-      "cool": "#3a1a14",
+      "warm": "#455f9b",
+      "cool": "#30236b",
       "lights": [
         {
-          "x": 0.06,
+          "x": 0.08,
           "y": 0.3,
-          "r": 0.22,
-          "color": "255,150,50",
-          "flicker": 0.45
+          "r": 0.24,
+          "color": "105,225,255",
+          "flicker": 0.13
         },
         {
-          "x": 0.92,
+          "x": 0.91,
           "y": 0.34,
-          "r": 0.22,
-          "color": "255,150,50",
-          "flicker": 0.45
+          "r": 0.24,
+          "color": "190,145,255",
+          "flicker": 0.12
         },
         {
-          "x": 0.68,
+          "x": 0.66,
           "y": 0.45,
-          "r": 0.35,
-          "color": "255,110,30",
-          "flicker": 0.18
+          "r": 0.34,
+          "color": "115,175,255",
+          "flicker": 0.08
         },
         {
-          "x": 0.27,
+          "x": 0.28,
           "y": 0.4,
-          "r": 0.18,
-          "color": "255,150,50",
-          "flicker": 0.4
+          "r": 0.19,
+          "color": "225,198,115",
+          "flicker": 0.1
         }
       ]
     }
