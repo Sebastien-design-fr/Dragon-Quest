@@ -117,9 +117,6 @@ export class GameState {
     return lost;
   }
 
-  /** Compatibilité avec les anciennes sauvegardes : plus aucun objet n'est verrouillé par sanction. */
-  locked = new Set<string>();
-
   addGold(n: number): void { this.data.gold = Math.max(0, this.data.gold + n); this.commit(); }
 
   // ---------- Boutique & inventaire ----------
@@ -148,8 +145,6 @@ export class GameState {
   equip(id: string): ActionResult {
     const def = this.catalog.item(id);
     if (!def || !this.owns(id)) return { ok: false, reason: 'Objet non possédé.' };
-    // `locked` n'est plus alimenté depuis v0.18 ; une ancienne sauvegarde ne doit pas bloquer l'équipement.
-    if (this.locked.has(id)) this.locked.delete(id);
     const was = this.data.equipped[def.category];
     this.data.equipped[def.category] = id; // un objet par catégorie : remplace l'éventuel précédent
     this.commit();
