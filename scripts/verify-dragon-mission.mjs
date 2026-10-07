@@ -38,4 +38,12 @@ if (!theme.includes('--mission-blue') || !theme.includes('#152446')) {
   throw new Error('Nouvelle identité visuelle Dragon Mission absente');
 }
 
-console.log('Dragon Mission: assets, identité, thème final et défilement Android validés.');
+const viewSource = readFileSync('src/engine/DragonView.ts','utf8');
+if (!viewSource.includes("d.partPath?.toLowerCase().endsWith('.svg')")) {
+  throw new Error('Protection Canvas 2D des dragons SVG absente');
+}
+if (!viewSource.includes('pipeline WebGL')) {
+  throw new Error('Correctif anti-sprite-noir Android absent');
+}
+
+console.log('Dragon Mission: assets, identité, thème, défilement et rendu dragon Android validés.');
