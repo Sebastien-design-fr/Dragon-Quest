@@ -65,7 +65,7 @@ export interface StageDef {
   label: string;
   tagline: string;
   minLevel: number;
-  /** Taille visuelle relative du dragon dans une même scène (bébé = 1). */
+  /** Taille visuelle relative du dragon dans une même scène (adulte = 1). */
   displayScale?: number;
   /** Taille indicative affichable dans l'UI, en mètres. */
   sizeMeters?: number;
