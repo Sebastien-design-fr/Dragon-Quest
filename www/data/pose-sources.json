@@ -5,6 +5,21 @@
    "flyDown": "single",
    "flyMid": "single",
    "flyUp": "single"
+  },
+  "baby": {
+   "sleep": "single",
+   "flyDown": "single",
+   "flyUp": "single"
+  },
+  "legendary": {
+   "sleep": "single",
+   "flyDown": "single",
+   "flyUp": "single"
+  },
+  "young": {
+   "sleep": "single",
+   "flyDown": "single",
+   "flyUp": "single"
   }
  }
 }

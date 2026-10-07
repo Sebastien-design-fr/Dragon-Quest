@@ -93,10 +93,31 @@ DEFORM_SINGLE = {
               'tail': [(40, 85), (28, 82), (15, 78), (6, 68), (4, 55), (10, 48)]},
 }
 
+# Images seules : museau (S) et œil (E) relevés à la main, en % de l'image découpée.
+# Ils servent à recaler les images de vol entre elles et à placer les repères de la tête, du cou et du poitrail.
+HEADS = {
+    ('dragon', 'baby', 'flyUp'): ((92.5, 71), (85, 63)), ('dragon', 'baby', 'flyDown'): ((92.5, 44), (86, 38)),
+    ('dragon', 'baby', 'sleep'): ((95, 74), (91, 66)),
+    ('dragon', 'young', 'flyUp'): ((96, 59), (89, 53)), ('dragon', 'young', 'flyDown'): ((94, 25), (89, 21)),
+    ('dragon', 'young', 'sleep'): ((97.5, 59), (92.5, 51)),
+    ('dragon', 'adult', 'flyUp'): ((99.5, 68), (95, 64)), ('dragon', 'adult', 'flyMid'): ((99, 56), (94.5, 51)),
+    ('dragon', 'adult', 'flyDown'): ((99, 22), (95, 18)), ('dragon', 'adult', 'sleep'): ((99, 72), (92.5, 62)),
+    ('dragon', 'legendary', 'flyUp'): ((95, 49), (91, 45)), ('dragon', 'legendary', 'flyDown'): ((92.5, 27), (88, 21.5)),
+    ('dragon', 'legendary', 'sleep'): ((97, 68), (92.5, 59)),
+}
+# Repères de la tête exprimés depuis l'œil, en longueurs « œil → museau » (valables pour tous les stades)
+HEAD_FRAME = {'head_anchor': (-1.18, -0.24), 'neck_anchor': (-2.6, 0.67), 'chest_anchor': (-3.6, 1.8)}
+
 # Taille de la pose par rapport à la largeur du dragon debout.
 WIDTH_RATIO = {'sleep': 1.03, 'flyUp': 1.15}
 # Images seules : la taille est réglée sur la tête et le cou (cohérence avec le dragon debout), pas sur la largeur.
 HEAD_RATIO_SINGLE = {'sleep': 0.8, 'flyUp': 0.74}
+
+
+def head_points(key, w, h):
+    S, E = HEADS[key]
+    S = (S[0] / 100 * w, S[1] / 100 * h); E = (E[0] / 100 * w, E[1] / 100 * h)
+    return S, E, math.hypot(S[0] - E[0], S[1] - E[1])
 
 
 def r(v):
@@ -113,7 +134,7 @@ def head_box(a, frac=0.24):
     return a[:, int(x1 - frac * a.shape[1]):x1 + 1]
 
 
-def register(up, down):
+def register(up, down, single=False):
     """Échelle et décalage qui posent la tête de « ailes basses » sur celle de « ailes hautes » (flyUp px -> flyDown px)."""
     ys, xs = np.nonzero(up)
     nose_up = (xs.max(), ys[xs >= xs.max() - 3].mean())
@@ -121,9 +142,14 @@ def register(up, down):
     nose_dn = (xs2.max(), ys2[xs2 >= xs2.max() - 3].mean())
     # tête de flyUp : petite fenêtre autour du nez
     def sample(a, nose):
-        win = int(0.24 * a.shape[1])
+        win = int((0.13 if single else 0.24) * a.shape[1])
         x0 = max(0, int(nose[0]) - win)
-        yy, xx = np.nonzero(a[:, x0:int(nose[0]) + 1])
+        if single:
+            # image seule : uniquement la tête (au-dessus et un peu sous le museau), pas les ailes voisines
+            y0, y1 = max(0, int(nose[1] - 0.13 * a.shape[1])), int(nose[1] + 0.04 * a.shape[1])
+            yy, xx = np.nonzero(a[y0:y1, x0:int(nose[0]) + 1]); yy = yy + y0
+        else:
+            yy, xx = np.nonzero(a[:, x0:int(nose[0]) + 1])
         sel = np.random.default_rng(1).choice(len(xx), min(4000, len(xx)), replace=False)
         return xx[sel] + x0 - nose[0], yy[sel] - nose[1]
     ux, uy = sample(up, nose_up)
@@ -134,9 +160,9 @@ def register(up, down):
         ok = (x >= 0) & (x < a.shape[1]) & (y >= 0) & (y < a.shape[0])
         return a[y[ok], x[ok]].sum() / len(x)
     best = (-1, 1, 0, 0)
-    for s in (1.0,):  # même échelle dans les deux planches (la recherche d’échelle se trompe sur les crêtes)
-        for dy in range(-25, 26, 2):
-            for dx in range(-12, 13, 2):
+    for s in (np.arange(0.8, 1.26, 0.02) if single else (1.0,)):  # même échelle dans les deux planches (la recherche d’échelle se trompe sur les crêtes)
+        for dy in range(-40 if single else -25, 41 if single else 26, 3 if single else 2):
+            for dx in range(-20 if single else -12, 21 if single else 13, 3 if single else 2):
                 p1 = inside(down, nose_dn[0] + dx + ux * s, nose_dn[1] + dy + uy * s)
                 # et dans l'autre sens : la tête de « ailes basses » retombe dans celle de « ailes hautes »
                 p2 = inside(up, nose_up[0] + (vx - dx) / s, nose_up[1] + (vy - dy) / s)
@@ -189,8 +215,34 @@ def main():
             paths = {p: f for p, f in paths.items() if os.path.exists(f) and (p != 'flyMid' or single(p))}
             if not all(p in paths for p in ('sleep', 'flyUp', 'flyDown')):
                 continue
-            anchors_for = lambda p: ANCHORS_SINGLE[p] if single(p) else ANCHORS[p][variant]
-            deform_for = lambda p: DEFORM_SINGLE[p] if single(p) else DEFORM[p]
+            def anchors_for(p):
+                if not single(p):
+                    return ANCHORS[p][variant]
+                a = dict(ANCHORS_SINGLE[p])
+                key = (variant, stage, p)
+                if key in HEADS:
+                    w, h = Image.open(paths[p]).size
+                    S, E, L = head_points(key, w, h)
+                    pct = lambda x, y: (x / w * 100, y / h * 100)
+                    for n, (kx, ky) in HEAD_FRAME.items():
+                        a[n] = (*pct(E[0] + kx * L, E[1] + ky * L), a[n][2])
+                    a['mouth_anchor'] = (*pct(S[0] - 0.3 * L, S[1] + 0.1 * L), a['mouth_anchor'][2])
+                return a
+            def deform_for(p):
+                if not single(p):
+                    return DEFORM[p]
+                d = {k: list(v) for k, v in DEFORM_SINGLE[p].items()}
+                key = (variant, stage, p)
+                if key in HEADS:
+                    w, h = Image.open(paths[p]).size
+                    S, E, L = head_points(key, w, h)
+                    pct = lambda x, y: (x / w * 100, y / h * 100)
+                    a = anchors_for(p)
+                    hb = pct(E[0] - 1.0 * L, E[1] + 0.2 * L)
+                    d['head'] = [hb, pct(*S)]
+                    d['neck'] = [a['chest_anchor'][:2], a['neck_anchor'][:2], hb]
+                    d['spine'] = [d['spine'][0], a['chest_anchor'][:2]]
+                return d
             sizes = {p: Image.open(paths[p]).size for p in paths}
             ds, feet = {}, {}
             for p in ('sleep', 'flyUp'):
@@ -201,7 +253,10 @@ def main():
                     d_stand = (hd(sa['head_anchor'], sa['neck_anchor']) + hd(sa['neck_anchor'], sa['chest_anchor'])) * sds
                     aa = {n: (v[0] / 100 * w, v[1] / 100 * h) for n, v in anchors_for(p).items()}
                     d_px = hd(aa['head_anchor'], aa['neck_anchor']) + hd(aa['neck_anchor'], aa['chest_anchor'])
-                    ds[p] = HEAD_RATIO_SINGLE[p] * d_stand / d_px
+                    by_head = HEAD_RATIO_SINGLE[p] * d_stand / d_px
+                    by_width = sb['w'] * (0.95 if p == 'sleep' else 1.0) / w
+                    # compromis : tête cohérente avec le dragon debout ET taille d'ensemble cohérente
+                    ds[p] = math.sqrt(by_head * by_width)
                     # doit tenir dans le cadre de la scène (les poses très étalées sont réduites)
                     cam_w = stand['camera']['w'] * 0.96
                     if w * ds[p] > cam_w:
@@ -220,7 +275,15 @@ def main():
                     feet[p] = (cx / 100 * w, cy / 100 * h + center_h / ds[p])
             up = alpha(paths['flyUp'])
             for other in [p for p in ('flyMid', 'flyDown') if p in paths]:
-                T, s, score = register(up, alpha(paths[other]))
+                ku, ko = (variant, stage, 'flyUp'), (variant, stage, other)
+                if ku in HEADS and ko in HEADS:
+                    wu, hu = sizes['flyUp']; wo, ho = sizes[other]
+                    Su, Eu, Lu = head_points(ku, wu, hu); So, Eo, Lo = head_points(ko, wo, ho)
+                    s_ = Lo / Lu
+                    T = (lambda So, Su, s_: (lambda x, y: (So[0] + (x - Su[0]) * s_, So[1] + (y - Su[1]) * s_)))(So, Su, s_)
+                    s, score = s_, 1.0
+                else:
+                    T, s, score = register(up, alpha(paths[other]), single(other) and single('flyUp'))
                 ds[other] = ds['flyUp'] / s
                 feet[other] = T(*feet['flyUp'])
                 print(variant, stage, other, 'recalage', round(s, 3), round(score, 3))

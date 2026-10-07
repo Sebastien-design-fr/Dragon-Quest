@@ -73,10 +73,10 @@
    "poses": {
     "flyDown": {
      "file": "assets/dragon/baby/dragon_baby_flyDown.webp",
-     "w": 457,
-     "h": 191,
-     "bytes": 29938,
-     "drawScale": 1.875,
+     "w": 1512,
+     "h": 977,
+     "bytes": 274812,
+     "drawScale": 0.5235,
      "rig": "data/rigs/baby.dragon.flyDown.json",
      "rigExists": true,
      "declared": true,
@@ -85,67 +85,67 @@
        "screen": "Android 1080×2400 (densité 2,625)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 487,
-        "physicalW": 639,
-        "texToCanvas": 1.066,
+        "canvasW": 450,
+        "physicalW": 591,
+        "texToCanvas": 0.298,
         "canvasToScreen": 1.312,
-        "sourceToScreen": 1.399
+        "sourceToScreen": 0.391
        },
        "after": {
         "renderDpr": 2.625,
-        "canvasW": 639,
-        "physicalW": 639,
-        "texToCanvas": 1.399,
+        "canvasW": 591,
+        "physicalW": 591,
+        "texToCanvas": 0.391,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.399
+        "sourceToScreen": 0.391
        }
       },
       {
        "screen": "Android 1080×2400 (densité 3)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 426,
-        "physicalW": 638,
-        "texToCanvas": 0.931,
+        "canvasW": 393,
+        "physicalW": 590,
+        "texToCanvas": 0.26,
         "canvasToScreen": 1.5,
-        "sourceToScreen": 1.397
+        "sourceToScreen": 0.39
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 638,
-        "physicalW": 638,
-        "texToCanvas": 1.397,
+        "canvasW": 590,
+        "physicalW": 590,
+        "texToCanvas": 0.39,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.397
+        "sourceToScreen": 0.39
        }
       },
       {
        "screen": "Android 1440×3120 (densité 3,5)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 487,
-        "physicalW": 852,
-        "texToCanvas": 1.066,
+        "canvasW": 450,
+        "physicalW": 787,
+        "texToCanvas": 0.298,
         "canvasToScreen": 1.75,
-        "sourceToScreen": 1.865
+        "sourceToScreen": 0.521
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 731,
-        "physicalW": 852,
-        "texToCanvas": 1.599,
+        "canvasW": 675,
+        "physicalW": 787,
+        "texToCanvas": 0.446,
         "canvasToScreen": 1.167,
-        "sourceToScreen": 1.865
+        "sourceToScreen": 0.521
        }
       }
      ]
     },
     "flyUp": {
      "file": "assets/dragon/baby/dragon_baby_flyUp.webp",
-     "w": 470,
-     "h": 221,
-     "bytes": 34940,
-     "drawScale": 1.875,
+     "w": 1472,
+     "h": 903,
+     "bytes": 290000,
+     "drawScale": 0.454,
      "rig": "data/rigs/baby.dragon.flyUp.json",
      "rigExists": true,
      "declared": true,
@@ -154,57 +154,57 @@
        "screen": "Android 1080×2400 (densité 2,625)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 501,
-        "physicalW": 657,
-        "texToCanvas": 1.066,
+        "canvasW": 380,
+        "physicalW": 499,
+        "texToCanvas": 0.258,
         "canvasToScreen": 1.312,
-        "sourceToScreen": 1.399
+        "sourceToScreen": 0.339
        },
        "after": {
         "renderDpr": 2.625,
-        "canvasW": 657,
-        "physicalW": 657,
-        "texToCanvas": 1.399,
+        "canvasW": 499,
+        "physicalW": 499,
+        "texToCanvas": 0.339,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.399
+        "sourceToScreen": 0.339
        }
       },
       {
        "screen": "Android 1080×2400 (densité 3)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 438,
-        "physicalW": 657,
-        "texToCanvas": 0.931,
+        "canvasW": 332,
+        "physicalW": 498,
+        "texToCanvas": 0.225,
         "canvasToScreen": 1.5,
-        "sourceToScreen": 1.397
+        "sourceToScreen": 0.338
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 657,
-        "physicalW": 657,
-        "texToCanvas": 1.397,
+        "canvasW": 498,
+        "physicalW": 498,
+        "texToCanvas": 0.338,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.397
+        "sourceToScreen": 0.338
        }
       },
       {
        "screen": "Android 1440×3120 (densité 3,5)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 501,
-        "physicalW": 877,
-        "texToCanvas": 1.066,
+        "canvasW": 380,
+        "physicalW": 665,
+        "texToCanvas": 0.258,
         "canvasToScreen": 1.75,
-        "sourceToScreen": 1.865
+        "sourceToScreen": 0.452
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 751,
-        "physicalW": 877,
-        "texToCanvas": 1.599,
+        "canvasW": 570,
+        "physicalW": 665,
+        "texToCanvas": 0.387,
         "canvasToScreen": 1.167,
-        "sourceToScreen": 1.865
+        "sourceToScreen": 0.452
        }
       }
      ]
@@ -280,10 +280,10 @@
     },
     "sleep": {
      "file": "assets/dragon/baby/dragon_baby_sleep.webp",
-     "w": 472,
-     "h": 178,
-     "bytes": 32946,
-     "drawScale": 1.6722,
+     "w": 1528,
+     "h": 735,
+     "bytes": 320356,
+     "drawScale": 0.5633,
      "rig": "data/rigs/baby.dragon.sleep.json",
      "rigExists": true,
      "declared": true,
@@ -292,57 +292,57 @@
        "screen": "Android 1080×2400 (densité 2,625)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 561,
-        "physicalW": 736,
-        "texToCanvas": 1.188,
+        "canvasW": 612,
+        "physicalW": 803,
+        "texToCanvas": 0.4,
         "canvasToScreen": 1.312,
-        "sourceToScreen": 1.559
+        "sourceToScreen": 0.525
        },
        "after": {
         "renderDpr": 2.625,
-        "canvasW": 736,
-        "physicalW": 736,
-        "texToCanvas": 1.559,
+        "canvasW": 803,
+        "physicalW": 803,
+        "texToCanvas": 0.525,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.559
+        "sourceToScreen": 0.525
        }
       },
       {
        "screen": "Android 1080×2400 (densité 3)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 490,
-        "physicalW": 735,
-        "texToCanvas": 1.038,
+        "canvasW": 534,
+        "physicalW": 802,
+        "texToCanvas": 0.35,
         "canvasToScreen": 1.5,
-        "sourceToScreen": 1.557
+        "sourceToScreen": 0.525
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 735,
-        "physicalW": 735,
-        "texToCanvas": 1.557,
+        "canvasW": 802,
+        "physicalW": 802,
+        "texToCanvas": 0.525,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.557
+        "sourceToScreen": 0.525
        }
       },
       {
        "screen": "Android 1440×3120 (densité 3,5)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 561,
-        "physicalW": 981,
-        "texToCanvas": 1.188,
+        "canvasW": 612,
+        "physicalW": 1070,
+        "texToCanvas": 0.4,
         "canvasToScreen": 1.75,
-        "sourceToScreen": 2.079
+        "sourceToScreen": 0.7
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 841,
-        "physicalW": 981,
-        "texToCanvas": 1.782,
+        "canvasW": 917,
+        "physicalW": 1070,
+        "texToCanvas": 0.6,
         "canvasToScreen": 1.167,
-        "sourceToScreen": 2.079
+        "sourceToScreen": 0.7
        }
       }
      ]
@@ -402,10 +402,10 @@
    "poses": {
     "flyDown": {
      "file": "assets/dragon/young/dragon_young_flyDown.webp",
-     "w": 574,
-     "h": 284,
-     "bytes": 55336,
-     "drawScale": 1.7544,
+     "w": 1500,
+     "h": 957,
+     "bytes": 265114,
+     "drawScale": 0.9397,
      "rig": "data/rigs/young.dragon.flyDown.json",
      "rigExists": true,
      "declared": true,
@@ -414,67 +414,67 @@
        "screen": "Android 1080×2400 (densité 2,625)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 490,
-        "physicalW": 643,
-        "texToCanvas": 0.853,
+        "canvasW": 686,
+        "physicalW": 900,
+        "texToCanvas": 0.457,
         "canvasToScreen": 1.312,
-        "sourceToScreen": 1.12
+        "sourceToScreen": 0.6
        },
        "after": {
         "renderDpr": 2.625,
-        "canvasW": 643,
-        "physicalW": 643,
-        "texToCanvas": 1.12,
+        "canvasW": 900,
+        "physicalW": 900,
+        "texToCanvas": 0.6,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.12
+        "sourceToScreen": 0.6
        }
       },
       {
        "screen": "Android 1080×2400 (densité 3)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 428,
-        "physicalW": 642,
-        "texToCanvas": 0.746,
+        "canvasW": 599,
+        "physicalW": 899,
+        "texToCanvas": 0.399,
         "canvasToScreen": 1.5,
-        "sourceToScreen": 1.119
+        "sourceToScreen": 0.599
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 642,
-        "physicalW": 642,
-        "texToCanvas": 1.119,
+        "canvasW": 899,
+        "physicalW": 899,
+        "texToCanvas": 0.599,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.119
+        "sourceToScreen": 0.599
        }
       },
       {
        "screen": "Android 1440×3120 (densité 3,5)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 490,
-        "physicalW": 857,
-        "texToCanvas": 0.853,
+        "canvasW": 686,
+        "physicalW": 1200,
+        "texToCanvas": 0.457,
         "canvasToScreen": 1.75,
-        "sourceToScreen": 1.494
+        "sourceToScreen": 0.8
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 735,
-        "physicalW": 857,
-        "texToCanvas": 1.28,
+        "canvasW": 1029,
+        "physicalW": 1200,
+        "texToCanvas": 0.686,
         "canvasToScreen": 1.167,
-        "sourceToScreen": 1.494
+        "sourceToScreen": 0.8
        }
       }
      ]
     },
     "flyUp": {
      "file": "assets/dragon/young/dragon_young_flyUp.webp",
-     "w": 666,
-     "h": 262,
-     "bytes": 62542,
-     "drawScale": 1.7544,
+     "w": 1468,
+     "h": 945,
+     "bytes": 299120,
+     "drawScale": 0.6742,
      "rig": "data/rigs/young.dragon.flyUp.json",
      "rigExists": true,
      "declared": true,
@@ -483,57 +483,57 @@
        "screen": "Android 1080×2400 (densité 2,625)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 568,
-        "physicalW": 746,
-        "texToCanvas": 0.853,
+        "canvasW": 481,
+        "physicalW": 632,
+        "texToCanvas": 0.328,
         "canvasToScreen": 1.312,
-        "sourceToScreen": 1.12
+        "sourceToScreen": 0.43
        },
        "after": {
         "renderDpr": 2.625,
-        "canvasW": 746,
-        "physicalW": 746,
-        "texToCanvas": 1.12,
+        "canvasW": 632,
+        "physicalW": 632,
+        "texToCanvas": 0.43,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.12
+        "sourceToScreen": 0.43
        }
       },
       {
        "screen": "Android 1080×2400 (densité 3)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 497,
-        "physicalW": 745,
-        "texToCanvas": 0.746,
+        "canvasW": 421,
+        "physicalW": 631,
+        "texToCanvas": 0.287,
         "canvasToScreen": 1.5,
-        "sourceToScreen": 1.119
+        "sourceToScreen": 0.43
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 745,
-        "physicalW": 745,
-        "texToCanvas": 1.119,
+        "canvasW": 631,
+        "physicalW": 631,
+        "texToCanvas": 0.43,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.119
+        "sourceToScreen": 0.43
        }
       },
       {
        "screen": "Android 1440×3120 (densité 3,5)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 568,
-        "physicalW": 995,
-        "texToCanvas": 0.853,
+        "canvasW": 481,
+        "physicalW": 843,
+        "texToCanvas": 0.328,
         "canvasToScreen": 1.75,
-        "sourceToScreen": 1.494
+        "sourceToScreen": 0.574
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 853,
-        "physicalW": 995,
-        "texToCanvas": 1.28,
+        "canvasW": 722,
+        "physicalW": 843,
+        "texToCanvas": 0.492,
         "canvasToScreen": 1.167,
-        "sourceToScreen": 1.494
+        "sourceToScreen": 0.574
        }
       }
      ]
@@ -609,10 +609,10 @@
     },
     "sleep": {
      "file": "assets/dragon/young/dragon_young_sleep.webp",
-     "w": 637,
-     "h": 232,
-     "bytes": 50860,
-     "drawScale": 1.6428,
+     "w": 1518,
+     "h": 750,
+     "bytes": 309454,
+     "drawScale": 0.74,
      "rig": "data/rigs/young.dragon.sleep.json",
      "rigExists": true,
      "declared": true,
@@ -621,57 +621,57 @@
        "screen": "Android 1080×2400 (densité 2,625)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 636,
-        "physicalW": 835,
-        "texToCanvas": 0.999,
+        "canvasW": 683,
+        "physicalW": 897,
+        "texToCanvas": 0.45,
         "canvasToScreen": 1.312,
-        "sourceToScreen": 1.311
+        "sourceToScreen": 0.591
        },
        "after": {
         "renderDpr": 2.625,
-        "canvasW": 835,
-        "physicalW": 835,
-        "texToCanvas": 1.311,
+        "canvasW": 897,
+        "physicalW": 897,
+        "texToCanvas": 0.591,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.311
+        "sourceToScreen": 0.591
        }
       },
       {
        "screen": "Android 1080×2400 (densité 3)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 556,
-        "physicalW": 834,
-        "texToCanvas": 0.873,
+        "canvasW": 597,
+        "physicalW": 895,
+        "texToCanvas": 0.393,
         "canvasToScreen": 1.5,
-        "sourceToScreen": 1.309
+        "sourceToScreen": 0.59
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 834,
-        "physicalW": 834,
-        "texToCanvas": 1.309,
+        "canvasW": 895,
+        "physicalW": 895,
+        "texToCanvas": 0.59,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.309
+        "sourceToScreen": 0.59
        }
       },
       {
        "screen": "Android 1440×3120 (densité 3,5)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 636,
-        "physicalW": 1114,
-        "texToCanvas": 0.999,
+        "canvasW": 683,
+        "physicalW": 1195,
+        "texToCanvas": 0.45,
         "canvasToScreen": 1.75,
-        "sourceToScreen": 1.748
+        "sourceToScreen": 0.787
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 954,
-        "physicalW": 1114,
-        "texToCanvas": 1.498,
+        "canvasW": 1025,
+        "physicalW": 1195,
+        "texToCanvas": 0.675,
         "canvasToScreen": 1.167,
-        "sourceToScreen": 1.748
+        "sourceToScreen": 0.787
        }
       }
      ]
@@ -734,7 +734,7 @@
      "w": 1515,
      "h": 806,
      "bytes": 229356,
-     "drawScale": 0.9147,
+     "drawScale": 1.017,
      "rig": "data/rigs/adult.dragon.flyDown.json",
      "rigExists": true,
      "declared": true,
@@ -743,57 +743,57 @@
        "screen": "Android 1080×2400 (densité 2,625)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 596,
-        "physicalW": 782,
-        "texToCanvas": 0.393,
+        "canvasW": 662,
+        "physicalW": 869,
+        "texToCanvas": 0.437,
         "canvasToScreen": 1.312,
-        "sourceToScreen": 0.516
+        "sourceToScreen": 0.574
        },
        "after": {
         "renderDpr": 2.625,
-        "canvasW": 782,
-        "physicalW": 782,
-        "texToCanvas": 0.516,
+        "canvasW": 869,
+        "physicalW": 869,
+        "texToCanvas": 0.574,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 0.516
+        "sourceToScreen": 0.574
        }
       },
       {
        "screen": "Android 1080×2400 (densité 3)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 520,
-        "physicalW": 781,
-        "texToCanvas": 0.344,
+        "canvasW": 579,
+        "physicalW": 868,
+        "texToCanvas": 0.382,
         "canvasToScreen": 1.5,
-        "sourceToScreen": 0.515
+        "sourceToScreen": 0.573
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 781,
-        "physicalW": 781,
-        "texToCanvas": 0.515,
+        "canvasW": 868,
+        "physicalW": 868,
+        "texToCanvas": 0.573,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 0.515
+        "sourceToScreen": 0.573
        }
       },
       {
        "screen": "Android 1440×3120 (densité 3,5)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 596,
-        "physicalW": 1042,
-        "texToCanvas": 0.393,
+        "canvasW": 662,
+        "physicalW": 1159,
+        "texToCanvas": 0.437,
         "canvasToScreen": 1.75,
-        "sourceToScreen": 0.688
+        "sourceToScreen": 0.765
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 893,
-        "physicalW": 1042,
-        "texToCanvas": 0.59,
+        "canvasW": 993,
+        "physicalW": 1159,
+        "texToCanvas": 0.656,
         "canvasToScreen": 1.167,
-        "sourceToScreen": 0.688
+        "sourceToScreen": 0.765
        }
       }
      ]
@@ -803,7 +803,7 @@
      "w": 1512,
      "h": 628,
      "bytes": 228250,
-     "drawScale": 0.9147,
+     "drawScale": 0.9316,
      "rig": "data/rigs/adult.dragon.flyMid.json",
      "rigExists": true,
      "declared": true,
@@ -812,57 +812,57 @@
        "screen": "Android 1080×2400 (densité 2,625)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 594,
-        "physicalW": 780,
-        "texToCanvas": 0.393,
+        "canvasW": 605,
+        "physicalW": 795,
+        "texToCanvas": 0.4,
         "canvasToScreen": 1.312,
-        "sourceToScreen": 0.516
+        "sourceToScreen": 0.526
        },
        "after": {
         "renderDpr": 2.625,
-        "canvasW": 780,
-        "physicalW": 780,
-        "texToCanvas": 0.516,
+        "canvasW": 795,
+        "physicalW": 795,
+        "texToCanvas": 0.526,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 0.516
+        "sourceToScreen": 0.526
        }
       },
       {
        "screen": "Android 1080×2400 (densité 3)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 519,
-        "physicalW": 779,
-        "texToCanvas": 0.344,
+        "canvasW": 529,
+        "physicalW": 794,
+        "texToCanvas": 0.35,
         "canvasToScreen": 1.5,
-        "sourceToScreen": 0.515
+        "sourceToScreen": 0.525
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 779,
-        "physicalW": 779,
-        "texToCanvas": 0.515,
+        "canvasW": 794,
+        "physicalW": 794,
+        "texToCanvas": 0.525,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 0.515
+        "sourceToScreen": 0.525
        }
       },
       {
        "screen": "Android 1440×3120 (densité 3,5)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 594,
-        "physicalW": 1040,
-        "texToCanvas": 0.393,
+        "canvasW": 605,
+        "physicalW": 1060,
+        "texToCanvas": 0.4,
         "canvasToScreen": 1.75,
-        "sourceToScreen": 0.688
+        "sourceToScreen": 0.701
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 892,
-        "physicalW": 1040,
-        "texToCanvas": 0.59,
+        "canvasW": 908,
+        "physicalW": 1060,
+        "texToCanvas": 0.601,
         "canvasToScreen": 1.167,
-        "sourceToScreen": 0.688
+        "sourceToScreen": 0.701
        }
       }
      ]
@@ -1010,7 +1010,7 @@
      "w": 1522,
      "h": 631,
      "bytes": 242516,
-     "drawScale": 0.9093,
+     "drawScale": 0.7882,
      "rig": "data/rigs/adult.dragon.sleep.json",
      "rigExists": true,
      "declared": true,
@@ -1019,57 +1019,57 @@
        "screen": "Android 1080×2400 (densité 2,625)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 744,
-        "physicalW": 976,
-        "texToCanvas": 0.489,
+        "canvasW": 645,
+        "physicalW": 846,
+        "texToCanvas": 0.423,
         "canvasToScreen": 1.312,
-        "sourceToScreen": 0.641
+        "sourceToScreen": 0.556
        },
        "after": {
         "renderDpr": 2.625,
-        "canvasW": 976,
-        "physicalW": 976,
-        "texToCanvas": 0.641,
+        "canvasW": 846,
+        "physicalW": 846,
+        "texToCanvas": 0.556,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 0.641
+        "sourceToScreen": 0.556
        }
       },
       {
        "screen": "Android 1080×2400 (densité 3)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 650,
-        "physicalW": 975,
-        "texToCanvas": 0.427,
+        "canvasW": 563,
+        "physicalW": 845,
+        "texToCanvas": 0.37,
         "canvasToScreen": 1.5,
-        "sourceToScreen": 0.64
+        "sourceToScreen": 0.555
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 975,
-        "physicalW": 975,
-        "texToCanvas": 0.64,
+        "canvasW": 845,
+        "physicalW": 845,
+        "texToCanvas": 0.555,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 0.64
+        "sourceToScreen": 0.555
        }
       },
       {
        "screen": "Android 1440×3120 (densité 3,5)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 744,
-        "physicalW": 1301,
-        "texToCanvas": 0.489,
+        "canvasW": 645,
+        "physicalW": 1128,
+        "texToCanvas": 0.423,
         "canvasToScreen": 1.75,
-        "sourceToScreen": 0.855
+        "sourceToScreen": 0.741
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 1115,
-        "physicalW": 1301,
-        "texToCanvas": 0.733,
+        "canvasW": 967,
+        "physicalW": 1128,
+        "texToCanvas": 0.635,
         "canvasToScreen": 1.167,
-        "sourceToScreen": 0.855
+        "sourceToScreen": 0.741
        }
       }
      ]
@@ -1129,10 +1129,10 @@
    "poses": {
     "flyDown": {
      "file": "assets/dragon/legendary/dragon_legendary_flyDown.webp",
-     "w": 742,
-     "h": 329,
-     "bytes": 77120,
-     "drawScale": 2.0585,
+     "w": 1515,
+     "h": 974,
+     "bytes": 343404,
+     "drawScale": 0.7923,
      "rig": "data/rigs/legendary.dragon.flyDown.json",
      "rigExists": true,
      "declared": true,
@@ -1141,67 +1141,67 @@
        "screen": "Android 1080×2400 (densité 2,625)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 630,
-        "physicalW": 826,
-        "texToCanvas": 0.848,
+        "canvasW": 495,
+        "physicalW": 649,
+        "texToCanvas": 0.327,
         "canvasToScreen": 1.312,
-        "sourceToScreen": 1.114
+        "sourceToScreen": 0.429
        },
        "after": {
         "renderDpr": 2.625,
-        "canvasW": 826,
-        "physicalW": 826,
-        "texToCanvas": 1.114,
+        "canvasW": 649,
+        "physicalW": 649,
+        "texToCanvas": 0.429,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.114
+        "sourceToScreen": 0.429
        }
       },
       {
        "screen": "Android 1080×2400 (densité 3)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 550,
-        "physicalW": 825,
-        "texToCanvas": 0.741,
+        "canvasW": 432,
+        "physicalW": 648,
+        "texToCanvas": 0.285,
         "canvasToScreen": 1.5,
-        "sourceToScreen": 1.112
+        "sourceToScreen": 0.428
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 825,
-        "physicalW": 825,
-        "texToCanvas": 1.112,
+        "canvasW": 648,
+        "physicalW": 648,
+        "texToCanvas": 0.428,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.112
+        "sourceToScreen": 0.428
        }
       },
       {
        "screen": "Android 1440×3120 (densité 3,5)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 630,
-        "physicalW": 1102,
-        "texToCanvas": 0.848,
+        "canvasW": 495,
+        "physicalW": 866,
+        "texToCanvas": 0.327,
         "canvasToScreen": 1.75,
-        "sourceToScreen": 1.485
+        "sourceToScreen": 0.571
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 944,
-        "physicalW": 1102,
-        "texToCanvas": 1.273,
+        "canvasW": 742,
+        "physicalW": 866,
+        "texToCanvas": 0.49,
         "canvasToScreen": 1.167,
-        "sourceToScreen": 1.485
+        "sourceToScreen": 0.571
        }
       }
      ]
     },
     "flyUp": {
      "file": "assets/dragon/legendary/dragon_legendary_flyUp.webp",
-     "w": 742,
-     "h": 287,
-     "bytes": 86218,
-     "drawScale": 2.0585,
+     "w": 1515,
+     "h": 977,
+     "bytes": 397738,
+     "drawScale": 0.9527,
      "rig": "data/rigs/legendary.dragon.flyUp.json",
      "rigExists": true,
      "declared": true,
@@ -1210,57 +1210,57 @@
        "screen": "Android 1080×2400 (densité 2,625)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 630,
-        "physicalW": 826,
-        "texToCanvas": 0.848,
+        "canvasW": 595,
+        "physicalW": 781,
+        "texToCanvas": 0.393,
         "canvasToScreen": 1.312,
-        "sourceToScreen": 1.114
+        "sourceToScreen": 0.515
        },
        "after": {
         "renderDpr": 2.625,
-        "canvasW": 826,
-        "physicalW": 826,
-        "texToCanvas": 1.114,
+        "canvasW": 781,
+        "physicalW": 781,
+        "texToCanvas": 0.515,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.114
+        "sourceToScreen": 0.515
        }
       },
       {
        "screen": "Android 1080×2400 (densité 3)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 550,
-        "physicalW": 825,
-        "texToCanvas": 0.741,
+        "canvasW": 520,
+        "physicalW": 780,
+        "texToCanvas": 0.343,
         "canvasToScreen": 1.5,
-        "sourceToScreen": 1.112
+        "sourceToScreen": 0.515
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 825,
-        "physicalW": 825,
-        "texToCanvas": 1.112,
+        "canvasW": 780,
+        "physicalW": 780,
+        "texToCanvas": 0.515,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.112
+        "sourceToScreen": 0.515
        }
       },
       {
        "screen": "Android 1440×3120 (densité 3,5)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 630,
-        "physicalW": 1102,
-        "texToCanvas": 0.848,
+        "canvasW": 595,
+        "physicalW": 1041,
+        "texToCanvas": 0.393,
         "canvasToScreen": 1.75,
-        "sourceToScreen": 1.485
+        "sourceToScreen": 0.687
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 944,
-        "physicalW": 1102,
-        "texToCanvas": 1.273,
+        "canvasW": 892,
+        "physicalW": 1041,
+        "texToCanvas": 0.589,
         "canvasToScreen": 1.167,
-        "sourceToScreen": 1.485
+        "sourceToScreen": 0.687
        }
       }
      ]
@@ -1336,10 +1336,10 @@
     },
     "sleep": {
      "file": "assets/dragon/legendary/dragon_legendary_sleep.webp",
-     "w": 760,
-     "h": 348,
-     "bytes": 112722,
-     "drawScale": 1.8001,
+     "w": 1522,
+     "h": 780,
+     "bytes": 397800,
+     "drawScale": 0.9483,
      "rig": "data/rigs/legendary.dragon.sleep.json",
      "rigExists": true,
      "declared": true,
@@ -1348,57 +1348,57 @@
        "screen": "Android 1080×2400 (densité 2,625)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 705,
-        "physicalW": 925,
-        "texToCanvas": 0.927,
+        "canvasW": 744,
+        "physicalW": 976,
+        "texToCanvas": 0.489,
         "canvasToScreen": 1.312,
-        "sourceToScreen": 1.217
+        "sourceToScreen": 0.641
        },
        "after": {
         "renderDpr": 2.625,
-        "canvasW": 925,
-        "physicalW": 925,
-        "texToCanvas": 1.217,
+        "canvasW": 976,
+        "physicalW": 976,
+        "texToCanvas": 0.641,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.217
+        "sourceToScreen": 0.641
        }
       },
       {
        "screen": "Android 1080×2400 (densité 3)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 616,
-        "physicalW": 924,
-        "texToCanvas": 0.81,
+        "canvasW": 650,
+        "physicalW": 975,
+        "texToCanvas": 0.427,
         "canvasToScreen": 1.5,
-        "sourceToScreen": 1.215
+        "sourceToScreen": 0.64
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 924,
-        "physicalW": 924,
-        "texToCanvas": 1.215,
+        "canvasW": 975,
+        "physicalW": 975,
+        "texToCanvas": 0.64,
         "canvasToScreen": 1.0,
-        "sourceToScreen": 1.215
+        "sourceToScreen": 0.64
        }
       },
       {
        "screen": "Android 1440×3120 (densité 3,5)",
        "before": {
         "renderDpr": 2.0,
-        "canvasW": 705,
-        "physicalW": 1233,
-        "texToCanvas": 0.927,
+        "canvasW": 744,
+        "physicalW": 1301,
+        "texToCanvas": 0.489,
         "canvasToScreen": 1.75,
-        "sourceToScreen": 1.623
+        "sourceToScreen": 0.855
        },
        "after": {
         "renderDpr": 3.0,
-        "canvasW": 1057,
-        "physicalW": 1233,
-        "texToCanvas": 1.391,
+        "canvasW": 1115,
+        "physicalW": 1301,
+        "texToCanvas": 0.733,
         "canvasToScreen": 1.167,
-        "sourceToScreen": 1.623
+        "sourceToScreen": 0.855
        }
       }
      ]
