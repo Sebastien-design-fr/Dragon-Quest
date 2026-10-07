@@ -1,5 +1,5 @@
 {
-  "note": "Stades d'évolution. minLevel = niveau à partir duquel le stade est atteint. Ajouter un stade = une entrée ici + son rig.",
+  "note": "Stades d'évolution. minLevel = niveau à partir duquel le stade est atteint. displayScale donne une vraie croissance visuelle dans une scène commune ; sizeMeters est une taille indicative. Ajouter un stade = une entrée ici + son rig.",
   "stages": [
     {
       "id": "baby",
@@ -7,7 +7,9 @@
       "tagline": "Mignon mais puissant",
       "minLevel": 1,
       "rig": "data/rigs/baby.sprite.json",
-      "permanentEffects": []
+      "permanentEffects": [],
+      "displayScale": 0.72,
+      "sizeMeters": 0.8
     },
     {
       "id": "young",
@@ -15,7 +17,9 @@
       "tagline": "Élancé et agile",
       "minLevel": 6,
       "rig": "data/rigs/young.sprite.json",
-      "permanentEffects": []
+      "permanentEffects": [],
+      "displayScale": 0.86,
+      "sizeMeters": 1.6
     },
     {
       "id": "adult",
@@ -23,7 +27,9 @@
       "tagline": "Massif et imposant",
       "minLevel": 15,
       "rig": "data/rigs/adult.sprite.json",
-      "permanentEffects": []
+      "permanentEffects": [],
+      "displayScale": 1,
+      "sizeMeters": 3
     },
     {
       "id": "legendary",
@@ -34,7 +40,9 @@
       "permanentEffects": [
         "legendaryAura",
         "legendaryGold"
-      ]
+      ],
+      "displayScale": 1.12,
+      "sizeMeters": 4.2
     }
   ],
   "xp": {
