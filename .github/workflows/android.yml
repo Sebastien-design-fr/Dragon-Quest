@@ -108,12 +108,12 @@ jobs:
           make_latest: false
           files: dragon-mission.apk
 
-      - name: APK séparé Lumia
+      - name: APK Dragon Mission consolidé
         if: github.ref == 'refs/heads/lumia-test'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: dragon-mission-test
-          name: Dragon Mission 0.18 — application séparée (build ${{ github.run_number }})
+          name: Dragon Mission 0.19 — version consolidée (build ${{ github.run_number }})
           prerelease: true
           make_latest: false
           files: dragon-mission.apk
