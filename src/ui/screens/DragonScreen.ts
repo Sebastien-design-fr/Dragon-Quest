@@ -9,6 +9,7 @@ import { todayKey } from '../../family/model.js';
 import { fill, journeyFor, landmarks } from '../../family/Expedition.js';
 import { openLair } from '../Lair.js';
 import { shareCard } from '../ShareCard.js';
+import { sayFor } from '../../family/Thoughts.js';
 
 export class DragonScreen implements Screen {
   id = 'dragon'; label = 'Dragon'; icon = ICONS.dragon;
@@ -147,6 +148,14 @@ export class DragonScreen implements Screen {
       }, app.careMode === 'wash' ? 'on' : ''),
       btn('Jouer', ICONS.game, () => void this.play(comp, doneToday), playState === 'ok' ? 'glow' : 'dim'),
       btn(app.sleeping ? 'Réveiller' : evening ? 'Coucher' : 'Sieste', ICONS.moon, () => app.toggleSleep(), app.sleeping ? 'on' : ''),
+      btn('Voler', ICONS.wing, () => {
+        if (app.sleeping) { app.toast('Il dort… réveille-le d’abord'); return; }
+        void app.act('hover');
+      }, app.sleeping ? 'dim' : ''),
+      btn('Câlin', ICONS.hand, () => {
+        if (app.sleeping) { app.toast('Chut… il dort'); return; }
+        comp.pet(); void app.act('pet'); app.say(sayFor('pet'), null, 2500);
+      }),
       btn('Tours', ICONS.spark, () => this.tricksSheet(comp)),
       btn('Album', ICONS.album, () => this.albumSheet(comp))));
     out.push(h('p', { class: 'small muted care-hint' }, app.careMode === 'wash'
