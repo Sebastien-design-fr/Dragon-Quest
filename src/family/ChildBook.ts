@@ -13,7 +13,7 @@ import { fill, journeyFor, landmarks, weekKey } from './Expedition.js';
 import type { Reminders } from './Reminders.js';
 import type { Companion } from './Companion.js';
 import { missionLine } from './Thoughts.js';
-import { ENERGY, EMPTY_STATS, PENALTY, badgeProgress, xpMultiplier, type BadgeDef, type ChildStats, type Severity } from './badges.js';
+import { ENERGY, EMPTY_STATS, badgeProgress, type BadgeDef, type ChildStats, type Severity } from './badges.js';
 
 interface DayRecord { date: string; status: MissionStatus; requestId?: string }
 interface BookData {
@@ -23,7 +23,7 @@ interface BookData {
   history: Array<{ at: number; text: string }>;
   streakDays: string[]; // jours où toutes les missions du jour ont été faites
   seeded: boolean;
-  /** Énergie du dragon (0-100) : baisse avec les missions oubliées, remonte avec les missions faites. */
+  /** Énergie du dragon (0-100) : indicateur positif, restauré par les missions et les journées parfaites. */
   energy: number;
   /** Dernier jour dont le bilan (missions oubliées) a été fait. */
   lastSettled: string;
@@ -72,7 +72,13 @@ export class ChildBook {
     };
     const saved = readStore<Partial<BookData>>(KEY, {});
     this.data = { ...defaults, ...saved, stats: { ...defaults.stats, ...(saved.stats ?? {}) } };
-    if (this.data.confiscated) state.locked.add(this.data.confiscated.id);
+    // Migration v0.18 : aucune sanction ne doit survivre à la mise à jour.
+    if (this.data.confiscated) state.locked.delete(this.data.confiscated.id);
+    this.data.confiscated = null;
+    this.data.lastPenalty = null;
+    this.data.missStreak = 0;
+    this.data.energy = ENERGY.max;
+    this.companion?.setSick(false);
   }
 
   async init(): Promise<void> {
@@ -197,21 +203,22 @@ export class ChildBook {
   companion: Companion | null = null;
 
   /**
-   * Crédite une récompense. Pour une mission (mission = true), l'XP est modulé par l'énergie
-   * du dragon AVANT que la mission ne la fasse remonter : un dragon épuisé ne gagne pas d'XP
-   * sur la mission qui le relance. Retourne le texte de la récompense obtenue.
+   * Crédite une récompense. La progression est volontairement positive :
+   * l'énergie et l'humeur ne réduisent jamais l'XP gagné.
    */
   private reward(xp: number, gold: number, mission = false): string {
-    const mult = mission ? xpMultiplier(this.data.energy) : 1;
-    const care = mission && mult > 0 ? this.companion?.xpBonus() ?? 1 : 1;
-    const gainedXp = Math.round(xp * mult * care);
+    const care = mission ? this.companion?.xpBonus() ?? 1 : 1;
+    const gainedXp = Math.round(xp * care);
     if (gold) this.state.addGold(gold);
     if (gainedXp) this.state.addXp(gainedXp);
-    if (mission) { this.data.energy = Math.min(ENERGY.max, this.data.energy + ENERGY.perMission); this.companion?.onMission(); }
+    if (mission) {
+      this.data.energy = Math.min(ENERGY.max, this.data.energy + ENERGY.perMission);
+      this.companion?.onMission();
+    }
     if (gainedXp || gold) this.events.emit('reward', { xp: gainedXp, gold, mission });
-    const text = (rewardText(gainedXp, gold) || 'aucune récompense') + (mission ? ', +1 ration' : '') + (care > 1 ? ' (dragon heureux : XP +10 %)' : '');
-    if (mission && mult < 1) return mult === 0 ? `${text} (dragon épuisé : pas d’XP, il reprend des forces)` : `${text} (dragon fatigué : XP × ${String(mult).replace('.', ',')})`;
-    return text;
+    return (rewardText(gainedXp, gold) || 'aucune récompense')
+      + (mission ? ', +1 ration' : '')
+      + (care > 1 ? ' (dragon heureux : XP +10 %)' : '');
   }
 
   /** Statistiques pour les badges. */
@@ -256,14 +263,16 @@ export class ChildBook {
     return this.badgeDefs.find(b => b.id === this.data.title)?.title ?? null;
   }
 
-  // ---------- Bilan quotidien (malus) ----------
-  /** Fait le bilan des jours passés : chaque mission oubliée (ou refusée) fait baisser l'énergie. */
+  // ---------- Bilan quotidien ----------
+  /**
+   * Les missions oubliées sont enregistrées pour le bilan familial, sans retirer
+   * d'XP, d'or, d'énergie, d'humeur ou d'équipement. Le seul enjeu est de
+   * conserver les bonus de série et de journée parfaite.
+   */
   private settle(): void {
     const today = todayKey();
     const d = parseKey(this.data.lastSettled);
     d.setDate(d.getDate() + 1);
-    const rule = PENALTY[this.data.severity] ?? PENALTY.normal;
-    const sum = { missed: [] as string[], xp: 0, gold: 0, energy: 0, days: 0 };
     let guard = 0;
     while (todayKey(d) < today && guard++ < 60) {
       const key = todayKey(d);
@@ -272,43 +281,22 @@ export class ChildBook {
         const r = this.data.records[m.id];
         return !(r && r.date === key && (r.status === 'done' || r.status === 'pending'));
       });
-      if (missed.length && this.data.shields > 0 && this.streakBefore(key) >= 3) {
-        this.data.shields--;
-        this.data.streakDays.push(key);
-        this.log(`Bouclier utilisé le ${key} : ta série est sauvée`);
-        this.events.emit('toast', 'Ton bouclier a protégé ta série !');
-      }
       if (missed.length) {
-        const loss = Math.min(ENERGY.dailyCap, missed.length * ENERGY.missedPenalty);
-        this.data.energy = Math.max(0, this.data.energy - loss);
-        // Sanctions : XP et or des missions oubliées, humeur du dragon.
-        const xp = Math.round(missed.reduce((a, m) => a + m.xp, 0) * rule.xp);
-        const gold = Math.min(rule.goldCap, Math.round(missed.reduce((a, m) => a + m.gold, 0) * rule.gold));
-        const lostXp = xp ? this.state.removeXp(xp, rule.levelLoss) : 0;
-        const before = this.state.data.gold;
-        if (gold) this.state.addGold(-gold);
-        const lostGold = before - this.state.data.gold;
-        this.companion?.punish(Math.min(45, missed.length * rule.mood));
-        this.data.missStreak++;
         this.data.stats.missed = (this.data.stats.missed ?? 0) + missed.length;
         const label = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' });
-        this.log(`Bilan du ${label} : ${missed.map(m => m.title).join(', ')} oublié${missed.length > 1 ? 's' : ''} — −${lostXp} XP, −${lostGold} or, énergie −${loss}`);
-        sum.missed.push(...missed.map(m => m.title)); sum.xp += lostXp; sum.gold += lostGold; sum.energy += loss; sum.days++;
-        if (this.data.missStreak >= rule.sickAfter) this.companion?.setSick(true);
-        if (rule.confiscateAfter && this.data.missStreak >= rule.confiscateAfter) this.confiscate();
-      } else if (due.length) {
-        this.data.missStreak = 0;
+        this.log(`Bilan du ${label} : ${missed.length} mission${missed.length > 1 ? 's' : ''} non faite${missed.length > 1 ? 's' : ''} — aucune pénalité`);
       }
       d.setDate(d.getDate() + 1);
     }
     this.data.lastSettled = yesterdayKey();
-    if (sum.days) {
-      this.data.lastPenalty = { date: today, missed: [...new Set(sum.missed)], xp: sum.xp, gold: sum.gold };
-      this.events.emit('toast', `Missions oubliées : −${sum.xp} XP, −${sum.gold} or`);
-      const who = this.name();
-      void this.link.send('parents', 'penalty', { ...this.data.lastPenalty, days: sum.days, sick: this.companion?.data.sick ?? false },
-        { title: `${who} a oublié des missions`, body: `${[...new Set(sum.missed)].join(', ')} : −${sum.xp} XP, −${sum.gold} or`, tag: 'penalty-' + today, channel: 'missions' });
+    this.data.lastPenalty = null;
+    this.data.missStreak = 0;
+    this.data.energy = ENERGY.max;
+    if (this.data.confiscated) {
+      this.state.locked.delete(this.data.confiscated.id);
+      this.data.confiscated = null;
     }
+    if (this.companion?.data.sick) this.companion.setSick(false);
   }
 
   /** Série en cours juste avant le jour donné. */
@@ -407,40 +395,10 @@ export class ChildBook {
     return [{ key: 'recap-' + w.key, at, body: `Notre semaine : ${parts.join(', ')}.${bond ? ` Notre amitié : ${bond}.` : ''} Merci d’être là !` }];
   }
 
-  /** Sanction stricte : l'équipement le plus précieux est confisqué jusqu'à une journée parfaite. */
-  private confiscate(): void {
-    if (this.data.confiscated) return;
-    const order = ['legendary', 'epic', 'rare', 'common'];
-    const defs = this.state.equippedDefs().sort((a, b) => order.indexOf(a.rarity) - order.indexOf(b.rarity));
-    const def = defs[0];
-    if (!def) return;
-    this.data.confiscated = { id: def.id, category: def.category };
-    this.state.locked.add(def.id);
-    this.state.unequip(def.category);
-    this.log(`Confisqué : ${def.name} (rendu après une journée où toutes les missions sont faites)`);
-    this.events.emit('toast', `${def.name} confisqué jusqu’à une journée parfaite`);
-  }
-
-  /** Journée parfaite : le dragon guérit, l'objet confisqué est rendu. */
-  private forgive(): void {
-    this.data.missStreak = 0;
-    if (this.companion?.data.sick) { this.companion.setSick(false); this.events.emit('toast', 'Ton dragon est guéri !'); }
-    const c = this.data.confiscated;
-    if (c) {
-      this.state.locked.delete(c.id);
-      this.data.confiscated = null;
-      this.log('Objet confisqué rendu');
-      this.events.emit('toast', 'Ton équipement confisqué t’est rendu !');
-    }
-  }
-
-  severityRule() { return PENALTY[this.data.severity] ?? PENALTY.normal; }
-
-  /** Ce que coûteraient les missions encore à faire aujourd'hui si elles étaient oubliées. */
+  /** Missions encore à faire aujourd'hui : aucune perte, seulement des bonus à gagner. */
   pendingCost(): { count: number; xp: number; gold: number } {
-    const rule = this.severityRule();
-    const left = this.today().filter(t => (t.status === 'todo' || t.status === 'refused') && !t.mission.once).map(t => t.mission);
-    return { count: left.length, xp: Math.round(left.reduce((a, m) => a + m.xp, 0) * rule.xp), gold: Math.min(rule.goldCap, Math.round(left.reduce((a, m) => a + m.gold, 0) * rule.gold)) };
+    const left = this.today().filter(t => (t.status === 'todo' || t.status === 'refused') && !t.mission.once);
+    return { count: left.length, xp: 0, gold: 0 };
   }
 
   private afterCompletion(m: Mission): void {
@@ -459,7 +417,6 @@ export class ChildBook {
         this.data.stats.maxStreak = Math.max(this.data.stats.maxStreak, s);
         this.data.energy = Math.min(ENERGY.max, this.data.energy + ENERGY.perfectDayBonus);
         this.companion?.onPerfectDay();
-        this.forgive();
         this.data.gems += 2;
         this.rollWeek(); this.data.week.perfect++;
         if (s > 0 && s % 7 === 0 && this.data.shields < 2) { this.data.shields++; this.events.emit('toast', 'Bouclier de série gagné : il protégera ta série un jour d’oubli.'); }
@@ -605,12 +562,9 @@ export class ChildBook {
         return true;
       }
       case 'warning': {
-        // Avertissement d'un parent : retire de l'or (plafonné) et de l'énergie. Jamais de niveau ni d'objet.
-        const gold = Math.min(50, Math.max(0, Number(p.gold) || 0));
-        this.state.addGold(-gold);
-        this.data.energy = Math.max(0, this.data.energy - ENERGY.warningPenalty);
+        // Compatibilité avec d'anciens messages : un avertissement est désormais informatif.
         this.data.stats.warnings++;
-        const text = `Avertissement de ${by} : −${gold} or${p.reason ? ` — « ${p.reason} »` : ''}`;
+        const text = `Message de ${by}${p.reason ? ` — « ${p.reason} »` : ''}`;
         this.log(text);
         this.events.emit('toast', text);
         return true;
@@ -620,14 +574,9 @@ export class ChildBook {
         this.data.rewards = (p.rewards as Reward[]).filter(r => r && r.id && r.title).slice(0, 30);
         return true;
       }
-      case 'rules': {
-        const sev = p.severity as Severity;
-        if (!PENALTY[sev] || sev === this.data.severity) return false;
-        this.data.severity = sev;
-        this.log(`Sanctions réglées sur « ${PENALTY[sev].label} » par ${by}`);
-        this.events.emit('toast', `Sanctions des missions oubliées : ${PENALTY[sev].label}`);
-        return true;
-      }
+      case 'rules':
+        // Anciennes règles de sanctions ignorées depuis v0.18.
+        return false;
       case 'treat': {
         this.companion?.onTreat(by);
         this.log(`Friandise envoyée par ${by}${p.message ? ` — « ${p.message} »` : ''}`);
