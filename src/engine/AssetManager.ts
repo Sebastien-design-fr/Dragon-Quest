@@ -10,7 +10,7 @@ import { loadJSON } from '../core/data.js';
 import type { EquipmentDef, StageId } from '../core/types.js';
 
 export type Img = HTMLImageElement | ImageBitmap;
-const EXTENSIONS = ['webp', 'png', 'jpg'];
+const EXTENSIONS = ['svg', 'webp', 'png', 'jpg'];
 
 interface Entry { refs: number; promise: Promise<Img | null>; image: Img | null }
 
@@ -89,6 +89,16 @@ class AssetManagerImpl {
 }
 
 async function loadImage(path: string): Promise<Img> {
+  // Les dragons Dragon Mission utilisent des SVG : Android WebView les charge plus
+  // fiablement via HTMLImageElement que via createImageBitmap(blob).
+  if (path.toLowerCase().endsWith('.svg')) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = path;
+    });
+  }
   if ('createImageBitmap' in window) {
     const res = await fetch(path);
     if (!res.ok) throw new Error(path);
