@@ -1,0 +1,257 @@
+/* Dragon Mission 0.19.2 — identité visuelle froide et interface mobile consolidée.
+   Chargé EN DERNIER pour ne plus hériter de l'ancien thème noir/or de Quête du Dragon. */
+:root {
+  --bg: #10182d;
+  --panel: rgba(25, 38, 70, .92);
+  --panel-2: rgba(34, 51, 90, .96);
+  --line: rgba(126, 177, 255, .22);
+  --gold: #f2c96d;
+  --gold-soft: #ffe8ad;
+  --text: #f5f8ff;
+  --muted: #aebbd3;
+  --danger: #ff7185;
+  --mission-blue: #74d4ff;
+  --mission-cyan: #70f0df;
+  --mission-violet: #a98cff;
+  --mission-deep: #0e1730;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% -8%, rgba(116, 212, 255, .28), transparent 34%),
+    radial-gradient(circle at 88% 16%, rgba(169, 140, 255, .23), transparent 31%),
+    linear-gradient(180deg, #152446 0%, #101a35 48%, #0d162c 100%);
+  color: var(--text);
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+#app {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-rows: auto minmax(235px, 42dvh) minmax(0, 1fr) auto;
+  background:
+    radial-gradient(circle at 50% 13%, rgba(84, 151, 255, .09), transparent 38%),
+    transparent;
+}
+
+#app.stage-tall {
+  grid-template-rows: auto minmax(270px, 47dvh) minmax(0, 1fr) auto !important;
+}
+#app.stage-compact {
+  grid-template-rows: auto minmax(180px, 30dvh) minmax(0, 1fr) auto !important;
+}
+
+/* Correctif essentiel Android : le 3e item de la grille doit pouvoir rétrécir,
+   sinon le conteneur flex grandit et overflow-y ne défile jamais. */
+.screen {
+  min-height: 0 !important;
+  height: 100%;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  touch-action: pan-y !important;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+}
+.screen > * {
+  flex-shrink: 0;
+}
+
+/* HUD : plus de barre noire/or. */
+.hud {
+  position: relative;
+  z-index: 12;
+  border-bottom: 1px solid rgba(116, 212, 255, .16);
+  background:
+    linear-gradient(135deg, rgba(33, 55, 96, .97), rgba(20, 31, 59, .97));
+  box-shadow: 0 10px 26px rgba(3, 9, 24, .28);
+}
+.brand-mark {
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(116, 212, 255, .22), 0 7px 18px rgba(3, 9, 24, .3);
+}
+.hud-stage { color: #eaf8ff; }
+.hud-level, .hud-xp-label { color: #a9bbd8; }
+.hud .bar { background: rgba(5, 12, 31, .42); }
+.hud .fill {
+  background: linear-gradient(90deg, var(--mission-cyan), var(--mission-blue), var(--mission-violet));
+  box-shadow: 0 0 12px rgba(116, 212, 255, .25);
+}
+
+/* Scène dragon : bleu nuit lumineux, pas noir. */
+.stage-view {
+  border-bottom: 1px solid rgba(116, 212, 255, .16) !important;
+  background:
+    radial-gradient(85% 70% at 50% 78%, rgba(86, 161, 215, .24), transparent 62%),
+    radial-gradient(55% 70% at 82% 18%, rgba(154, 105, 255, .18), transparent 68%),
+    linear-gradient(180deg, #223a67 0%, #172b50 52%, #101c38 100%) !important;
+}
+.stage-view::after {
+  background:
+    linear-gradient(180deg, rgba(5, 11, 28, .04), transparent 33%, transparent 72%, rgba(5, 12, 30, .22)),
+    radial-gradient(80% 52% at 50% 82%, transparent 46%, rgba(5, 12, 30, .10) 100%) !important;
+}
+
+/* Cartes : verre bleu/violet, bordure froide et très discrète. */
+.card, .list-row, .item, .action, .ds-today, .ds-tool,
+.q-card, .ph-card, .ph-day, .ph-activity, .cp-item {
+  border-color: rgba(124, 181, 255, .18) !important;
+  background:
+    radial-gradient(120% 110% at 0% 0%, rgba(112, 168, 255, .10), transparent 55%),
+    linear-gradient(180deg, rgba(34, 51, 90, .94), rgba(24, 37, 68, .96)) !important;
+  box-shadow: 0 10px 26px rgba(3, 9, 24, .18) !important;
+}
+
+.card, .q-card, .cp-item, .ph-card, .ds-today, .ds-tool {
+  border-radius: 18px !important;
+}
+
+h2 { color: #dff7ff; }
+h3 { color: #edf5ff; }
+h4, .muted, .small.muted { color: var(--muted); }
+
+/* Boutons : bleu/cyan au lieu de doré. */
+.btn {
+  border-color: rgba(126, 177, 255, .22) !important;
+  background: linear-gradient(180deg, rgba(47, 69, 116, .98), rgba(31, 48, 83, .98)) !important;
+}
+.btn.primary {
+  color: #081826 !important;
+  border-color: rgba(121, 236, 228, .72) !important;
+  background: linear-gradient(135deg, #7cf0df, #74d4ff) !important;
+  box-shadow: 0 8px 20px rgba(92, 210, 238, .20) !important;
+}
+.btn.ghost { background: rgba(21, 34, 65, .42) !important; }
+
+.action.on, .chip.active, .segmented button.active {
+  border-color: rgba(116, 212, 255, .72) !important;
+  color: #eafcff !important;
+  background: linear-gradient(135deg, rgba(52, 100, 151, .72), rgba(77, 66, 137, .60)) !important;
+}
+
+/* Barre d'actions autour du dragon. */
+.sh-status, .sh-bar, .sh-tray {
+  border-color: rgba(116, 212, 255, .20) !important;
+  background: linear-gradient(180deg, rgba(24, 42, 76, .88), rgba(13, 25, 50, .94)) !important;
+  box-shadow: 0 10px 28px rgba(3, 9, 24, .26) !important;
+}
+.sh-ico {
+  border-color: rgba(116, 212, 255, .18) !important;
+  background: radial-gradient(circle at 35% 30%, #365b8b, #1a2e54 72%) !important;
+}
+.sh-btn.on .sh-ico {
+  border-color: rgba(112, 240, 223, .65) !important;
+  background: radial-gradient(circle at 35% 30%, #286c73, #17384f 72%) !important;
+  box-shadow: 0 0 16px rgba(112, 240, 223, .25) !important;
+}
+.sh-lbl, .sh-name strong { color: #edf8ff !important; }
+
+/* Navigation inférieure : bleue, active cyan. */
+.tabs {
+  border-top: 1px solid rgba(116, 212, 255, .16) !important;
+  background: linear-gradient(180deg, rgba(19, 32, 60, .98), rgba(12, 22, 44, .995)) !important;
+  box-shadow: 0 -10px 26px rgba(3, 9, 24, .22) !important;
+}
+.tab { color: #91a6c7 !important; }
+.tab.active {
+  color: #79e9ed !important;
+  text-shadow: 0 0 16px rgba(112, 240, 223, .32) !important;
+}
+
+/* Missions. L'or reste réservé à la monnaie/récompenses. */
+.q-today, .q-bonus {
+  border-color: rgba(118, 174, 255, .20) !important;
+  background:
+    radial-gradient(130% 100% at 0% 0%, rgba(83, 146, 235, .15), transparent 58%),
+    linear-gradient(180deg, rgba(32, 50, 89, .96), rgba(21, 34, 65, .98)) !important;
+}
+.q-card::before {
+  background: linear-gradient(180deg, var(--mission-cyan), var(--mission-blue), var(--mission-violet)) !important;
+}
+.q-chip {
+  border-color: rgba(126, 177, 255, .16) !important;
+  background: rgba(8, 20, 43, .46) !important;
+}
+.q-chip.or, .gold, .item-price, .price { color: var(--gold) !important; }
+
+/* Boutique / profil. */
+.cp-seg {
+  border-bottom-color: rgba(116, 212, 255, .14) !important;
+  background: rgba(15, 28, 54, .94) !important;
+}
+.cp-shop-hero, .cp-hero {
+  border-color: rgba(137, 157, 255, .24) !important;
+  background:
+    radial-gradient(115% 130% at 100% 0%, rgba(169, 140, 255, .23), transparent 50%),
+    linear-gradient(145deg, rgba(36, 58, 101, .98), rgba(22, 35, 68, .98)) !important;
+}
+.cp-shop-kicker { color: #8deef0 !important; }
+.cp-shop-gold {
+  border-color: rgba(242, 201, 109, .28) !important;
+  background: rgba(12, 25, 49, .62) !important;
+}
+
+/* Parent et visite : violet/bleu, distinct de l'enfant. */
+.ph-hero, .friend-card {
+  border-color: rgba(177, 145, 255, .27) !important;
+  background:
+    radial-gradient(120% 110% at 100% 0%, rgba(168, 117, 255, .20), transparent 56%),
+    linear-gradient(180deg, rgba(39, 47, 91, .96), rgba(24, 33, 66, .98)) !important;
+}
+.visit-panel {
+  border-color: rgba(116, 212, 255, .28) !important;
+  background: linear-gradient(180deg, rgba(30, 49, 88, .93), rgba(16, 29, 57, .96)) !important;
+}
+
+/* Grotte : panneau bleu sombre, les lumières du décor restent colorées. */
+.lair { background: #101a32 !important; }
+.lair-top, .lair-info {
+  border-color: rgba(116, 212, 255, .20) !important;
+  background: rgba(17, 32, 62, .76) !important;
+}
+.lair-panel {
+  border-top-color: rgba(116, 212, 255, .22) !important;
+  background: linear-gradient(180deg, rgba(25, 43, 78, .94), rgba(14, 28, 55, .99)) !important;
+}
+.decor {
+  border-color: rgba(126, 177, 255, .17) !important;
+  background: linear-gradient(180deg, rgba(39, 59, 101, .96), rgba(25, 40, 74, .97)) !important;
+}
+
+/* Premier lancement. */
+.setup-card {
+  border-color: rgba(116, 212, 255, .24) !important;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(94, 164, 255, .18), transparent 55%),
+    linear-gradient(180deg, rgba(32, 52, 91, .98), rgba(20, 34, 66, .99)) !important;
+}
+.role-btn {
+  border-color: rgba(126, 177, 255, .20) !important;
+  background: linear-gradient(155deg, rgba(44, 67, 111, .98), rgba(26, 43, 78, .98)) !important;
+  color: #dff7ff !important;
+}
+.role-btn:focus-visible, .role-btn:hover { border-color: #74d4ff !important; }
+
+/* Inputs / segments. */
+input[type=text], input[type=number], input[type=time], select {
+  color: #eef6ff !important;
+  border-color: rgba(126, 177, 255, .20) !important;
+  background: rgba(19, 34, 65, .86) !important;
+}
+.segmented { background: rgba(11, 24, 50, .64) !important; }
+
+/* Mobile compact : encore plus d'espace utile au scroll. */
+@media (max-height: 760px) {
+  #app.stage-tall {
+    grid-template-rows: auto minmax(225px, 40dvh) minmax(0, 1fr) auto !important;
+  }
+  .screen { padding-top: 10px; gap: 10px; }
+}
