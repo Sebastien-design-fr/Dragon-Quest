@@ -1,6 +1,6 @@
 {
-  "appId": "fr.lumia.gardiens",
-  "appName": "Lumia",
+  "appId": "fr.dragonmission.app",
+  "appName": "Dragon Mission",
   "webDir": "www",
   "android": {
     "backgroundColor": "#0b0a0d"
