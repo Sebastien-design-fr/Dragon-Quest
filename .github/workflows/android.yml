@@ -7,7 +7,7 @@ name: Android APK
 
 on:
   push:
-    branches: [main, dev, visual-engine-upgrade, v1-polish]
+    branches: [main, dev, visual-engine-upgrade, v1-polish, lumia-test]
     tags: ['v*']
   workflow_dispatch:
 
@@ -104,6 +104,16 @@ jobs:
         with:
           tag_name: v1-polish-test
           name: Quête du Dragon 0.18 — test (build ${{ github.run_number }})
+          prerelease: true
+          make_latest: false
+          files: quete-du-dragon.apk
+
+      - name: APK séparé Lumia
+        if: github.ref == 'refs/heads/lumia-test'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: lumia-test
+          name: Lumia 0.18 — application séparée (build ${{ github.run_number }})
           prerelease: true
           make_latest: false
           files: quete-du-dragon.apk
