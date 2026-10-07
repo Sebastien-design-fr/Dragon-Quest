@@ -54,6 +54,12 @@ export class ChestScreen implements Screen {
   private shop(el: HTMLElement): void {
     const { app } = this;
     const s = app.state;
+    el.append(h('section', { class: 'cp-shop-hero' },
+      h('span', { class: 'cp-shop-kicker' }, 'TRÉSOR DU DRAGON'),
+      h('div', { class: 'row' }, h('div', { class: 'grow' },
+        h('h2', null, 'Boutique'),
+        h('p', { class: 'small muted' }, app.isParent ? 'Personnalise ta dragonne et son univers.' : 'Transforme les récompenses de tes missions en objets pour ton dragon.')),
+        h('div', { class: 'cp-shop-gold' }, icon(ICONS.coin, 17), h('strong', null, s.data.gold.toLocaleString('fr-FR')), h('span', { class: 'small muted' }, 'or'))));
     const active = app.catalog.activeCollections();
     if (active.length) {
       el.append(h('div', { class: 'event-banner', style: { borderColor: active[0].accent, color: active[0].accent } },
