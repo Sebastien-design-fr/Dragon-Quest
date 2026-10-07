@@ -51,15 +51,15 @@ export function thoughts(book: ChildBook | null, c: Companion, childName: string
     }
   }
 
-  // 2. Santé et sanctions
-  if (d.sick) out.push({ id: 'sick', text: 'Je suis malade… si tu fais toutes tes missions aujourd’hui, je guérirai.', action: 'missions', priority: 93 });
-  const lp = book?.data.lastPenalty;
-  if (lp && lp.date === todayKey()) {
-    out.push({ id: 'penalty', text: `Tu as oublié ${lp.missed.slice(0, 2).join(' et ')}${lp.missed.length > 2 ? '…' : ''} J’ai perdu ${lp.xp} XP et ${lp.gold} or. On se rattrape aujourd’hui ?`, action: 'missions', priority: 94 });
-  }
+  // 2. Missions restantes : encouragement uniquement, jamais de perte de progression.
   if (book) {
     const cost = book.pendingCost();
-    if (cost.count && now.getHours() >= 19) out.push({ id: 'evening', text: `Il reste ${cost.count} mission${cost.count > 1 ? 's' : ''}. Si on les oublie, demain je perds ${cost.xp} XP et ${cost.gold} or…`, action: 'missions', priority: 88 });
+    if (cost.count && now.getHours() >= 19) out.push({
+      id: 'evening',
+      text: `Il reste ${cost.count} mission${cost.count > 1 ? 's' : ''}. Encore un petit effort pour gagner les récompenses du jour !`,
+      action: 'missions',
+      priority: 78
+    });
   }
 
   // 3. Besoins
