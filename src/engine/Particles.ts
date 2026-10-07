@@ -5,7 +5,7 @@ import { rand } from '../core/math.js';
 import type { ParticlePreset } from '../core/types.js';
 
 interface P {
-  alive: boolean; x: number; y: number; vx: number; vy: number;
+  alive: boolean; x: number; y: number; vx: number; vy: number; rot: number; vr: number;
   life: number; max: number; size: number; color: string;
   preset: ParticlePreset;
 }
@@ -62,6 +62,8 @@ export class ParticleSystem {
       p.life += dt;
       if (p.life >= p.max) { p.alive = false; continue; }
       p.vy += p.preset.gravity * dt;
+      if (p.preset.drag) { const k = Math.exp(-p.preset.drag * dt); p.vx *= k; p.vy *= k; }
+      p.rot += p.vr * dt;
       p.x += p.vx * dt; p.y += p.vy * dt;
     }
   }
@@ -74,8 +76,17 @@ export class ParticleSystem {
       ctx.globalAlpha = Math.max(0, alpha);
       ctx.globalCompositeOperation = p.preset.blend;
       ctx.fillStyle = p.color;
-      const s = p.size * (p.preset.shape === 'smoke' ? 0.6 + t : 1);
-      if (p.preset.shape === 'spark') {
+      const s = p.size * (p.preset.shape === 'smoke' ? 0.6 + t : 1) * (p.preset.grow !== undefined ? 1 + (p.preset.grow - 1) * t : 1);
+      if (p.preset.shape === 'glow') {
+        // lueur douce pré-rendue (aucun dégradé recalculé)
+        const g = glowSprite(p.color);
+        ctx.drawImage(g, p.x - s * 2, p.y - s * 2, s * 4, s * 4);
+      } else if (p.preset.shape === 'star') {
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.beginPath();
+        for (let k = 0; k < 8; k++) { const r = k % 2 ? s * 0.32 : s; const a = (k * Math.PI) / 4; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+        ctx.closePath(); ctx.fill(); ctx.restore();
+      } else if (p.preset.shape === 'spark') {
         ctx.fillRect(p.x - s / 2, p.y - s * 1.5, s, s * 3);
       } else if (p.preset.shape === 'heart') {
         ctx.beginPath();
@@ -109,6 +120,26 @@ export class ParticleSystem {
     p.x = x + rand(-r, r); p.y = y + rand(-r * 0.6, r * 0.6);
     p.vx = Math.cos(ang) * sp; p.vy = Math.sin(ang) * sp;
     p.size = rand(pr.size[0], pr.size[1]) * scale;
+    p.rot = Math.random() * Math.PI * 2;
+    p.vr = ((pr.spin ?? 0) * Math.PI / 180) * (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.5);
     p.color = pr.colors[(Math.random() * pr.colors.length) | 0];
   }
+}
+
+/** Lueurs pré-rendues par couleur (cache). */
+const glowCache = new Map<string, HTMLCanvasElement>();
+function glowSprite(color: string): HTMLCanvasElement {
+  let c = glowCache.get(color);
+  if (c) return c;
+  c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d')!;
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, color); grd.addColorStop(0.25, color); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.globalAlpha = 1; g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+  // cœur plus clair
+  const core = g.createRadialGradient(32, 32, 0, 32, 32, 10);
+  core.addColorStop(0, 'rgba(255,255,255,0.9)'); core.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = core; g.fillRect(0, 0, 64, 64);
+  glowCache.set(color, c);
+  return c;
 }

@@ -125,3 +125,24 @@
 .rt-cr { right: 0; border-left: 2px solid #2a0a14; }
 .rt-curtain.open .rt-c { transition: transform .6s cubic-bezier(.4,0,.2,1); }
 .rt-curtain .rt-hint { bottom: 50%; }
+
+/* ---------- LOT 5 : réactions ---------- */
+.rx-float { position: absolute; z-index: 6; display: flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; pointer-events: none;
+  font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: .02em; white-space: nowrap; text-shadow: 0 2px 6px rgba(0,0,0,.7); opacity: 0; }
+.rx-xp { color: #c8f59a; background: rgba(20,40,16,.55); border: 1px solid rgba(160,230,120,.45); }
+.rx-gold { color: #ffd76a; background: rgba(40,28,8,.6); border: 1px solid rgba(255,200,90,.55); }
+.rx-gold svg { color: #ffd76a; }
+.rx-level { position: absolute; left: 50%; top: 38%; z-index: 7; display: flex; flex-direction: column; align-items: center; pointer-events: none; opacity: 0;
+  padding: 14px 34px 10px; border-radius: 22px; background: radial-gradient(closest-side, rgba(60,40,10,.75), rgba(20,14,6,.0)); }
+.rx-level-k { font-family: var(--display); font-size: 15px; letter-spacing: .4em; text-transform: uppercase; color: #fff1b8; text-shadow: 0 0 12px rgba(255,200,90,.8); }
+.rx-level strong { font-family: var(--display); font-size: 64px; line-height: 1; color: #ffd76a; text-shadow: 0 0 18px rgba(255,190,70,.9), 0 3px 0 #7a4d10, 0 6px 14px rgba(0,0,0,.6); }
+.rx-item { --rc: #d9a84a; position: absolute; left: 50%; top: 22%; z-index: 7; display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 10px; border-radius: 18px; pointer-events: none;
+  background: rgba(14,11,18,.88); border: 1px solid var(--rc); box-shadow: 0 0 22px color-mix(in srgb, var(--rc) 45%, transparent), 0 8px 18px rgba(0,0,0,.5); opacity: 0; }
+.rx-item-glow { position: absolute; left: 6px; top: 6px; width: 92px; height: 92px; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--rc) 70%, transparent), transparent); animation: rx-pulse 1s ease-in-out infinite; }
+.rx-p0 .rx-item-glow { animation: none; opacity: .4; }
+.rx-p3 .rx-item-glow { animation-duration: .6s; }
+@keyframes rx-pulse { 50% { transform: scale(1.18); opacity: .55; } }
+.rx-item .thumb { position: relative; z-index: 1; }
+.rx-item-txt { display: flex; flex-direction: column; gap: 2px; position: relative; }
+.rx-item-k { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--rc); }
+.rx-item-txt strong { font-family: var(--display); font-size: 17px; color: #fff3dc; }

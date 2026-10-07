@@ -68,6 +68,7 @@ class SoundManager {
     const pitch = (stage === 'baby' ? 1.15 : stage === 'young' ? 1.05 : stage === 'legendary' ? 0.92 : 1) * (variant === 'dragonne' ? 1.1 : 1);
     const map: Record<string, () => void> = {
       happy: () => void this.play(voice, { user: true, rate: pitch }),
+      cheer: () => void this.play(voice, { user: true, rate: pitch * 1.08 }),
       welcome: () => void this.play(voice, { user: true, rate: pitch }),
       bow: () => void this.play(voice, { user: true, rate: pitch * 0.95 }),
       pet: () => void this.play('purr', { once: true, user: true, rate: pitch }),

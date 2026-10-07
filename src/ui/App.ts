@@ -8,6 +8,7 @@ import type { Duo } from '../family/Duo.js';
 import type { Training } from '../family/Training.js';
 import { VisitScene } from './VisitScene.js';
 import { StageHud } from './StageHud.js';
+import { equipReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
 import { installShake } from './Sensors.js';
@@ -45,7 +46,7 @@ export interface FamilyContext {
   training: Training | null;
 }
 
-export const APP_VERSION = '0.14.0';
+export const APP_VERSION = '0.15.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -124,7 +125,9 @@ export class App {
       this.syncEquipment();
       this.refresh();
     });
-    state.events.on('levelUp', ({ level }) => { if (this.showingOwn) { this.toast(`Niveau ${level} !`); void this.act('level_up'); } });
+    state.events.on('levelUp', ({ level }) => { if (this.showingOwn) levelUpReaction(this, level); });
+    state.events.on('item', ({ def, how }) => itemReaction(this, def, how));
+    state.events.on('equip', ({ def }) => equipReaction(this, def));
     state.events.on('evolve', ({ to }) => { if (this.showingOwn) this.evolve(to); });
 
     const book = family.book, hub = family.hub;
@@ -132,6 +135,7 @@ export class App {
     book?.events.on('change', () => { this.view.tired = tiredNow(); this.refresh(); });
     if (book) this.view.tired = tiredNow();
     book?.events.on('toast', t => this.toast(t));
+    book?.events.on('reward', r => { if (r.mission) missionReaction(this, r.xp, r.gold); });
     book?.events.on('story', t => setTimeout(() => this.say(t, null, 10000), 900));
     hub?.events.on('change', () => { if (!this.showingOwn) this.showChildDragon(); this.refresh(); });
     hub?.events.on('toast', t => this.toast(t));

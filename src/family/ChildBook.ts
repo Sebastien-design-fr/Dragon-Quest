@@ -57,7 +57,7 @@ interface BookData {
 const KEY = 'quete-du-dragon:missions';
 
 export class ChildBook {
-  readonly events = new EventBus<{ change: void; toast: string; story: string }>();
+  readonly events = new EventBus<{ change: void; toast: string; story: string; reward: { xp: number; gold: number; mission: boolean } }>();
   data: BookData;
   private statusTimer = 0;
 
@@ -208,6 +208,7 @@ export class ChildBook {
     if (gold) this.state.addGold(gold);
     if (gainedXp) this.state.addXp(gainedXp);
     if (mission) { this.data.energy = Math.min(ENERGY.max, this.data.energy + ENERGY.perMission); this.companion?.onMission(); }
+    if (gainedXp || gold) this.events.emit('reward', { xp: gainedXp, gold, mission });
     const text = (rewardText(gainedXp, gold) || 'aucune récompense') + (mission ? ', +1 ration' : '') + (care > 1 ? ' (dragon heureux : XP +10 %)' : '');
     if (mission && mult < 1) return mult === 0 ? `${text} (dragon épuisé : pas d’XP, il reprend des forces)` : `${text} (dragon fatigué : XP × ${String(mult).replace('.', ',')})`;
     return text;

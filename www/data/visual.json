@@ -345,6 +345,24 @@
     },
     "roar": {
       "rim": 1.4
+    },
+    "cheer": {
+      "glow": 0.14,
+      "glowColor": [
+        255,
+        214,
+        140
+      ],
+      "rim": 1.4
+    },
+    "receive_item": {
+      "glow": 0.25,
+      "glowColor": [
+        255,
+        220,
+        160
+      ],
+      "rim": 1.6
     }
   }
 }

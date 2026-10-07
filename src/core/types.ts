@@ -182,7 +182,11 @@ export interface ParticlePreset {
   spread: number;        // rayon de la zone d'émission (relatif à l'échelle du dragon)
   area: 'anchor' | 'body';
   fade: 'out' | 'inout';
-  shape: 'circle' | 'spark' | 'smoke' | 'heart' | 'bubble';
+  shape: 'circle' | 'spark' | 'smoke' | 'heart' | 'bubble' | 'glow' | 'star';
+  /** LOT 5 (facultatifs) : rotation (degrés/s, aléatoire ±), taille en fin de vie (facteur), freinage (par seconde). */
+  spin?: number;
+  grow?: number;
+  drag?: number;
 }
 
 export interface QualityPreset {

@@ -545,6 +545,24 @@ const clips = {};
   clips.dizzy = { duration: D, loop: false, tracks: t, events: [{ t: 0.2, type: 'emit', preset: 'happySparkle', anchor: 'head_anchor' }] };
 }
 
+
+// Réaction à une quête validée : anticipation (il se ramasse) → bond joyeux, ailes qui s'ouvrent → impact → retour.
+{
+  const D = 1.5;
+  const hop = [[0, 0], [0.22, 5], [0.5, -20], [0.78, 0], [0.9, 3], [1.15, 0], [1.5, 0]];
+  const t = {
+    body: { y: mix(D, hop), sy: mix(D, [[0, 1], [0.22, 0.96], [0.5, 1.03], [0.78, 0.97], [0.95, 1.01], [1.2, 1]]) },
+    ground: { y: mix(D, hop.map(([a, v]) => [a, Math.min(0, v + 5)])) },
+    neck1: { rot: mix(D, [[0, 0], [0.22, 5], [0.5, -7], [0.85, 2], [1.3, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.22, 6], [0.5, -12], [0.85, 3], [1.3, 0]]) },
+    wing1: { rot: mix(D, [[0, 0], [0.4, -5], [0.7, 2], [1.2, 0]]) },
+    wing2: { rot: mix(D, [[0, 0], [0.25, -4], [0.5, 18], [0.75, 4], [1.0, 9], [1.4, 0]]) },
+    wingFar: { rot: mix(D, [[0, 0], [0.5, 12], [1.0, 5], [1.4, 0]]) }
+  };
+  tailWave(t, D, 8, 0.5, t2 => (t2 > 0.3 && t2 < 1.2 ? 5 : 0), 0.05);
+  clips.cheer = { duration: D, loop: false, tracks: t, events: [{ t: 0.5, type: 'emit', preset: 'rewardBurst', anchor: 'head_anchor' }] };
+}
+
 for (const [id, c] of Object.entries(clips)) {
   for (const tr of Object.values(c.tracks)) for (const k of Object.keys(tr)) if (!tr[k].length) delete tr[k];
   const clip = { id: `${id}@sprite`, note: 'Généré par scripts/build-sprite-clips.mjs', duration: c.duration, loop: c.loop, tracks: c.tracks, ...(c.events ? { events: c.events } : {}) };

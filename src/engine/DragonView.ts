@@ -186,6 +186,8 @@ export class DragonView {
   /** Battement d'ailes : phase et durée d'un cycle (s). */
   private flapPhase = 0;
   private flapRate = 1;
+  /** Caméra (LOT 5) : micro-zoom centré sur le dragon. */
+  private camFx = { amp: 0, t: 0, dur: 1 };
   /** Appelé à chaque animation lancée (sons). */
   onClip: ((clip: string) => void) | null = null;
   /** Appelé quand un clip demande le changement de stade (animation EVOLUTION). */
@@ -557,7 +559,15 @@ export class DragonView {
     this.shake = Math.max(0, this.shake - dt * 30);
     this.placement.x = damp(this.placement.x, this.placeTarget.x, 2.2, dt);
     this.placement.scale = damp(this.placement.scale, this.placeTarget.scale, 2.2, dt);
-    const s = s0 * this.placement.scale;
+    // micro-zoom d'événement : monte vite, redescend en douceur (les pattes restent sur le sol)
+    let zoom = 1;
+    if (this.camFx.amp) {
+      this.camFx.t += dt;
+      const u = this.camFx.t / this.camFx.dur;
+      if (u >= 1) this.camFx.amp = 0;
+      else zoom = 1 + this.camFx.amp * (u < 0.25 ? Math.sin((u / 0.25) * Math.PI / 2) : 0.5 + 0.5 * Math.cos(((u - 0.25) / 0.75) * Math.PI));
+    }
+    const s = s0 * this.placement.scale * zoom;
     // demi-tour en vol : le dragon pivote (largeur qui passe par zéro) au lieu de se retourner d'un coup
     const want = this.mirrored ? -1 : 1;
     this.facing = this.flight ? damp(this.facing, want, 9, dt) : want;
@@ -694,6 +704,16 @@ export class DragonView {
     const r = this.canvas.getBoundingClientRect();
     const w = this.camM.invert().point((clientX - r.left) * this.dpr, (clientY - r.top) * this.dpr);
     this.particles.burst(preset, w.x, w.y, this.rig?.fxScale ?? 2);
+  }
+
+  /** Micro-zoom sur le dragon (passage de niveau, objet rare…). */
+  cameraPulse(amp: number, dur = 1.6): void { this.camFx = { amp, t: 0, dur }; }
+
+  /** Effet continu pendant quelques secondes (particules ascendantes…). */
+  emitFor(preset: string, anchor: string, seconds: number): void {
+    const id = `temp:${preset}:${this.time}`;
+    this.particles.setEmitter(id, preset, this.anchorSource(anchor, this.deps.presets.get(preset)));
+    this.tempEmitters.push({ id, until: this.time + seconds });
   }
 
   /** Effet ponctuel sur un ancrage (cœurs sur la tête…). */
@@ -956,7 +976,7 @@ export class DragonView {
     if (!f.dustDown && P.touchdown) {
       f.dustDown = true;
       this.emit('dust', 'front_leg_anchor'); this.emit('dust', 'rear_leg_anchor');
-      if (c.landingDust > 1) this.emit('dust', 'body_center');
+      if (c.landingDust > 1) { this.emit('dustHeavy', 'front_leg_anchor'); this.emit('dustHeavy', 'rear_leg_anchor'); }
       this.impact.vel -= c.impact * 14;           // écrasement léger à l'impact, amorti ensuite
       if (c.shake > 0) this.shake = Math.max(this.shake, c.shake);
     }

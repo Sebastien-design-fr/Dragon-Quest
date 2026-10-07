@@ -11,6 +11,9 @@ type Events = {
   change: SaveData;
   levelUp: { level: number };
   evolve: { from: StageDef; to: StageDef };
+  /** Objet obtenu (achat ou cadeau) et objet équipé : réactions du dragon (LOT 5). */
+  item: { def: EquipmentDef; how: 'buy' | 'gift' };
+  equip: { def: EquipmentDef };
 };
 
 export type ActionResult = { ok: true } | { ok: false; reason: string };
@@ -132,18 +135,24 @@ export class GameState {
     this.data.gold -= def.price;
     this.data.owned.push(id);
     this.commit();
+    this.events.emit('item', { def, how: 'buy' });
     return { ok: true };
   }
 
   /** Objet offert (cadeau d'un autre dragon). */
-  grant(id: string): void { if (this.catalog.item(id) && !this.owns(id)) { this.data.owned.push(id); this.commit(); } }
+  grant(id: string): void {
+    const def = this.catalog.item(id);
+    if (def && !this.owns(id)) { this.data.owned.push(id); this.commit(); this.events.emit('item', { def, how: 'gift' }); }
+  }
 
   equip(id: string): ActionResult {
     const def = this.catalog.item(id);
     if (!def || !this.owns(id)) return { ok: false, reason: 'Objet non possédé.' };
     if (this.locked.has(id)) return { ok: false, reason: 'Objet confisqué : fais toutes tes missions d’une journée pour le récupérer.' };
+    const was = this.data.equipped[def.category];
     this.data.equipped[def.category] = id; // un objet par catégorie : remplace l'éventuel précédent
     this.commit();
+    if (was !== id) this.events.emit('equip', { def });
     return { ok: true };
   }
 

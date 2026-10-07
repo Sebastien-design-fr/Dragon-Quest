@@ -25,6 +25,11 @@ const POSES: PoseChoice[] = [
   { id: 'b_wing', label: 'Comportement : ajuster une aile', run: a => a.view.life.force('wing_adjust') },
   { id: 'b_shift', label: 'Comportement : changer d’appui', run: a => a.view.life.force('shift') },
   { id: 'b_tail', label: 'Comportement : coup de queue', run: a => a.view.life.force('tail_move') },
+  { id: 'r_mission', label: 'Réaction : quête validée', run: a => { a.view.debugPose = null; void import('./Reactions.js').then(m => m.missionReaction(a, 25, 12)); } },
+  { id: 'r_level', label: 'Réaction : passage de niveau', run: a => { a.view.debugPose = null; void import('./Reactions.js').then(m => m.levelUpReaction(a, a.state.data.level + 1)); } },
+  { id: 'r_rare', label: 'Réaction : objet rare', run: a => { const d = [...a.catalog.items.values()].find(x => x.rarity === 'rare'); if (d) void import('./Reactions.js').then(m => m.itemReaction(a, d, 'buy')); } },
+  { id: 'r_epic', label: 'Réaction : objet épique', run: a => { const d = [...a.catalog.items.values()].find(x => x.rarity === 'epic'); if (d) void import('./Reactions.js').then(m => m.itemReaction(a, d, 'buy')); } },
+  { id: 'r_leg', label: 'Réaction : objet légendaire', run: a => { const d = [...a.catalog.items.values()].find(x => x.rarity === 'legendary'); if (d) void import('./Reactions.js').then(m => m.itemReaction(a, d, 'gift')); } },
   { id: 'evolution', label: 'Évolution (sans changer de stade)', run: a => { a.view.debugPose = null; void a.view.play('evolution'); } }
 ];
 
