@@ -379,10 +379,9 @@ export class ChildBook {
     return [{ key: 'recap-' + w.key, at, body: `Notre semaine : ${parts.join(', ')}.${bond ? ` Notre amitié : ${bond}.` : ''} Merci d’être là !` }];
   }
 
-  /** Missions encore à faire aujourd'hui : aucune perte, seulement des bonus à gagner. */
-  pendingCost(): { count: number; xp: number; gold: number } {
-    const left = this.today().filter(t => (t.status === 'todo' || t.status === 'refused') && !t.mission.once);
-    return { count: left.length, xp: 0, gold: 0 };
+  /** Nombre de missions encore à faire aujourd'hui. */
+  pendingCount(): number {
+    return this.today().filter(t => (t.status === 'todo' || t.status === 'refused') && !t.mission.once).length;
   }
 
   private afterCompletion(m: Mission): void {
@@ -634,11 +633,11 @@ export class ChildBook {
 
   /** À 20 h 30, s'il reste des missions : rappel positif, sans menace ni perte de progression. */
   private eveningWarning(): Array<{ key: string; at: Date; body: string }> {
-    const cost = this.pendingCost();
-    if (!cost.count) return [];
+    const count = this.pendingCount();
+    if (!count) return [];
     const at = new Date(); at.setHours(20, 30, 0, 0);
     return [{ key: 'evening-' + todayKey(), at,
-      body: `Il te reste ${cost.count} mission${cost.count > 1 ? 's' : ''} aujourd’hui. Encore un petit effort pour gagner tes récompenses et avancer avec ton dragon !` }];
+      body: `Il te reste ${count} mission${count > 1 ? 's' : ''} aujourd’hui. Encore un petit effort pour gagner tes récompenses et avancer avec ton dragon !` }];
   }
 }
 
