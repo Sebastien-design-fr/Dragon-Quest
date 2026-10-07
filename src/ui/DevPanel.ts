@@ -65,6 +65,10 @@ export function toggleDevPanel(app: App): void {
     h('div', { class: 'dv-label' }, 'Comparer avec l’ancien rendu'),
     check('Densité plafonnée à 2 (avant)', view.debug.capDpr2, v => view.setDebug({ capDpr2: v })),
     check('Sans mipmaps (avant)', view.debug.noMipmaps, v => view.setDebug({ noMipmaps: v })),
+    h('div', { class: 'dv-label' }, 'Intégration au décor (LOT 2)'),
+    check('Ombres', view.fx.shadows, v => { view.fx.shadows = v; }),
+    check('Éclairage (teinte, lumière, haut/bas)', view.fx.lighting, v => { view.fx.lighting = v; }),
+    check('Lumière de contour', view.fx.rim, v => { view.fx.rim = v; }),
     h('div', { class: 'dv-label' }, 'Couches d’ambiance du décor'),
     check('Lueurs', view.backdrop.layers.lights, v => { view.backdrop.layers.lights = v; }),
     check('Poussières', view.backdrop.layers.motes, v => { view.backdrop.layers.motes = v; }),
@@ -88,6 +92,7 @@ export function toggleDevPanel(app: App): void {
       `particules ${d.particles} · qualité ${app.state.data.settings.quality}`,
       `canvas ${s.canvas} · densité ${s.renderDpr} (écran ${window.devicePixelRatio})`,
       `texture ${d.tex}`,
+      `lumière scène ${view.backdrop.scene.ambient.map(x => Math.round(x * 255)).join(',')} · dir ${view.backdrop.scene.dir.map(x => x.toFixed(2)).join(',')}`,
       `contextes WebGL ${MeshRenderer.contexts} · mémoire ${mem()} · images ${Assets.stats().loaded}`
     ].join('\n');
   };

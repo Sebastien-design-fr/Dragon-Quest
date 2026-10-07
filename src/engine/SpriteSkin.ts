@@ -1,3 +1,4 @@
+import type { LightUniforms } from './Lighting.js';
 // Illustration « vivante » : l'image entière du dragon est posée sur un maillage dont chaque sommet
 // est lié aux os souples les plus proches (cou, tête, ailes, queue, pattes…). Quand un os tourne,
 // la zone de l'image qui l'entoure suit, avec des transitions douces vers les zones voisines.
@@ -203,6 +204,10 @@ export class MeshRenderer {
   private texImg: unknown = null;
   private mesh: SpriteSkin | null = null;
   private uMat: WebGLUniformLocation;
+  private u: Record<string, WebGLUniformLocation | null> = {};
+  /** Éclairage de l'image en cours (null = rendu brut). */
+  lighting: { u: LightUniforms; mirrored: boolean } | null = null;
+  private texW = 1; private texH = 1;
 
   static create(): MeshRenderer | null {
     try { return new MeshRenderer(); } catch { return null; }
@@ -219,9 +224,43 @@ export class MeshRenderer {
     this.canvas.addEventListener('webglcontextlost', () => { MeshRenderer.contexts--; this.released = true; });
     const vs = `attribute vec2 p; attribute vec2 uv; uniform mat3 m; varying vec2 vUv;
       void main(){ vec3 q = m * vec3(p, 1.0); gl_Position = vec4(q.xy, 0.0, 1.0); vUv = uv; }`;
-    // léger biais de niveau de détail : un peu plus net sans réintroduire de scintillement
-    const fs = `precision mediump float; uniform sampler2D t; varying vec2 vUv;
-      void main(){ gl_FragColor = texture2D(t, vUv, -0.25); }`;
+    // Éclairage non destructif (l'image source n'est jamais modifiée) :
+    // teinte ambiante de la scène, dégradé haut/bas, lumière directionnelle et lumière de contour
+    // calculées à partir de la silhouette (alpha flouté via les mipmaps), halo d'événement.
+    const fs = `precision mediump float;
+      uniform sampler2D t; varying vec2 vUv;
+      uniform vec2 uTexel; uniform vec3 uAmbient; uniform float uAmbientMix;
+      uniform vec2 uDir; uniform vec3 uLight; uniform float uLightStr;
+      uniform float uRim; uniform float uRimW; uniform vec3 uRimC;
+      uniform float uTop; uniform float uBottom; uniform float uExposure;
+      uniform float uGlow; uniform vec3 uGlowC; uniform float uLit;
+      float A(vec2 o, float b){ return texture2D(t, vUv + o, b).a; }
+      void main(){
+        vec4 c = texture2D(t, vUv, -0.25);
+        if (uLit < 0.5 || c.a < 0.004) { gl_FragColor = c; return; }
+        vec3 col = c.rgb / c.a;
+        float l = dot(uAmbient, vec3(0.2126, 0.7152, 0.0722));
+        vec3 tint = min(uAmbient / max(l, 0.05), vec3(1.6)) * 0.92;
+        col *= mix(vec3(1.0), tint, uAmbientMix);
+        col *= 1.0 + uTop * (1.0 - vUv.y) - uBottom * vUv.y;
+        // silhouette floue (mipmaps) : normale approchée vers l'extérieur
+        vec2 o = uTexel * uRimW;
+        vec2 g = vec2(A(vec2(o.x, 0.0), 2.0) - A(vec2(-o.x, 0.0), 2.0), A(vec2(0.0, o.y), 2.0) - A(vec2(0.0, -o.y), 2.0));
+        vec2 n = -g;
+        float edge = clamp(length(g) * 2.2, 0.0, 1.0);
+        float facing = dot(normalize(n + vec2(1e-5)), uDir);
+        float rim = clamp(facing, 0.0, 1.0) * edge;
+        // lumière directionnelle large : silhouette très floue
+        vec2 O = o * 6.0;
+        vec2 G = vec2(A(vec2(O.x, 0.0), 4.0) - A(vec2(-O.x, 0.0), 4.0), A(vec2(0.0, O.y), 4.0) - A(vec2(0.0, -O.y), 4.0));
+        float side = clamp(dot(-G * 3.0, uDir), -1.0, 1.0);
+        col *= 1.0 + uLightStr * side;
+        col += uRimC * rim * rim * uRim;
+        // halo d'événement : surtout sur les contours, l'intérieur s'éclaire sans se délaver
+        col = col * (1.0 + uGlow * 0.45) + uGlowC * uGlow * (0.03 + 0.45 * edge);
+        col *= uExposure;
+        gl_FragColor = vec4(col * c.a, c.a);
+      }`;
     const sh = (type: number, src: string) => {
       const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s);
       if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? 'shader');
@@ -234,6 +273,7 @@ export class MeshRenderer {
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error('programme WebGL');
     this.prog = prog;
     this.uMat = gl.getUniformLocation(prog, 'm')!;
+    for (const n of ['uTexel', 'uAmbient', 'uAmbientMix', 'uDir', 'uLight', 'uLightStr', 'uRim', 'uRimW', 'uRimC', 'uTop', 'uBottom', 'uExposure', 'uGlow', 'uGlowC', 'uLit']) this.u[n] = gl.getUniformLocation(prog, n);
     this.posBuf = gl.createBuffer()!;
     this.uvBuf = gl.createBuffer()!;
     this.idxBuf = gl.createBuffer()!;
@@ -274,6 +314,7 @@ export class MeshRenderer {
       src = c; w = c.width; h = c.height;
     }
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+    this.texW = img.width; this.texH = img.height;
     if (mip) {
       gl.generateMipmap(gl.TEXTURE_2D);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
@@ -284,6 +325,28 @@ export class MeshRenderer {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     this.texInfo = `${w}×${h}${mip ? ' + mipmaps' : ''}${this.webgl2 ? ' (WebGL 2)' : ' (WebGL 1)'}`;
+  }
+
+  private applyLighting(): void {
+    const gl = this.gl, U = this.u, L = this.lighting;
+    if (!L || !L.u.enabled) { gl.uniform1f(U.uLit, 0); return; }
+    const u = L.u;
+    gl.uniform1f(U.uLit, 1);
+    gl.uniform2f(U.uTexel, 1 / this.texW, 1 / this.texH);
+    gl.uniform3f(U.uAmbient, u.ambient[0], u.ambient[1], u.ambient[2]);
+    gl.uniform1f(U.uAmbientMix, u.ambientMix);
+    // direction exprimée dans l'image : retournée si le dragon regarde à gauche
+    gl.uniform2f(U.uDir, L.mirrored ? -u.dir[0] : u.dir[0], u.dir[1]);
+    gl.uniform3f(U.uLight, u.light[0], u.light[1], u.light[2]);
+    gl.uniform1f(U.uLightStr, u.lightStrength);
+    gl.uniform1f(U.uRim, u.rim);
+    gl.uniform1f(U.uRimW, u.rimWidth);
+    gl.uniform3f(U.uRimC, u.rimColor[0], u.rimColor[1], u.rimColor[2]);
+    gl.uniform1f(U.uTop, u.top);
+    gl.uniform1f(U.uBottom, u.bottom);
+    gl.uniform1f(U.uExposure, u.exposure);
+    gl.uniform1f(U.uGlow, u.glow);
+    gl.uniform3f(U.uGlowC, u.glowColor[0], u.glowColor[1], u.glowColor[2]);
   }
 
   /** Libère le contexte WebGL (vue supprimée, changement de stade) : évite d'en accumuler. */
@@ -305,6 +368,7 @@ export class MeshRenderer {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(this.prog);
+    this.applyLighting();
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     // monde -> pixels (caméra) -> espace de découpe

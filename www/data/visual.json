@@ -1,0 +1,125 @@
+{
+  "note": "Intégration du dragon dans le décor (LOT 2). Tout est générique : la lumière de la scène est mesurée sur l'image du décor (sans la modifier), puis combinée avec les réglages du dragon (par stade, éventuellement par variante « dragonne.adult ») et ceux de l'état (repos, sommeil, niveau…). Clés de stade : « default », puis l'identifiant du stade, puis « <variante>.<stade> ». Les valeurs absentes reprennent celles du niveau précédent.",
+  "scenes": {
+    "default": {
+      "ambientMix": 0.16,
+      "lightStrength": 0.12,
+      "rimStrength": 0.6,
+      "rimWidth": 3.0,
+      "rimColorBoost": 1.25
+    }
+  },
+  "dragons": {
+    "default": {
+      "shadow": {
+        "ambientOpacity": 0.58,
+        "ambientWidth": 1.25,
+        "ambientHeight": 0.2,
+        "contactOpacity": 0.72,
+        "contactSize": 0.11,
+        "flightGrow": 0.55,
+        "flightFade": 0.75
+      },
+      "lighting": {
+        "ambientMix": 1.0,
+        "light": 1.0,
+        "rim": 1.0,
+        "topLight": 0.06,
+        "bottomShade": 0.1
+      }
+    },
+    "baby": {
+      "shadow": {
+        "ambientOpacity": 0.52,
+        "contactSize": 0.13,
+        "flightGrow": 0.65
+      },
+      "lighting": {
+        "rim": 1.1
+      }
+    },
+    "young": {
+      "shadow": {
+        "ambientOpacity": 0.55
+      }
+    },
+    "adult": {
+      "shadow": {
+        "ambientOpacity": 0.6,
+        "contactOpacity": 0.76
+      },
+      "lighting": {
+        "rim": 0.95
+      }
+    },
+    "legendary": {
+      "shadow": {
+        "ambientOpacity": 0.62,
+        "contactOpacity": 0.78,
+        "flightGrow": 0.45
+      },
+      "lighting": {
+        "rim": 0.9,
+        "topLight": 0.07
+      }
+    },
+    "dragonne.default": {
+      "lighting": {
+        "rim": 0.85
+      }
+    }
+  },
+  "states": {
+    "idle": {},
+    "sleep": {
+      "light": 0.6,
+      "rim": 0.45,
+      "exposure": 0.94
+    },
+    "happy": {
+      "glow": 0.1,
+      "glowColor": [
+        255,
+        214,
+        140
+      ]
+    },
+    "level_up": {
+      "glow": 0.4,
+      "glowColor": [
+        255,
+        220,
+        150
+      ],
+      "rim": 1.8
+    },
+    "evolution": {
+      "glow": 0.75,
+      "glowColor": [
+        255,
+        236,
+        200
+      ],
+      "rim": 2.4
+    },
+    "fire": {
+      "glow": 0.18,
+      "glowColor": [
+        255,
+        150,
+        60
+      ]
+    },
+    "ring": {
+      "glow": 0.22,
+      "glowColor": [
+        255,
+        150,
+        60
+      ]
+    },
+    "roar": {
+      "rim": 1.4
+    }
+  }
+}

@@ -30,6 +30,7 @@ export class VisitScene {
     host.append(this.canvas);
     const g = new DragonView(this.canvas, app.view.dependencies);
     this.guest = g;
+    g.sceneFrom = app.view; // même lumière que la scène de l’hôte
     g.showBackdrop = false;
     g.idleLife = false;
     g.setQuality(app.view.quality, app.view.effectsEnabled);

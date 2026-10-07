@@ -4,6 +4,7 @@
 // RÈGLE : l'image du décor est affichée telle quelle (ni flou, ni assombrissement, ni zoom animé).
 // Les ambiances (lueurs, poussières, teinte de nuit) sont des couches séparées, désactivables.
 import type { Mat2D } from '../core/math.js';
+import { NEUTRAL_SCENE, analyseScene, type SceneLight } from './Lighting.js';
 
 export interface BackdropDef {
   floor: number;
@@ -29,6 +30,9 @@ export class Backdrop {
   night = 0;
   /** Couches d'ambiance indépendantes du décor, désactivables une par une. */
   readonly layers = { lights: true, motes: true, tint: true };
+  /** Lumière de la scène, mesurée sur l'image du décor (lecture seule). */
+  scene: SceneLight = { ...NEUTRAL_SCENE };
+  sceneOverrides: Partial<SceneLight> | undefined;
 
   setStage(stageId: string, def: BackdropDef | null, imagePath: string | null): void {
     this.stageId = stageId;
@@ -36,11 +40,12 @@ export class Backdrop {
     this.img = null;
     this.painted = null;
     this.scaled = null; this.scaledKey = '';
+    this.scene = { ...NEUTRAL_SCENE, ...this.sceneOverrides };
     this.motes = [];
     if (imagePath) {
       const im = new Image();
       im.decoding = 'async';
-      im.onload = () => { if (this.stageId === stageId) this.img = im; };
+      im.onload = () => { if (this.stageId === stageId) { this.img = im; this.scene = analyseScene(im, def?.floor ?? 0.75, this.sceneOverrides); } };
       im.src = imagePath;
     }
   }

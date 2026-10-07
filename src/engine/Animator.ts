@@ -42,6 +42,8 @@ export class Animator {
 
   get baseId(): string | null { return this.base?.clip.id ?? null; }
   get actionId(): string | null { return this.action?.clip.id ?? null; }
+  /** Avancement de l'action en cours (0..1), pour les effets de lumière qui l'accompagnent. */
+  get actionProgress(): number { const a = this.action; return a ? Math.min(1, a.time / a.clip.duration) : 0; }
 
   /** Joue un clip. Bouclé : devient la boucle de base. Ponctuel : joué par-dessus, promesse résolue à la fin. */
   play(id: string): Promise<void> {

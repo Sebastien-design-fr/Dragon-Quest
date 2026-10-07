@@ -18,6 +18,7 @@ import { AssetScope, Assets } from './AssetManager.js';
 import { ParticleSystem } from './Particles.js';
 import { drawEquipment, drawPart } from './Placeholders.js';
 import { Skeleton } from './Skeleton.js';
+import { TintCache, buildUniforms, dragonConfig, shadowBlob, type DragonLightConfig, type LightUniforms, type ShadowConfig, type VisualConfig } from './Lighting.js';
 import { MeshRenderer, SpriteSkin } from './SpriteSkin.js';
 import { Backdrop, type BackdropDef } from './Backdrop.js';
 
@@ -55,6 +56,8 @@ export interface DragonViewDeps {
   backdrops?: Record<string, BackdropDef>;
   /** Poses peintes disponibles : variante -> stade -> ['sleep', 'flyUp', 'flyDown']. */
   poses?: Record<string, Record<string, string[]>>;
+  /** Intégration au décor : lumière, ombres, états (data/visual.json). */
+  visual?: VisualConfig;
 }
 
 type PoseId = 'sleep' | 'flyUp' | 'flyDown';
@@ -108,6 +111,15 @@ export class DragonView {
   /** Panneau développeur : pose peinte forcée, comparaisons avant / après. */
   debugPose: PoseId | null = null;
   debug = { capDpr2: false, noMipmaps: false };
+  /** LOT 2 : ombres et éclairage, désactivables (panneau développeur). */
+  fx = { shadows: true, lighting: true, rim: true };
+  /** Dragon invité : utilise la lumière de la scène de l'hôte. */
+  sceneFrom: DragonView | null = null;
+  private dcfg: { shadow: ShadowConfig; lighting: DragonLightConfig } = dragonConfig(undefined, 'adult', 'dragon');
+  private lightState = { key: 'idle', w: 1 };
+  /** Paramètres d'éclairage de l'image en cours (partagés avec les poses peintes). */
+  private lightU: LightUniforms | null = null;
+  private tints = new TintCache();
   readonly stats: ViewStats = { fps: 0, frameMs: 0, renderDpr: 1, canvas: '', refreshHz: 60, divisor: 1 };
   private tmp = new Mat2D();
   private tmp2 = new Mat2D();
@@ -186,6 +198,10 @@ export class DragonView {
     }
     previous.dispose();
     this.camTarget = { ...rig.camera };
+    this.dcfg = dragonConfig(this.deps.visual, stage.id, variant);
+    const sc = this.deps.visual?.scenes;
+    this.backdrop.sceneOverrides = sc ? { ...sc.default, ...sc[stage.id] } : undefined;
+    this.tints.clear();
     this.backdrop.setStage(stage.id, this.deps.backdrops?.[stage.id] ?? null, Assets.background(stage.id));
     // La boucle en cours (repos, sommeil) bascule sur la variante adaptée au nouveau type de dragon.
     const loop = this.animator.baseId;
@@ -510,12 +526,9 @@ export class DragonView {
     const feet = this.camM.point(0, 0);
     if (this.showBackdrop) this.backdrop.draw(ctx, W, H, feet.y, this.camM.e - W / 2, this.time, dt, this.effectsEnabled && this.quality.permanentEffects);
 
-    // Ombre au sol (plus petite quand il vole)
-    this.camM.apply(ctx);
-    ctx.fillStyle = `rgba(0,0,0,${0.35 * (1 - Math.min(0.7, this.lift * 3))})`;
-    const fx = this.rig.fxScale ?? this.rig.scale;
-    const sh = 1 - Math.min(0.5, this.lift * 2);
-    ctx.beginPath(); ctx.ellipse(0, 4 * fx, this.rig.bounds.w * 0.32 * sh, 10 * fx * sh, 0, 0, Math.PI * 2); ctx.fill();
+    // Ombres (sous le dragon, au sol) puis éclairage de l'image
+    this.updateLighting(dt);
+    if (this.fx.shadows) this.drawShadows(ctx);
 
     // En vol : tout le dragon monte (le décor et l'ombre restent au sol)
     this.camM.f -= this.lift * H;
@@ -649,6 +662,7 @@ export class DragonView {
       if (!bone) continue;
       if (d === this.skinPart && this.mesh?.ready) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.mesh.lighting = this.lightU ? { u: this.lightU, mirrored: this.camM.a < 0 } : null;
         const gl = this.mesh.render(this.camM, W, H);
         // copie pixel pour pixel : aucun filtrage nécessaire (le lissage « high » coûterait cher pour rien)
         ctx.imageSmoothingQuality = 'low';
@@ -663,7 +677,9 @@ export class DragonView {
         const e = d.equip;
         const anchorM = this.anchorWorld(e.anchor, this.tmp2);
         if (!anchorM) continue;
-        const img = e.path ? Assets.peek(e.path) : null;
+        const raw = e.path ? Assets.peek(e.path) : null;
+        // même teinte ambiante que le dragon (copie teintée en cache, l'image source reste intacte)
+        const img = raw && this.lightU ? this.tints.get(raw as HTMLImageElement, this.lightU) as HTMLImageElement : raw;
         const f = img ? e.fit : null;
         const s = rig.scale;
         let rot = e.rot + (f?.rotation ?? 0);
@@ -701,6 +717,8 @@ export class DragonView {
     sk.update(new Mat2D());
     this.skin?.update();
     this.camM.copy(main.camM);
+    this.lightU = main.lightU;
+    this.fx = main.fx;
     this.drawDragon(ctx, W, H, alpha);
   }
 
@@ -716,6 +734,84 @@ export class DragonView {
     if (r < 0.06) { void this.fly(); return; }
     const pick = ['look_around', 'tail_swish', 'sniff', 'stretch', 'yawn', 'scratch', 'look_around', 'tail_swish'];
     void this.animator.play(this.clipFor(pick[Math.floor(Math.random() * pick.length)]));
+  }
+
+  /** Lumière de l'image : scène (décor) + dragon (stade / variante) + état (repos, sommeil, niveau…). */
+  private updateLighting(dt: number): void {
+    const host = this.sceneFrom ?? this;
+    let scene = host.backdrop.scene;
+    // la nuit (voile bleuté sur le décor), le dragon reçoit la même ambiance
+    const night = host.backdrop.layers.tint ? host.backdrop.night : 0;
+    if (night > 0) {
+      const k = 0.55 * night;
+      scene = { ...scene, ambient: scene.ambient.map((v, i) => v * (1 - k) + [0.16, 0.2, 0.42][i] * k) as [number, number, number], ambientMix: scene.ambientMix + 0.12 * night };
+    }
+    const act = (this.animator.actionId ?? '').split('@')[0];
+    const base = (this.animator.baseId ?? 'idle').split('@')[0].replace(/_pose$/, '');
+    const states = this.deps.visual?.states ?? {};
+    const key = act && states[act] ? act : states[base] ? base : 'idle';
+    if (key !== this.lightState.key) this.lightState = { key, w: 0 };
+    this.lightState.w = damp(this.lightState.w, 1, 3.5, dt);
+    // une action : effet qui monte puis redescend avec l'animation
+    const env = key === act ? Math.pow(Math.sin(Math.PI * this.animator.actionProgress), 0.6) : 1;
+    this.lightU = buildUniforms(scene, this.dcfg.lighting, states[key] ?? {}, this.lightState.w * env, { lighting: this.fx.lighting, rim: this.fx.rim });
+    if (night > 0) this.lightU.exposure *= 1 - 0.12 * night;
+  }
+
+  /**
+   * Ombres générées depuis la silhouette réellement affichée (debout, couché ou en vol), pour tous les stades :
+   * ombre ambiante douce, occlusion le long du contact au sol, petites ombres de contact sous les pattes.
+   * Au sol : plus petites, plus sombres, plus nettes ; en vol : plus grandes, plus pâles, plus diffuses.
+   */
+  private drawShadows(ctx: CanvasRenderingContext2D): void {
+    const v = this.visible();
+    const skin = v.skin;
+    if (!skin) return;
+    const P = skin.positions;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (let i = 0; i < P.length; i += 8) {
+      const x = P[i], y = P[i + 1];
+      if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    if (!isFinite(minX)) return;
+    // bande de contact : sommets proches du bas de la silhouette
+    const band = maxY - (maxY - minY) * 0.12;
+    let bMin = Infinity, bMax = -Infinity;
+    for (let i = 0; i < P.length; i += 4) { if (P[i + 1] >= band) { const x = P[i]; if (x < bMin) bMin = x; if (x > bMax) bMax = x; } }
+    if (!isFinite(bMin)) { bMin = minX; bMax = maxX; }
+    const S = this.dcfg.shadow;
+    const W = maxX - minX;
+    const air = Math.min(1, this.lift / 0.12 + (this.poseW.fly > 0.5 ? 0.6 : 0));
+    const ground = 1 - air;
+    const blob = shadowBlob();
+    ctx.save();
+    this.camM.apply(ctx);
+    const put = (cx: number, w: number, hgt: number, a: number) => {
+      if (a <= 0.005 || w <= 0) return;
+      ctx.globalAlpha = Math.min(1, a);
+      ctx.drawImage(blob, cx - w / 2, -hgt / 2, w, hgt);
+    };
+    // ombre ambiante : centrée sous le contact au sol, s'élargit et pâlit en vol
+    const cGround = (bMin + bMax) / 2, cAir = (minX + maxX) / 2;
+    const cx = cGround * ground + cAir * air;
+    const wGround = (bMax - bMin) * S.ambientWidth + W * 0.15;
+    const wAir = W * (0.7 + S.flightGrow * air);
+    const w = wGround * ground + wAir * air;
+    put(cx, w, w * S.ambientHeight * (1 + air * 0.6), S.ambientOpacity * (1 - S.flightFade * air));
+    if (ground > 0.02) {
+      // occlusion serrée le long du contact
+      put(cGround, (bMax - bMin) * 1.02, W * S.contactSize * 0.55, S.contactOpacity * 0.65 * ground);
+      // petites ombres de contact sous chaque patte (ancrages des pattes de la pose affichée)
+      const m = this.tmp2;
+      for (const a of ['front_leg_anchor', 'rear_leg_anchor', 'front_leg_far_anchor', 'rear_leg_far_anchor']) {
+        const ok = v === this ? this.anchorWorld(a, m) : v.skeleton?.anchorWorld(a, m);
+        if (!ok) continue;
+        const far = a.includes('far') ? 0.7 : 1;
+        put(m.e, W * S.contactSize * far, W * S.contactSize * 0.32 * far, S.contactOpacity * ground * far);
+      }
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
   }
 
   /** Ressorts amortis : la queue et les ailes traînent un peu derrière les mouvements du corps. */

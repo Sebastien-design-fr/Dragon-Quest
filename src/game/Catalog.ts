@@ -1,3 +1,4 @@
+import type { VisualConfig } from '../engine/Lighting.js';
 // Accès aux définitions de jeu (toutes issues de www/data/). L'interface ne connaît aucun
 // équipement en dur : elle interroge ce catalogue, qui découvre tout dans les JSON.
 import { loadJSON } from '../core/data.js';
@@ -24,9 +25,11 @@ export class Catalog {
   backdrops: Record<string, BackdropDef> = {};
   /** Poses peintes disponibles : variante -> stade -> poses. */
   poses: Record<string, Record<string, string[]>> = {};
+  /** Intégration au décor : lumière, ombres, états (data/visual.json). */
+  visual: VisualConfig | undefined;
 
   async load(): Promise<void> {
-    const [st, cat, rar, col, eq, fx, q, bd, ft, bgs, ps] = await Promise.all([
+    const [st, cat, rar, col, eq, fx, q, bd, ft, bgs, ps, vis] = await Promise.all([
       loadJSON<{ stages: StageDef[]; xp: { base: number; step?: number; growth?: number } }>('data/stages.json'),
       loadJSON<{ categories: CategoryDef[] }>('data/categories.json'),
       loadJSON<{ rarities: RarityDef[] }>('data/rarities.json'),
@@ -37,8 +40,10 @@ export class Catalog {
       loadJSON<{ badges: BadgeDef[] }>('data/badges.json').catch(() => ({ badges: [] as BadgeDef[] })),
       loadJSON<{ categories: Record<string, FitTable>; items: Record<string, FitTable> }>('data/fits.json').catch(() => ({ categories: {}, items: {} })),
       loadJSON<{ stages: Record<string, BackdropDef> }>('data/backgrounds.json').catch(() => ({ stages: {} as Record<string, BackdropDef> })),
-      loadJSON<{ poses: Record<string, Record<string, string[]>> }>('data/poses.json').catch(() => ({ poses: {} }))
+      loadJSON<{ poses: Record<string, Record<string, string[]>> }>('data/poses.json').catch(() => ({ poses: {} })),
+      loadJSON<VisualConfig>('data/visual.json').catch(() => undefined)
     ]);
+    this.visual = vis;
     this.stages = [...st.stages].sort((a, b) => a.minLevel - b.minLevel);
     this.xp = st.xp;
     cat.categories.sort((a, b) => a.order - b.order).forEach(c => this.categories.set(c.id, c));
