@@ -12,10 +12,10 @@ Variantes trouvées : dragon, dragonne. Stades trouvés : baby, young, adult, le
 | dragon | young | 1239×931 | 1518×750 | 1468×945 | **manquant** | 1500×957 | — | young.sprite.json (19 / 16 / 26 px) | 13/13 | 28 |
 | dragon | adult | 1244×1017 | 1522×631 | 1513×862 | 1512×628 | 1515×806 | — | adult.sprite.json (19 / 16 / 26 px) | 13/13 | 29 |
 | dragon | legendary | 1253×1075 | 1522×780 | 1515×977 | **manquant** | 1515×974 | — | legendary.sprite.json (19 / 16 / 26 px) | 13/13 | 29 |
-| dragonne | baby | 1510×978 | 457×183 | 490×221 | **manquant** | 532×204 | — | baby.dragonne.json (19 / 16 / 30 px) | 13/13 | 22 |
-| dragonne | young | 1524×1024 | 611×227 | 630×264 | **manquant** | 612×289 | — | young.dragonne.json (19 / 16 / 30 px) | 13/13 | 28 |
-| dragonne | adult | 1524×1011 | 709×273 | 750×284 | **manquant** | 698×311 | — | adult.dragonne.json (19 / 16 / 30 px) | 13/13 | 29 |
-| dragonne | legendary | 1536×1022 | 742×342 | 735×284 | **manquant** | 734×328 | — | legendary.dragonne.json (19 / 16 / 30 px) | 13/13 | 29 |
+| dragonne | baby | 1510×978 | 1503×869 | 1523×963 | **manquant** | 1516×1005 | — | baby.dragonne.json (19 / 16 / 30 px) | 13/13 | 22 |
+| dragonne | young | 1524×1024 | 1520×880 | 1513×942 | **manquant** | 1508×1014 | — | young.dragonne.json (19 / 16 / 30 px) | 13/13 | 28 |
+| dragonne | adult | 1524×1011 | 1519×873 | 1504×988 | **manquant** | 1510×987 | — | adult.dragonne.json (19 / 16 / 30 px) | 13/13 | 29 |
+| dragonne | legendary | 1536×1022 | 1526×912 | 1516×980 | **manquant** | 1522×1009 | — | legendary.dragonne.json (19 / 16 / 30 px) | 13/13 | 29 |
 
 Assets absents partout : WINGS_MID, yeux fermés, gueule ouverte, ailes séparées du corps (voir DRAGON_ASSET_REQUIREMENTS.md).
 
@@ -44,22 +44,22 @@ Taille de l’illustration sur l’écran Dragon (scène = 60 % de la hauteur), 
 | dragon | legendary | WINGS_UP | 1515×977 | 595 → 781 (×1.312) | 781 | 0.52 | forte réduction : mipmaps indispensables |
 | dragon | legendary | NORMAL | 1253×1075 | 684 → 898 (×1.312) | 898 | 0.72 | réduction : mipmaps recommandés |
 | dragon | legendary | SLEEP | 1522×780 | 744 → 976 (×1.312) | 976 | 0.64 | réduction : mipmaps recommandés |
-| dragonne | baby | WINGS_DOWN | 532×204 | 541 → 710 (×1.312) | 710 | 1.33 | **agrandi ×1.33 : résolution insuffisante, flou** |
-| dragonne | baby | WINGS_UP | 490×221 | 498 → 654 (×1.312) | 654 | 1.33 | **agrandi ×1.33 : résolution insuffisante, flou** |
+| dragonne | baby | WINGS_DOWN | 1516×1005 | 463 → 608 (×1.312) | 608 | 0.40 | forte réduction : mipmaps indispensables |
+| dragonne | baby | WINGS_UP | 1523×963 | 461 → 606 (×1.312) | 606 | 0.40 | forte réduction : mipmaps indispensables |
 | dragonne | baby | NORMAL | 1510×978 | 542 → 711 (×1.312) | 711 | 0.47 | forte réduction : mipmaps indispensables |
-| dragonne | baby | SLEEP | 457×183 | 558 → 732 (×1.312) | 732 | 1.60 | **agrandi ×1.60 : résolution insuffisante, flou** |
-| dragonne | young | WINGS_DOWN | 612×289 | 550 → 723 (×1.312) | 723 | 1.18 | **agrandi ×1.18 : résolution insuffisante, flou** |
-| dragonne | young | WINGS_UP | 630×264 | 567 → 744 (×1.312) | 744 | 1.18 | **agrandi ×1.18 : résolution insuffisante, flou** |
+| dragonne | baby | SLEEP | 1503×869 | 571 → 750 (×1.312) | 750 | 0.50 | forte réduction : mipmaps indispensables |
+| dragonne | young | WINGS_DOWN | 1508×1014 | 599 → 786 (×1.312) | 786 | 0.52 | forte réduction : mipmaps indispensables |
+| dragonne | young | WINGS_UP | 1513×942 | 540 → 709 (×1.312) | 709 | 0.47 | forte réduction : mipmaps indispensables |
 | dragonne | young | NORMAL | 1524×1024 | 616 → 808 (×1.312) | 808 | 0.53 | forte réduction : mipmaps indispensables |
-| dragonne | young | SLEEP | 611×227 | 634 → 833 (×1.312) | 833 | 1.36 | **agrandi ×1.36 : résolution insuffisante, flou** |
-| dragonne | adult | WINGS_DOWN | 698×311 | 571 → 749 (×1.312) | 749 | 1.07 | **agrandi ×1.07 : résolution insuffisante, flou** |
-| dragonne | adult | WINGS_UP | 750×284 | 614 → 805 (×1.312) | 805 | 1.07 | **agrandi ×1.07 : résolution insuffisante, flou** |
+| dragonne | young | SLEEP | 1520×880 | 530 → 696 (×1.312) | 696 | 0.46 | forte réduction : mipmaps indispensables |
+| dragonne | adult | WINGS_DOWN | 1510×987 | 533 → 700 (×1.312) | 700 | 0.46 | forte réduction : mipmaps indispensables |
+| dragonne | adult | WINGS_UP | 1504×988 | 532 → 698 (×1.312) | 698 | 0.46 | forte réduction : mipmaps indispensables |
 | dragonne | adult | NORMAL | 1524×1011 | 667 → 875 (×1.312) | 875 | 0.57 | réduction : mipmaps recommandés |
-| dragonne | adult | SLEEP | 709×273 | 687 → 902 (×1.312) | 902 | 1.27 | **agrandi ×1.27 : résolution insuffisante, flou** |
-| dragonne | legendary | WINGS_DOWN | 734×328 | 629 → 825 (×1.312) | 825 | 1.12 | **agrandi ×1.12 : résolution insuffisante, flou** |
-| dragonne | legendary | WINGS_UP | 735×284 | 630 → 826 (×1.312) | 826 | 1.12 | **agrandi ×1.12 : résolution insuffisante, flou** |
+| dragonne | adult | SLEEP | 1519×873 | 677 → 889 (×1.312) | 889 | 0.58 | réduction : mipmaps recommandés |
+| dragonne | legendary | WINGS_DOWN | 1522×1009 | 492 → 645 (×1.312) | 645 | 0.42 | forte réduction : mipmaps indispensables |
+| dragonne | legendary | WINGS_UP | 1516×980 | 595 → 781 (×1.312) | 781 | 0.52 | forte réduction : mipmaps indispensables |
 | dragonne | legendary | NORMAL | 1536×1022 | 684 → 898 (×1.312) | 898 | 0.58 | réduction : mipmaps recommandés |
-| dragonne | legendary | SLEEP | 742×342 | 705 → 925 (×1.312) | 925 | 1.25 | **agrandi ×1.25 : résolution insuffisante, flou** |
+| dragonne | legendary | SLEEP | 1526×912 | 702 → 921 (×1.312) | 921 | 0.60 | réduction : mipmaps recommandés |
 
 ### Android 1080×2400 (densité 3)
 
@@ -82,22 +82,22 @@ Taille de l’illustration sur l’écran Dragon (scène = 60 % de la hauteur), 
 | dragon | legendary | WINGS_UP | 1515×977 | 520 → 780 (×1.5) | 780 | 0.52 | forte réduction : mipmaps indispensables |
 | dragon | legendary | NORMAL | 1253×1075 | 598 → 897 (×1.5) | 897 | 0.72 | réduction : mipmaps recommandés |
 | dragon | legendary | SLEEP | 1522×780 | 650 → 975 (×1.5) | 975 | 0.64 | réduction : mipmaps recommandés |
-| dragonne | baby | WINGS_DOWN | 532×204 | 473 → 709 (×1.5) | 709 | 1.33 | **agrandi ×1.33 : résolution insuffisante, flou** |
-| dragonne | baby | WINGS_UP | 490×221 | 435 → 653 (×1.5) | 653 | 1.33 | **agrandi ×1.33 : résolution insuffisante, flou** |
+| dragonne | baby | WINGS_DOWN | 1516×1005 | 405 → 607 (×1.5) | 607 | 0.40 | forte réduction : mipmaps indispensables |
+| dragonne | baby | WINGS_UP | 1523×963 | 403 → 605 (×1.5) | 605 | 0.40 | forte réduction : mipmaps indispensables |
 | dragonne | baby | NORMAL | 1510×978 | 473 → 710 (×1.5) | 710 | 0.47 | forte réduction : mipmaps indispensables |
-| dragonne | baby | SLEEP | 457×183 | 487 → 731 (×1.5) | 731 | 1.60 | **agrandi ×1.60 : résolution insuffisante, flou** |
-| dragonne | young | WINGS_DOWN | 612×289 | 481 → 722 (×1.5) | 722 | 1.18 | **agrandi ×1.18 : résolution insuffisante, flou** |
-| dragonne | young | WINGS_UP | 630×264 | 495 → 743 (×1.5) | 743 | 1.18 | **agrandi ×1.18 : résolution insuffisante, flou** |
+| dragonne | baby | SLEEP | 1503×869 | 499 → 749 (×1.5) | 749 | 0.50 | forte réduction : mipmaps indispensables |
+| dragonne | young | WINGS_DOWN | 1508×1014 | 523 → 785 (×1.5) | 785 | 0.52 | forte réduction : mipmaps indispensables |
+| dragonne | young | WINGS_UP | 1513×942 | 472 → 708 (×1.5) | 708 | 0.47 | forte réduction : mipmaps indispensables |
 | dragonne | young | NORMAL | 1524×1024 | 538 → 807 (×1.5) | 807 | 0.53 | forte réduction : mipmaps indispensables |
-| dragonne | young | SLEEP | 611×227 | 554 → 832 (×1.5) | 832 | 1.36 | **agrandi ×1.36 : résolution insuffisante, flou** |
-| dragonne | adult | WINGS_DOWN | 698×311 | 499 → 748 (×1.5) | 748 | 1.07 | **agrandi ×1.07 : résolution insuffisante, flou** |
-| dragonne | adult | WINGS_UP | 750×284 | 536 → 804 (×1.5) | 804 | 1.07 | **agrandi ×1.07 : résolution insuffisante, flou** |
+| dragonne | young | SLEEP | 1520×880 | 463 → 695 (×1.5) | 695 | 0.46 | forte réduction : mipmaps indispensables |
+| dragonne | adult | WINGS_DOWN | 1510×987 | 466 → 699 (×1.5) | 699 | 0.46 | forte réduction : mipmaps indispensables |
+| dragonne | adult | WINGS_UP | 1504×988 | 465 → 697 (×1.5) | 697 | 0.46 | forte réduction : mipmaps indispensables |
 | dragonne | adult | NORMAL | 1524×1011 | 583 → 874 (×1.5) | 874 | 0.57 | réduction : mipmaps recommandés |
-| dragonne | adult | SLEEP | 709×273 | 600 → 900 (×1.5) | 900 | 1.27 | **agrandi ×1.27 : résolution insuffisante, flou** |
-| dragonne | legendary | WINGS_DOWN | 734×328 | 549 → 824 (×1.5) | 824 | 1.12 | **agrandi ×1.12 : résolution insuffisante, flou** |
-| dragonne | legendary | WINGS_UP | 735×284 | 550 → 825 (×1.5) | 825 | 1.12 | **agrandi ×1.12 : résolution insuffisante, flou** |
+| dragonne | adult | SLEEP | 1519×873 | 592 → 888 (×1.5) | 888 | 0.58 | réduction : mipmaps recommandés |
+| dragonne | legendary | WINGS_DOWN | 1522×1009 | 430 → 644 (×1.5) | 644 | 0.42 | forte réduction : mipmaps indispensables |
+| dragonne | legendary | WINGS_UP | 1516×980 | 520 → 780 (×1.5) | 780 | 0.51 | forte réduction : mipmaps indispensables |
 | dragonne | legendary | NORMAL | 1536×1022 | 598 → 897 (×1.5) | 897 | 0.58 | réduction : mipmaps recommandés |
-| dragonne | legendary | SLEEP | 742×342 | 616 → 924 (×1.5) | 924 | 1.25 | **agrandi ×1.25 : résolution insuffisante, flou** |
+| dragonne | legendary | SLEEP | 1526×912 | 613 → 920 (×1.5) | 920 | 0.60 | réduction : mipmaps recommandés |
 
 ### Android 1440×3120 (densité 3,5)
 
@@ -120,22 +120,22 @@ Taille de l’illustration sur l’écran Dragon (scène = 60 % de la hauteur), 
 | dragon | legendary | WINGS_UP | 1515×977 | 595 → 1041 (×1.75) | 1041 | 0.69 | réduction : mipmaps recommandés |
 | dragon | legendary | NORMAL | 1253×1075 | 684 → 1197 (×1.75) | 1197 | 0.96 | proche du 1:1 |
 | dragon | legendary | SLEEP | 1522×780 | 744 → 1301 (×1.75) | 1301 | 0.85 | proche du 1:1 |
-| dragonne | baby | WINGS_DOWN | 532×204 | 541 → 947 (×1.75) | 947 | 1.78 | **agrandi ×1.78 : résolution insuffisante, flou** |
-| dragonne | baby | WINGS_UP | 490×221 | 498 → 872 (×1.75) | 872 | 1.78 | **agrandi ×1.78 : résolution insuffisante, flou** |
+| dragonne | baby | WINGS_DOWN | 1516×1005 | 463 → 811 (×1.75) | 811 | 0.54 | forte réduction : mipmaps indispensables |
+| dragonne | baby | WINGS_UP | 1523×963 | 461 → 808 (×1.75) | 808 | 0.53 | forte réduction : mipmaps indispensables |
 | dragonne | baby | NORMAL | 1510×978 | 542 → 948 (×1.75) | 948 | 0.63 | réduction : mipmaps recommandés |
-| dragonne | baby | SLEEP | 457×183 | 558 → 976 (×1.75) | 976 | 2.14 | **agrandi ×2.14 : résolution insuffisante, flou** |
-| dragonne | young | WINGS_DOWN | 612×289 | 550 → 963 (×1.75) | 963 | 1.57 | **agrandi ×1.57 : résolution insuffisante, flou** |
-| dragonne | young | WINGS_UP | 630×264 | 567 → 992 (×1.75) | 992 | 1.57 | **agrandi ×1.57 : résolution insuffisante, flou** |
+| dragonne | baby | SLEEP | 1503×869 | 571 → 1000 (×1.75) | 1000 | 0.67 | réduction : mipmaps recommandés |
+| dragonne | young | WINGS_DOWN | 1508×1014 | 599 → 1048 (×1.75) | 1048 | 0.69 | réduction : mipmaps recommandés |
+| dragonne | young | WINGS_UP | 1513×942 | 540 → 945 (×1.75) | 945 | 0.62 | réduction : mipmaps recommandés |
 | dragonne | young | NORMAL | 1524×1024 | 616 → 1078 (×1.75) | 1078 | 0.71 | réduction : mipmaps recommandés |
-| dragonne | young | SLEEP | 611×227 | 634 → 1110 (×1.75) | 1110 | 1.82 | **agrandi ×1.82 : résolution insuffisante, flou** |
-| dragonne | adult | WINGS_DOWN | 698×311 | 571 → 999 (×1.75) | 999 | 1.43 | **agrandi ×1.43 : résolution insuffisante, flou** |
-| dragonne | adult | WINGS_UP | 750×284 | 614 → 1074 (×1.75) | 1074 | 1.43 | **agrandi ×1.43 : résolution insuffisante, flou** |
+| dragonne | young | SLEEP | 1520×880 | 530 → 928 (×1.75) | 928 | 0.61 | réduction : mipmaps recommandés |
+| dragonne | adult | WINGS_DOWN | 1510×987 | 533 → 933 (×1.75) | 933 | 0.62 | réduction : mipmaps recommandés |
+| dragonne | adult | WINGS_UP | 1504×988 | 532 → 931 (×1.75) | 931 | 0.62 | réduction : mipmaps recommandés |
 | dragonne | adult | NORMAL | 1524×1011 | 667 → 1167 (×1.75) | 1167 | 0.77 | réduction : mipmaps recommandés |
-| dragonne | adult | SLEEP | 709×273 | 687 → 1202 (×1.75) | 1202 | 1.70 | **agrandi ×1.70 : résolution insuffisante, flou** |
-| dragonne | legendary | WINGS_DOWN | 734×328 | 629 → 1100 (×1.75) | 1100 | 1.50 | **agrandi ×1.50 : résolution insuffisante, flou** |
-| dragonne | legendary | WINGS_UP | 735×284 | 630 → 1102 (×1.75) | 1102 | 1.50 | **agrandi ×1.50 : résolution insuffisante, flou** |
+| dragonne | adult | SLEEP | 1519×873 | 677 → 1185 (×1.75) | 1185 | 0.78 | réduction : mipmaps recommandés |
+| dragonne | legendary | WINGS_DOWN | 1522×1009 | 492 → 860 (×1.75) | 860 | 0.56 | réduction : mipmaps recommandés |
+| dragonne | legendary | WINGS_UP | 1516×980 | 595 → 1041 (×1.75) | 1041 | 0.69 | réduction : mipmaps recommandés |
 | dragonne | legendary | NORMAL | 1536×1022 | 684 → 1197 (×1.75) | 1197 | 0.78 | réduction : mipmaps recommandés |
-| dragonne | legendary | SLEEP | 742×342 | 705 → 1233 (×1.75) | 1233 | 1.66 | **agrandi ×1.66 : résolution insuffisante, flou** |
+| dragonne | legendary | SLEEP | 1526×912 | 702 → 1228 (×1.75) | 1228 | 0.81 | réduction : mipmaps recommandés |
 
 ## Équipements (écran de référence 1)
 

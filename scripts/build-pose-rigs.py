@@ -104,6 +104,14 @@ HEADS = {
     ('dragon', 'adult', 'flyDown'): ((99, 22), (95, 18)), ('dragon', 'adult', 'sleep'): ((99, 72), (92.5, 62)),
     ('dragon', 'legendary', 'flyUp'): ((95, 49), (91, 45)), ('dragon', 'legendary', 'flyDown'): ((92.5, 27), (88, 21.5)),
     ('dragon', 'legendary', 'sleep'): ((97, 68), (92.5, 59)),
+    ('dragonne', 'baby', 'flyUp'): ((98.3, 36.5), (93.9, 31.5)), ('dragonne', 'baby', 'flyDown'): ((96.4, 26.5), (91.7, 22.5)),
+    ('dragonne', 'baby', 'sleep'): ((99.2, 51), (93.9, 47.5)),
+    ('dragonne', 'young', 'flyUp'): ((96.4, 38), (91.4, 35)), ('dragonne', 'young', 'flyDown'): ((96.4, 26), (92.2, 22.5)),
+    ('dragonne', 'young', 'sleep'): ((99.2, 60), (93, 49)),
+    ('dragonne', 'adult', 'flyUp'): ((99.3, 48), (93.9, 42.5)), ('dragonne', 'adult', 'flyDown'): ((97, 23), (91.4, 18)),
+    ('dragonne', 'adult', 'sleep'): ((98.9, 64), (94.4, 56)),
+    ('dragonne', 'legendary', 'flyUp'): ((99.4, 39), (95.6, 35.5)), ('dragonne', 'legendary', 'flyDown'): ((99.3, 27), (95.1, 22)),
+    ('dragonne', 'legendary', 'sleep'): ((97.5, 61), (94.7, 52)),
 }
 # Repères de la tête exprimés depuis l'œil, en longueurs « œil → museau » (valables pour tous les stades)
 HEAD_FRAME = {'head_anchor': (-1.18, -0.24), 'neck_anchor': (-2.6, 0.67), 'chest_anchor': (-3.6, 1.8)}
