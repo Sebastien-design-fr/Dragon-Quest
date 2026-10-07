@@ -1,57 +1,17 @@
 {
-  "note": "Poses peintes attendues par le moteur (variante -> stade -> poses). La 0.18 utilise systématiquement flyUp/flyMid/flyDown afin d'obtenir un battement d'ailes fluide ; l'asset manquant peut temporairement retomber sur l'interpolation moteur.",
+  "note": "Dragon Mission 0.19.1 : les anciennes poses peintes de Quête du Dragon sont désactivées. Les animations utilisent uniquement les nouveaux dragons Dragon Mission et le rig sprite.",
   "poses": {
     "dragon": {
-      "baby": [
-        "sleep",
-        "flyUp",
-        "flyMid",
-        "flyDown"
-      ],
-      "young": [
-        "sleep",
-        "flyUp",
-        "flyMid",
-        "flyDown"
-      ],
-      "adult": [
-        "sleep",
-        "flyUp",
-        "flyMid",
-        "flyDown"
-      ],
-      "legendary": [
-        "sleep",
-        "flyUp",
-        "flyMid",
-        "flyDown"
-      ]
+      "baby": [],
+      "young": [],
+      "adult": [],
+      "legendary": []
     },
     "dragonne": {
-      "baby": [
-        "sleep",
-        "flyUp",
-        "flyMid",
-        "flyDown"
-      ],
-      "young": [
-        "sleep",
-        "flyUp",
-        "flyMid",
-        "flyDown"
-      ],
-      "adult": [
-        "sleep",
-        "flyUp",
-        "flyMid",
-        "flyDown"
-      ],
-      "legendary": [
-        "sleep",
-        "flyUp",
-        "flyMid",
-        "flyDown"
-      ]
+      "baby": [],
+      "young": [],
+      "adult": [],
+      "legendary": []
     }
   }
 }
