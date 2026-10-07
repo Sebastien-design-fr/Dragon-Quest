@@ -8,7 +8,7 @@ import type { Duo } from '../family/Duo.js';
 import type { Training } from '../family/Training.js';
 import { VisitScene } from './VisitScene.js';
 import { StageHud } from './StageHud.js';
-import { equipReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
+import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
 import { installShake } from './Sensors.js';
@@ -69,6 +69,7 @@ export class App {
   private tabs: HTMLElement;
   private tray: HTMLElement;
   private evolving = false;
+  private evoFrom: StageDef | null = null;
   /** Geste sur le dragon : caresser (par défaut) ou laver. */
   careMode: 'pet' | 'wash' = 'pet';
   private bubble: HTMLElement;
@@ -603,15 +604,43 @@ export class App {
   private evolve(to: StageDef): void {
     if (this.stageOverride) return; // en mode test, la vue reste sur le stade forcé
     this.family.companion?.noteStage(to.id, to.label);
+    void this.playEvolution(to);
+  }
+
+  /** Transformation mise en scène (LOT 6) ; l'interface reprend la main à la fin. */
+  private async playEvolution(to: StageDef): Promise<void> {
     this.evolving = true;
+    this.evoFrom = this.view.stage;
     this.toggleSleep(false);
-    this.view.onSwapStage = () => this.view.setStage(to);
-    void this.view.play('evolution').then(async () => {
-      this.view.onSwapStage = null;
+    this.bubble.classList.remove('show');
+    this.root.classList.add('evolving');
+    this.view.onEvolveReveal = () => { this.evoFrom = null; this.renderHud(); evolutionReaction(this, to, this.state.data.level); };
+    try {
+      await this.view.evolve(to, this.ownVariant);
+    } finally {
+      this.view.onEvolveReveal = null;
       this.evolving = false;
-      if (this.view.stage?.id !== to.id) await this.view.setStage(to); // sécurité si l'animation a été interrompue
-      this.toast(`Évolution : ${to.label} !`);
-    });
+      this.evoFrom = null;
+      this.root.classList.remove('evolving');
+      if (this.view.stage?.id !== to.id) await this.view.setStage(to, true, this.ownVariant); // sécurité
+      this.syncEquipment();
+      this.renderHud();
+    }
+  }
+
+  /** Panneau développeur : évolution complète du stade affiché vers le suivant (sans toucher à la sauvegarde). */
+  async devEvolve(): Promise<void> {
+    if (this.evolving) return;
+    const stages = this.catalog.stages;
+    let i = stages.findIndex(s => s.id === this.view.stage?.id);
+    if (i < 0 || i >= stages.length - 1) {
+      i = Math.max(0, stages.length - 2);
+      await this.view.setStage(stages[i], true, this.ownVariant);
+      this.syncEquipment();
+    }
+    const to = stages[i + 1];
+    this.stageOverride = to;
+    await this.playEvolution(to);
   }
 
   async setStageOverride(stage: StageDef | null): Promise<void> {
@@ -638,7 +667,8 @@ export class App {
       return;
     }
     const d = this.state.data;
-    const stage = this.stageOverride ?? this.state.stage;
+    // pendant l'évolution, le bandeau garde l'ancien stade jusqu'à la révélation
+    const stage = (this.evolving && this.evoFrom) || this.stageOverride || this.state.stage;
     const need = this.state.xpToNext();
     this.hud.append(
       h('div', { class: 'hud-id' },

@@ -23,6 +23,7 @@ import { OrganicLife, personalityFor } from './Organic.js';
 import { flightConfig, flightPhase, type FlightConfig } from './Flight.js';
 import { MeshRenderer, SpriteSkin } from './SpriteSkin.js';
 import { Backdrop, type BackdropDef } from './Backdrop.js';
+import { drawEvolutionBackLayers, drawEvolutionRing, evolutionConfig, evolutionFrame, evolutionMarks, rgba, type EvoFrame, type EvolutionConfig, type RGB } from './Evolution.js';
 
 /** Taches de saleté : [ancrage, décalage x, y, rayon, intensité] (unités : échelle des effets). */
 const DIRT_SPOTS: Array<[string, number, number, number, number]> = [
@@ -192,6 +193,20 @@ export class DragonView {
   onClip: ((clip: string) => void) | null = null;
   /** Appelé quand un clip demande le changement de stade (animation EVOLUTION). */
   onSwapStage: (() => Promise<void> | void) | null = null;
+  /** Évolution (LOT 6) : appelé au moment où le nouveau dragon apparaît. */
+  onEvolveReveal: (() => void) | null = null;
+  private evo: {
+    c: EvolutionConfig; t: number; f: EvoFrame; to: StageDef; variant: string; resolve: () => void;
+    gather: boolean; swapped: boolean; loaded: boolean; revealed: boolean; clip: boolean; landed: boolean; wait: number;
+    snapA: HTMLCanvasElement | null; snapB: HTMLCanvasElement | null; feetA: { x: number; y: number }; feetB: { x: number; y: number } | null;
+    shown: HTMLCanvasElement | null; prevShown: HTMLCanvasElement | null; switchAt: number; release: string[];
+  } | null = null;
+  /** Calque de composition du dragon pendant l'évolution (silhouette, halo). */
+  private layer: HTMLCanvasElement | null = null;
+  private flashColor: RGB = [255, 236, 190];
+  private shakeOff = { x: 0, y: 0 };
+  /** Une évolution est-elle en cours ? */
+  get evolving(): boolean { return !!this.evo; }
 
   get dependencies(): DragonViewDeps { return this.deps; }
 
@@ -464,6 +479,141 @@ export class DragonView {
     return new Promise(resolve => { this.flight = { t: 0, dur: this.fcfg.cruise, baseMirror: this.mirrored, resolve }; });
   }
 
+  /**
+   * Évolution mise en scène (LOT 6) : charge → silhouette de lumière → métamorphose → révélation du nouveau stade.
+   * Le changement de stade (illustration, squelette, décor) a lieu pendant la métamorphose. Résolue à la fin.
+   */
+  evolve(to: StageDef, variant = this.variant): Promise<void> {
+    if (!this.stage || !this.skeleton) return this.setStage(to, true, variant);
+    if (this.evo) { const old = this.evo; this.evo = null; old.resolve(); }
+    if (this.flight) { this.mirrored = this.flight.baseMirror; this.flight.resolve?.(); this.flight = null; this.airborne = false; this.placement.x = this.placeTarget.x; }
+    this.debugPose = null;
+    const c = evolutionConfig(this.deps.visual as never, to.id, variant);
+    // les images du nouveau stade se chargent pendant la charge : pas d'attente au moment du changement
+    const release: string[] = [];
+    for (const path of [Assets.dragonPart(to.id, 'full', variant)]) if (path) { void Assets.acquire(path); release.push(path); }
+    const bg = Assets.background(to.id);
+    if (bg) { const im = new Image(); im.src = bg; }
+    void this.play('idle');
+    this.onClip?.('evolution');
+    return new Promise(resolve => {
+      this.evo = {
+        c, t: 0, f: evolutionFrame(c, 0), to, variant, resolve,
+        gather: false, swapped: false, loaded: false, revealed: false, clip: false, landed: false, wait: 0,
+        snapA: null, snapB: null, feetA: { x: 0, y: 0 }, feetB: null, shown: null, prevShown: null, switchAt: 0, release
+      };
+    });
+  }
+
+  /** Avance l'évolution : phases, changement de stade, déclenchements (éclair, particules, atterrissage). */
+  private evoTick(dt: number): void {
+    const e = this.evo;
+    if (!e) return;
+    const m = evolutionMarks(e.c);
+    e.t += dt;
+    // le nouveau dragon n'est pas encore prêt : la métamorphose se prolonge (au plus quelques secondes)
+    if (e.t >= m.morphed && !e.revealed && !(e.loaded && this.skin) && e.wait < 6) { e.wait += dt; e.t = m.morphed - 1e-3; }
+    const f = e.f = evolutionFrame(e.c, e.t);
+    this.lift = e.c.levitate * f.lift;
+    if (f.tremble > 0) this.shake = Math.max(this.shake, e.c.shake * f.tremble * 0.5);
+    if (!e.gather && e.t > 0.15) {
+      e.gather = true;
+      const id = `temp:evo:${this.time}`;
+      this.particles.setEmitter(id, e.c.gather, this.anchorSource('body_center', this.deps.presets.get(e.c.gather)));
+      this.tempEmitters.push({ id, until: this.time + m.lit - e.t + 0.4 });
+    }
+    if (!e.swapped && e.t >= m.lit) {
+      e.swapped = true;
+      // silhouette de l'ancien dragon (dernière image composée), puis chargement du nouveau stade
+      if (this.layer) { e.snapA = copyCanvas(this.layer); e.feetA = this.camM.point(0, 0); e.feetA.y -= this.lift * this.canvas.height; }
+      void this.setStage(e.to, true, e.variant).then(() => { e.loaded = true; }, () => { e.loaded = true; });
+    }
+    if (!e.revealed && e.t >= m.morphed) {
+      e.revealed = true;
+      this.flashColor = e.c.color;
+      this.flash = 0.95;
+      this.shake = Math.max(this.shake, e.c.shake * 2.4);
+      for (const p of e.c.burst) this.emit(p, 'body_center');
+      for (const p of e.release) Assets.release(p);
+      e.release = [];
+      this.onEvolveReveal?.();
+    }
+    if (!e.clip && e.t >= m.clip) { e.clip = true; void this.play(e.c.revealClip); }
+    if (!e.landed && e.t >= m.land) {
+      e.landed = true;
+      for (const a of ['front_leg_anchor', 'rear_leg_anchor']) { this.emit('dustLand', a); this.emit('dustLand', a); }
+      this.impact.vel -= 0.5;
+    }
+    if (e.t >= m.end) {
+      this.evo = null;
+      this.lift = 0;
+      e.snapA = e.snapB = e.shown = e.prevShown = null;
+      if (this.layer) { this.layer.width = this.layer.height = 1; }
+      e.resolve();
+    }
+  }
+
+  /** Dessine le dragon pendant l'évolution : rendu normal composé en silhouette lumineuse, ou silhouettes figées. */
+  private drawEvoDragon(ctx: CanvasRenderingContext2D, W: number, H: number): void {
+    const e = this.evo!, f = e.f, c = e.c;
+    const L = this.layer ?? (this.layer = document.createElement('canvas'));
+    if (L.width !== W || L.height !== H) { L.width = W; L.height = H; }
+    const g = L.getContext('2d')!;
+    const renderLive = (sil: number) => {
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.globalCompositeOperation = 'source-over';
+      g.clearRect(0, 0, W, H);
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+      this.drawDragon(g, W, H, 1);
+      if (sil > 0.005) {
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.globalCompositeOperation = 'source-atop';
+        g.fillStyle = rgba(c.color, sil);
+        g.fillRect(0, 0, W, H);
+        g.globalCompositeOperation = 'source-over';
+      }
+    };
+    const halo = (strength: number) => {
+      ctx.shadowColor = rgba(c.color, Math.min(1, strength));
+      ctx.shadowBlur = c.halo * this.dpr * Math.min(1.6, strength);
+    };
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
+    const ready = this.skin && this.mesh?.ready && e.loaded;
+    if (f.phase === 'morph' || (f.phase === 'reveal' && !ready)) {
+      if (!e.snapB && ready) {
+        renderLive(1);
+        e.snapB = copyCanvas(L);
+        e.feetB = this.camM.point(0, 0);
+      }
+      const cur = (f.showNew && e.snapB) || e.snapA;
+      if (!cur) return;
+      if (cur !== e.shown) { e.prevShown = e.shown; e.shown = cur; e.switchAt = e.t; }
+      const since = e.t - e.switchAt;
+      const isNew = cur === e.snapB;
+      // chaque silhouette est recalée sur les pattes du nouveau dragon
+      const ref = e.feetB ?? e.feetA;
+      const draw = (img: HTMLCanvasElement, sc: number, alpha: number) => {
+        const feet = img === e.snapB ? e.feetB ?? ref : e.feetA;
+        const dx = ref.x - feet.x + this.shakeOff.x, dy = ref.y - feet.y + this.shakeOff.y;
+        ctx.globalAlpha = alpha;
+        ctx.setTransform(sc, 0, 0, sc, ref.x * (1 - sc) + dx, ref.y * (1 - sc) + dy);
+        ctx.drawImage(img, 0, 0);
+      };
+      halo(f.halo);
+      if (e.prevShown && since < 0.09) draw(e.prevShown, 1, 1 - since / 0.09);
+      const pop = Math.exp(-since * 9);
+      draw(cur, 1 + (isNew ? 0.05 : -0.035) * pop, 1);
+    } else {
+      renderLive(f.sil);
+      if (f.halo > 0.02) halo(f.halo);
+      ctx.drawImage(L, 0, 0);
+    }
+    ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
+    ctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
   // ---------------- Boucle ----------------
   start(): void {
     const tick = (now: number) => {
@@ -556,6 +706,7 @@ export class DragonView {
     const s0 = Math.min(W / this.cam.w, H / this.cam.h) * 0.94;
     const shakeX = this.shake > 0 ? (Math.random() - 0.5) * this.shake * this.dpr : 0;
     const shakeY = this.shake > 0 ? (Math.random() - 0.5) * this.shake * this.dpr : 0;
+    this.shakeOff.x = shakeX; this.shakeOff.y = shakeY;
     this.shake = Math.max(0, this.shake - dt * 30);
     this.placement.x = damp(this.placement.x, this.placeTarget.x, 2.2, dt);
     this.placement.scale = damp(this.placement.scale, this.placeTarget.scale, 2.2, dt);
@@ -567,6 +718,7 @@ export class DragonView {
       if (u >= 1) this.camFx.amp = 0;
       else zoom = 1 + this.camFx.amp * (u < 0.25 ? Math.sin((u / 0.25) * Math.PI / 2) : 0.5 + 0.5 * Math.cos(((u - 0.25) / 0.75) * Math.PI));
     }
+    if (this.evo) zoom *= 1 + this.evo.c.zoom * this.evo.f.zoom;
     const s = s0 * this.placement.scale * zoom;
     // demi-tour en vol : le dragon pivote (largeur qui passe par zéro) au lieu de se retourner d'un coup
     const want = this.mirrored ? -1 : 1;
@@ -577,6 +729,7 @@ export class DragonView {
     // le sol (y = 0) reste à la même hauteur quelle que soit la taille
     this.camM.f = H / 2 - (this.cam.y + this.cam.h / 2) * s0 + shakeY;
     this.flightTick(dt);
+    this.evoTick(dt);
 
     // Décor (sol aligné sous les pattes du dragon)
     const feet = this.camM.point(0, 0);
@@ -584,14 +737,22 @@ export class DragonView {
 
     // Ombres (sous le dragon, au sol) puis éclairage de l'image
     this.updateLighting(dt);
-    if (this.fx.shadows) this.drawShadows(ctx);
+    const evo = this.evo;
+    // pendant la métamorphose, la silhouette de lumière ne projette pas l'ombre du dragon peint
+    if (this.fx.shadows && !(evo && evo.f.sil > 0.85)) this.drawShadows(ctx);
 
     // En vol : tout le dragon monte (le décor et l'ombre restent au sol)
     this.camM.f -= this.lift * H;
 
+    if (evo) {
+      const m = new Mat2D();
+      const bc = this.anchorWorld('body_center', m) ? this.camM.point(m.e, m.f) : this.camM.point(0, -this.cam.h * 0.3);
+      drawEvolutionBackLayers(ctx, evo.c, evo.f, W, H, bc, feet.y, Math.abs(this.camM.d) * this.cam.w * 0.42, this.time);
+    }
+
     if (this.layers.magicalEffect) { this.camM.apply(ctx); this.particles.draw(ctx, 'magical'); }
 
-    ctx.filter = this.tired ? 'grayscale(0.75) brightness(0.62) contrast(0.92)' : 'none';
+    ctx.filter = this.tired && !evo ? 'grayscale(0.75) brightness(0.62) contrast(0.92)' : 'none';
     // boucle de repos à vitesse légèrement variable (cycle non reconnaissable), rythme propre au stade
     const onIdleLoop = (this.animator.baseId ?? '').startsWith('idle') && !this.animator.actionId;
     this.animator.speed = (this.tired ? 0.6 : 1) * (onIdleLoop ? this.life.idleRate() * this.life.p.tempo : Math.sqrt(this.life.p.tempo));
@@ -605,9 +766,10 @@ export class DragonView {
     this.poseW.sleep = damp(this.poseW.sleep, wantSleep, 4, dt);
     this.poseW.fly = damp(this.poseW.fly, wantFly, 6, dt);
     const wBase = Math.max(0, 1 - this.poseW.sleep - this.poseW.fly);
-    if (wBase > 0.01) this.drawDragon(ctx, W, H, wBase);
-    if (this.poseW.sleep > 0.01 && pv.sleep) pv.sleep.renderPose(ctx, this, W, H, this.poseW.sleep);
-    if (this.poseW.fly > 0.01 && pv.flyUp && pv.flyDown) {
+    if (evo) this.drawEvoDragon(ctx, W, H);
+    else if (wBase > 0.01) this.drawDragon(ctx, W, H, wBase);
+    if (!evo && this.poseW.sleep > 0.01 && pv.sleep) pv.sleep.renderPose(ctx, this, W, H, this.poseW.sleep);
+    if (!evo && this.poseW.fly > 0.01 && pv.flyUp && pv.flyDown) {
       // battements : ailes hautes / ailes basses, presque nets avec un court fondu
       this.flapPhase += dt / (this.fcfg.flapPeriod * this.flapRate);
       let w3 = flapWeights(this.flapPhase, !!pv.flyMid);
@@ -621,10 +783,11 @@ export class DragonView {
 
     ctx.filter = 'none';
     if (this.layers.foregroundEffect) { this.camM.apply(ctx); this.particles.draw(ctx, 'foreground'); }
+    if (evo) drawEvolutionRing(ctx, evo.c, evo.f, W, feet.x, feet.y, this.dpr);
 
     if (this.flash > 0) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = `rgba(255,236,190,${Math.min(1, this.flash)})`;
+      ctx.fillStyle = rgba(this.flashColor, this.flash);
       ctx.fillRect(0, 0, W, H);
       this.flash = Math.max(0, this.flash - dt * 1.6);
     }
@@ -799,7 +962,7 @@ export class DragonView {
     const base = this.animator.baseId ?? '';
     const act = this.animator.actionId;
     const sleeping = base.startsWith('sleep');
-    const idle = base.startsWith('idle') && !this.flight;
+    const idle = base.startsWith('idle') && !this.flight && !this.evo;
     const unit = this.rig?.motionScale ?? 1;
     // mouvements de fond : aussi pendant une action courte (ils s'atténuent naturellement sous le clip)
     this.life.apply(dt, sk, !this.idleLife ? (sleeping ? 'sleep' : 'off') : sleeping ? 'sleep' : idle ? 'idle' : 'off', unit);
@@ -834,6 +997,12 @@ export class DragonView {
     const env = key === act ? Math.pow(Math.sin(Math.PI * this.animator.actionProgress), 0.6) : 1;
     this.lightU = buildUniforms(scene, this.dcfg.lighting, states[key] ?? {}, this.lightState.w * env, { lighting: this.fx.lighting, rim: this.fx.rim });
     if (night > 0) this.lightU.exposure *= 1 - 0.12 * night;
+    const evo = this.evo;
+    if (evo && evo.f.halo > 0) {
+      this.lightU.glow = Math.max(this.lightU.glow, Math.min(1, evo.f.halo) * 0.55);
+      this.lightU.glowColor = evo.c.color.map(v => v / 255) as RGB;
+      this.lightU.enabled = true;
+    }
   }
 
   /**
@@ -1008,6 +1177,16 @@ export class DragonView {
     const unit = this.rig?.motionScale ?? 1;
     body.offset.y += fb.y * unit;
     body.offset.rot += fb.rot;
+    const evo = this.evo;
+    if (evo) {
+      // évolution : il se ramasse, puis tremble d'énergie
+      const f = evo.f;
+      body.offset.y += f.crouch * evo.c.crouch * unit;
+      body.offset.rot += Math.sin(this.time * 41) * 0.7 * f.tremble * evo.c.tremble;
+      body.offset.x += Math.sin(this.time * 53 + 1.3) * 0.8 * f.tremble * evo.c.tremble * unit;
+      const head = sk.bone('head');
+      if (head) head.offset.rot -= 8 * Math.min(1, f.lift + f.crouch * 0.4);
+    }
     body.offset.sy *= 1 + sq - fb.y * 0.004;
     body.offset.sx *= 1 - sq * 0.45;
   }
@@ -1039,4 +1218,12 @@ export class DragonView {
       ctx.fillStyle = '#7fe0ff'; ctx.fillText(name.replace('_anchor', ''), p.x + 6 * this.dpr, p.y - 4 * this.dpr);
     }
   }
+}
+
+/** Copie d'un canvas (silhouette figée pendant la métamorphose). */
+function copyCanvas(src: HTMLCanvasElement): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = src.width; c.height = src.height;
+  c.getContext('2d')!.drawImage(src, 0, 0);
+  return c;
 }

@@ -30,7 +30,8 @@ const POSES: PoseChoice[] = [
   { id: 'r_rare', label: 'Réaction : objet rare', run: a => { const d = [...a.catalog.items.values()].find(x => x.rarity === 'rare'); if (d) void import('./Reactions.js').then(m => m.itemReaction(a, d, 'buy')); } },
   { id: 'r_epic', label: 'Réaction : objet épique', run: a => { const d = [...a.catalog.items.values()].find(x => x.rarity === 'epic'); if (d) void import('./Reactions.js').then(m => m.itemReaction(a, d, 'buy')); } },
   { id: 'r_leg', label: 'Réaction : objet légendaire', run: a => { const d = [...a.catalog.items.values()].find(x => x.rarity === 'legendary'); if (d) void import('./Reactions.js').then(m => m.itemReaction(a, d, 'gift')); } },
-  { id: 'evolution', label: 'Évolution (sans changer de stade)', run: a => { a.view.debugPose = null; void a.view.play('evolution'); } }
+  { id: 'evolve', label: 'Évolution complète → stade suivant (LOT 6)', run: a => { void a.devEvolve(); } },
+  { id: 'evolution', label: 'Ancienne animation d’évolution (sans changer de stade)', run: a => { a.view.debugPose = null; void a.view.play('evolution'); } }
 ];
 
 let panel: HTMLElement | null = null;

@@ -27,6 +27,17 @@ export class ParticleSystem {
 
   preset(id: string): ParticlePreset | undefined { return this.presets.get(id); }
 
+  /** Prochaine particule libre (recherche circulaire depuis la dernière trouvée : pas de parcours complet à chaque émission). */
+  private cursor = 0;
+  private free(): P | null {
+    const n = this.pool.length;
+    for (let i = 0; i < n; i++) {
+      const j = (this.cursor + i) % n;
+      if (!this.pool[j].alive) { this.cursor = (j + 1) % n; return this.pool[j]; }
+    }
+    return null;
+  }
+
   /** Particules vivantes (panneau développeur). */
   count(): number { let n = 0; for (const p of this.pool) if (p.alive) n++; return n; }
 
@@ -110,7 +121,7 @@ export class ParticleSystem {
   }
 
   private spawn(pr: ParticlePreset, x: number, y: number, scale: number): void {
-    const p = this.pool.find(q => !q.alive);
+    const p = this.free();
     if (!p) return;
     const ang = (rand(pr.angle[0], pr.angle[1]) * Math.PI) / 180;
     const sp = rand(pr.speed[0], pr.speed[1]) * scale;
@@ -123,6 +134,14 @@ export class ParticleSystem {
     p.rot = Math.random() * Math.PI * 2;
     p.vr = ((pr.spin ?? 0) * Math.PI / 180) * (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.5);
     p.color = pr.colors[(Math.random() * pr.colors.length) | 0];
+    if (pr.converge !== undefined) {
+      // départ sur un cercle autour de la source, arrivée au centre en fin de vie (avec un tourbillon)
+      const a = Math.random() * Math.PI * 2, R = r * rand(0.75, 1.25);
+      const ox = Math.cos(a) * R, oy = Math.sin(a) * R * 0.75;
+      p.x = x + ox; p.y = y + oy;
+      const k = 1 / p.max, w = pr.converge;
+      p.vx = (-ox - oy * w) * k; p.vy = (-oy + ox * w) * k;
+    }
   }
 }
 

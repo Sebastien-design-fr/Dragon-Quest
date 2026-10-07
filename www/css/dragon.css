@@ -146,3 +146,18 @@
 .rx-item-txt { display: flex; flex-direction: column; gap: 2px; position: relative; }
 .rx-item-k { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--rc); }
 .rx-item-txt strong { font-family: var(--display); font-size: 17px; color: #fff3dc; }
+
+/* LOT 6 — évolution : l'interface de scène s'efface pendant la transformation */
+#app.evolving .sh, #app.evolving .bubble, #app.evolving .stage-view [class^="sp-"] { opacity: 0; pointer-events: none; transition: opacity .4s; }
+#app.evolving .stage-view { pointer-events: none; }
+.rx-evo { position: absolute; left: 50%; top: 4%; z-index: 8; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; opacity: 0;
+  padding: 14px 30px 12px; text-align: center; white-space: nowrap;
+  background: radial-gradient(closest-side, rgba(40,26,8,.78), rgba(20,14,6,0)); }
+.rx-evo-k { font-family: var(--display); font-size: 13px; letter-spacing: .5em; text-transform: uppercase; color: #fff1b8; text-shadow: 0 0 12px rgba(255,200,90,.85); }
+.rx-evo-name { font-family: var(--display); font-size: 34px; line-height: 1.1; color: #ffe08a;
+  text-shadow: 0 0 18px rgba(255,190,70,.9), 0 2px 0 #7a4d10, 0 5px 14px rgba(0,0,0,.65); }
+.rx-evo-sub { font-size: 15px; font-weight: 600; color: #fff6e0; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
+.rx-evo-tag { font-size: 12px; font-style: italic; color: #f2dcae; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
+.rx-evo-lvl { margin-top: 4px; padding: 2px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .08em; color: #2a1a04;
+  background: linear-gradient(#ffe7a0, #e9b44c); box-shadow: 0 0 12px rgba(255,200,90,.6); }
+.rx-evo-legendary .rx-evo-name { font-size: 38px; color: #fff0b0; }

@@ -366,5 +366,122 @@
       ],
       "rim": 1.6
     }
+  },
+  "evolution": {
+    "note": "LOT 6 — transformation au passage de stade. Clés : default, <stade d'arrivée>, <variante>.default, <variante>.<stade>. Durées en secondes.",
+    "default": {
+      "charge": 2.2,
+      "silhouette": 0.6,
+      "morph": 2.4,
+      "reveal": 1.5,
+      "settle": 0.8,
+      "swaps": 9,
+      "color": [
+        255,
+        236,
+        190
+      ],
+      "accent": [
+        255,
+        200,
+        110
+      ],
+      "dim": 0.5,
+      "rays": 0.8,
+      "rayCount": 14,
+      "raySpin": 22,
+      "beam": 0.8,
+      "levitate": 0.05,
+      "crouch": 8,
+      "tremble": 1,
+      "shake": 5,
+      "zoom": 0.06,
+      "halo": 26,
+      "gather": "evoGather",
+      "burst": [
+        "evolutionBurst",
+        "evoShards",
+        "evoGlow"
+      ],
+      "revealClip": "roar",
+      "ring": 0.55
+    },
+    "young": {
+      "charge": 2.0,
+      "morph": 2.2,
+      "swaps": 7,
+      "shake": 3.5,
+      "ring": 0.45,
+      "levitate": 0.055
+    },
+    "adult": {
+      "charge": 2.4,
+      "morph": 2.6,
+      "swaps": 9,
+      "shake": 6,
+      "ring": 0.6,
+      "levitate": 0.045,
+      "halo": 30,
+      "zoom": 0.045
+    },
+    "legendary": {
+      "charge": 2.8,
+      "silhouette": 0.8,
+      "morph": 3.0,
+      "reveal": 1.8,
+      "swaps": 11,
+      "color": [
+        255,
+        230,
+        160
+      ],
+      "accent": [
+        255,
+        186,
+        60
+      ],
+      "dim": 0.6,
+      "rays": 1,
+      "rayCount": 18,
+      "shake": 9,
+      "zoom": 0.035,
+      "halo": 36,
+      "ring": 0.8,
+      "levitate": 0.04,
+      "gather": "evoGatherGold",
+      "burst": [
+        "evolutionBurst",
+        "evoShardsGold",
+        "evoGlow",
+        "legendaryGold"
+      ]
+    },
+    "dragonne.default": {
+      "accent": [
+        214,
+        170,
+        255
+      ],
+      "gather": "evoGatherViolet",
+      "burst": [
+        "evolutionBurst",
+        "evoShardsViolet",
+        "evoGlow"
+      ]
+    },
+    "dragonne.legendary": {
+      "accent": [
+        255,
+        196,
+        120
+      ],
+      "gather": "evoGatherGold",
+      "burst": [
+        "evolutionBurst",
+        "evoShardsGold",
+        "evoShardsViolet",
+        "evoGlow"
+      ]
+    }
   }
 }

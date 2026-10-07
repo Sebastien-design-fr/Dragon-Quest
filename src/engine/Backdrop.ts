@@ -26,6 +26,11 @@ export class Backdrop {
   private paintedKey = '';
   private motes: Mote[] = [];
   private stageId = '';
+  /** Décor précédent, en fondu enchaîné vers le nouveau (changement de stade, évolution). */
+  private prev: { img: CanvasImageSource; x: number; y: number; w: number; h: number; a: number } | null = null;
+  private lastRect: { x: number; y: number; w: number; h: number } | null = null;
+  /** Durée du fondu entre deux décors (s). */
+  fadeTime = 1.2;
   /** Nuit : voile bleuté posé par-dessus le décor (couche séparée). */
   night = 0;
   /** Couches d'ambiance indépendantes du décor, désactivables une par une. */
@@ -35,6 +40,10 @@ export class Backdrop {
   sceneOverrides: Partial<SceneLight> | undefined;
 
   setStage(stageId: string, def: BackdropDef | null, imagePath: string | null): void {
+    if (stageId !== this.stageId && this.img && this.lastRect) {
+      // l'ancien décor reste affiché tel quel (même cadrage) jusqu'à ce que le nouveau soit prêt, puis s'efface
+      this.prev = { img: this.scaled ?? this.img, ...this.lastRect, a: 1 };
+    }
     this.stageId = stageId;
     this.def = def;
     this.img = null;
@@ -62,8 +71,20 @@ export class Backdrop {
     let top = feetY - def.floor * dh;
     top = Math.min(0, Math.max(H - dh, top));
     const left = Math.min(0, Math.max(W - dw, (W - dw) / 2 - shiftX * 0.15));
-    if (this.img) ctx.drawImage(this.fit(this.img, dw, dh), Math.round(left), Math.round(top));
-    else ctx.drawImage(this.paint(def, Math.round(W), Math.round(H), feetY), 0, 0);
+    const prev = this.prev;
+    if (this.img) {
+      ctx.drawImage(this.fit(this.img, dw, dh), Math.round(left), Math.round(top));
+      this.lastRect = { x: Math.round(left), y: Math.round(top), w: Math.round(dw), h: Math.round(dh) };
+    } else if (!prev) ctx.drawImage(this.paint(def, Math.round(W), Math.round(H), feetY), 0, 0);
+    if (prev) {
+      if (this.img) prev.a -= dt / Math.max(0.01, this.fadeTime);
+      if (prev.a <= 0) this.prev = null;
+      else {
+        ctx.globalAlpha = this.img ? prev.a * prev.a * (3 - 2 * prev.a) : 1;
+        ctx.drawImage(prev.img, prev.x, prev.y, prev.w, prev.h);
+        ctx.globalAlpha = 1;
+      }
+    }
 
     if (!effects) { this.nightTint(ctx, W, H); return; }
     // Lueurs (torches, braseros, lave…)

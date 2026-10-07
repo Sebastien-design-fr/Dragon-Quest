@@ -1,7 +1,7 @@
 // LOT 5 — Réactions du dragon aux grands moments, communes à toutes les évolutions :
 // quête validée, passage de niveau, objet obtenu (intensité selon la rareté), objet équipé.
 // Courtes (1 à 3 s) et jamais bloquantes : l'interface reste utilisable pendant l'effet.
-import type { EquipmentDef } from '../core/types.js';
+import type { EquipmentDef, StageDef } from '../core/types.js';
 import { Sound } from '../engine/Sound.js';
 import type { App } from './App.js';
 import { ICONS, h, icon } from './dom.js';
@@ -140,4 +140,32 @@ export function equipReaction(app: App, def: EquipmentDef): void {
   app.view.emit('sparkle', anchor);
   app.view.emit('glow', anchor);
   if (!app.view.animator.actionId) void app.view.play('shake');
+}
+
+/**
+ * Évolution (LOT 6) : bandeau au moment où le nouveau dragon apparaît dans la lumière.
+ * Le spectacle lui-même (charge, silhouette, métamorphose, éclair) est rendu par le moteur.
+ */
+export function evolutionReaction(app: App, to: StageDef, level: number): void {
+  navigator.vibrate?.([40, 70, 120]);
+  const host = stage(app);
+  if (!host) return;
+  const name = app.family.companion?.name;
+  const label = app.stageLabel(to.label);
+  const card = h('div', { class: `rx-evo rx-evo-${to.id}` },
+    h('span', { class: 'rx-evo-k' }, 'Évolution'),
+    h('strong', { class: 'rx-evo-name' }, label),
+    name ? h('span', { class: 'rx-evo-sub' }, `${name} a grandi !`) : null,
+    to.tagline ? h('span', { class: 'rx-evo-tag' }, to.tagline) : null,
+    h('span', { class: 'rx-evo-lvl' }, `Niveau ${level}`));
+  setTimeout(() => {
+    host.append(card);
+    card.animate([
+      { transform: 'translate(-50%,0) scale(.6)', opacity: 0, filter: 'blur(8px)' },
+      { transform: 'translate(-50%,0) scale(1.06)', opacity: 1, filter: 'blur(0)', offset: 0.12 },
+      { transform: 'translate(-50%,0) scale(1)', opacity: 1, offset: 0.2 },
+      { transform: 'translate(-50%,0) scale(1)', opacity: 1, offset: 0.86 },
+      { transform: 'translate(-50%,-12px) scale(.97)', opacity: 0 }
+    ], { duration: 4200, easing: 'ease-out', fill: 'forwards' }).onfinish = () => card.remove();
+  }, 450);
 }

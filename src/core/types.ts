@@ -187,6 +187,8 @@ export interface ParticlePreset {
   spin?: number;
   grow?: number;
   drag?: number;
+  /** LOT 6 : particules qui convergent vers la source depuis un cercle (valeur = tourbillon, 0 = en ligne droite). */
+  converge?: number;
 }
 
 export interface QualityPreset {
