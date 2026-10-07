@@ -161,3 +161,58 @@
 .rx-evo-lvl { margin-top: 4px; padding: 2px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .08em; color: #2a1a04;
   background: linear-gradient(#ffe7a0, #e9b44c); box-shadow: 0 0 12px rgba(255,200,90,.6); }
 .rx-evo-legendary .rx-evo-name { font-size: 38px; color: #fff0b0; }
+
+
+/* Dragon Mission 0.19 — scène centrale et récompenses */
+#app.stage-tall { grid-template-rows:auto minmax(340px, 62dvh) 1fr auto; }
+.stage-view::after {
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
+  background:
+    linear-gradient(180deg, rgba(4,8,15,.08), transparent 28%, transparent 72%, rgba(5,9,16,.28)),
+    radial-gradient(80% 55% at 50% 72%, transparent 45%, rgba(5,9,16,.18) 100%);
+}
+.sh-status {
+  border-color:rgba(226,184,90,.22);
+  background:rgba(8,14,24,.62);
+  box-shadow:0 8px 24px rgba(0,0,0,.24);
+}
+.sh-bar {
+  border-color:rgba(226,184,90,.2);
+  background:linear-gradient(180deg, rgba(24,34,52,.82), rgba(9,15,26,.94));
+  box-shadow:0 10px 28px rgba(0,0,0,.28);
+}
+.sh-ico {
+  background:radial-gradient(circle at 35% 30%, #344767, #162237 72%);
+  border-color:rgba(226,184,90,.18);
+}
+.sh-btn.on .sh-ico {
+  background:radial-gradient(circle at 35% 30%, #5a4827, #2a1f12 72%);
+}
+.ds-today, .ds-tool {
+  border-color:rgba(226,184,90,.16);
+  background:linear-gradient(180deg, rgba(31,42,64,.98), rgba(17,25,41,.98));
+  box-shadow:0 10px 26px rgba(0,0,0,.17);
+}
+.ds-tool { min-height:72px; border-radius:16px; }
+.ds-tool svg { color:var(--gold-soft); filter:drop-shadow(0 0 10px rgba(226,184,90,.16)); }
+.friend-card {
+  border-color:rgba(121,171,255,.28);
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgba(82,117,179,.18), transparent 52%),
+    linear-gradient(180deg, rgba(27,38,60,.97), rgba(15,23,39,.98));
+}
+.rx-mission {
+  position:absolute; left:50%; top:11%; z-index:8; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:2px; padding:10px 24px 11px;
+  border-radius:18px; pointer-events:none;
+  background:linear-gradient(180deg, rgba(29,45,37,.9), rgba(12,25,21,.9));
+  border:1px solid rgba(108,221,153,.52);
+  box-shadow:0 12px 32px rgba(0,0,0,.32), 0 0 26px rgba(108,221,153,.16);
+}
+.rx-mission-k {
+  font-size:10px; font-weight:900; letter-spacing:.2em; color:#8fe0b1;
+}
+.rx-mission strong {
+  font-family:var(--display); font-size:24px; color:#f6fff8;
+  text-shadow:0 0 14px rgba(108,221,153,.28);
+}
