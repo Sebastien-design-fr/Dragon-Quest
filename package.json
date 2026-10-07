@@ -1,8 +1,8 @@
 {
-  "name": "lumia",
+  "name": "dragon-mission",
   "version": "0.18.0",
   "private": true,
-  "description": "Lumia : dragons évolutifs, animés et personnalisables, avec missions familiales validées par les parents.",
+  "description": "Dragon Mission : dragons évolutifs, animés et personnalisables, avec missions familiales validées par les parents.",
   "type": "module",
   "scripts": {
     "manifest": "node scripts/gen-manifest.mjs",
