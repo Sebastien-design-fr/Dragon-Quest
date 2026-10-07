@@ -6,7 +6,7 @@ import { readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 const ROOT = new URL('../www/assets/', import.meta.url).pathname;
-const EXT = /\.(png|webp|jpg|jpeg|avif|json)$/i;
+const EXT = /\.(svg|png|webp|jpg|jpeg|avif|json)$/i;
 
 function walk(dir, out) {
   for (const name of readdirSync(dir)) {
