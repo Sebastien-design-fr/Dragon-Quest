@@ -115,8 +115,8 @@ export class DragonScreen implements Screen {
     return h('div', { class: 'ds-today' },
       h('span', { class: 'ds-ring' }, ringSvg(1 - left / 100, 58, 6), h('span', { class: 'ds-ring-n' }, h('strong', null, String(100 - left)), h('small', null, 'XP'))),
       h('span', { class: 'grow ds-today-txt' },
-        h('span', { class: 'ds-kicker' }, 'Aujourd’hui'),
-        h('strong', null, left ? `Encore ${left} XP de soins possibles` : 'Elle a reçu tous ses soins du jour !'),
+        h('span', { class: 'ds-kicker' }, 'Compagnon Tamagotchi'),
+        h('strong', null, left ? `Prends soin d’elle · encore ${left} XP possibles` : 'Elle a reçu tous ses soins du jour !'),
         h('span', { class: 'small muted' }, `${rations} ration${rations > 1 ? 's' : ''} en réserve · de nouvelles chaque matin`)));
   }
 
@@ -142,7 +142,7 @@ export class DragonScreen implements Screen {
         h('div', { class: 'grow' }, h('div', { class: 'small muted' }, `${f.variant === 'dragonne' ? 'La dragonne' : 'Le dragon'} de ${f.owner}`), h('div', { class: 'item-name' }, `${f.name} · niveau ${f.level}`)),
         h('div', { class: 'bond' }, h('div', { class: 'small' }, `${comp.name} & ${f.name} : ${lv.label}`),
           h('div', { class: 'bar bond-bar' }, h('div', { class: 'fill', style: { width: `${Math.round(lv.progress * 100)}%` } })))),
-      h('p', { class: 'small muted' }, 'Chaque visite et chaque cadeau les rapprochent, et débloque des tours à deux.'),
+      h('p', { class: 'small muted' }, 'Ils peuvent se rendre visite, s’offrir des cadeaux et débloquer des tours à deux au fil de leur amitié.'),
       h('div', { class: 'row' },
         h('button', { class: 'btn primary grow', onclick: () => this.visitSheet(comp) }, `Rendre visite à ${f.name}`),
         h('span', { class: 'small muted' }, `${duo.visitsLeft()} / 3 aujourd’hui`)));
