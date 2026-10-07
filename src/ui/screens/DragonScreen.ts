@@ -78,9 +78,9 @@ export class DragonScreen implements Screen {
     const { app } = this;
     const book = app.family.book;
     if (!book) return null;
-    const cost = book.pendingCost();
-    if (!cost.count || new Date().getHours() < 17) return null;
-    const text = `Encore ${cost.count} quête${cost.count > 1 ? 's' : ''} aujourd’hui. Termine-les pour gagner tes récompenses et faire progresser ${comp.name} !`;
+    const count = book.pendingCount();
+    if (!count || new Date().getHours() < 17) return null;
+    const text = `Encore ${count} quête${count > 1 ? 's' : ''} aujourd’hui. Termine-les pour gagner tes récompenses et faire progresser ${comp.name} !`;
     return h('button', { class: 'ds-alert warn', onclick: () => app.show('missions') },
       icon(ICONS.clock, 20),
       h('span', { class: 'grow' }, h('strong', null, 'Ce soir'), h('span', { class: 'small' }, text)),
