@@ -192,3 +192,28 @@
 .ph-hero-need { font-size: 12px; color: #c9b8d8; }
 .ph-hero-need.urgent { color: #ffb08a; font-weight: 700; }
 .ph-hero-go { position: absolute; right: 12px; top: 12px; font-size: 12px; color: #e8c8ff; font-weight: 700; }
+
+
+/* Dragon Mission 0.19 — espace parent cohérent */
+.ph-card {
+  background:
+    radial-gradient(120% 110% at 0% 0%, rgba(59,79,117,.15), transparent 54%),
+    linear-gradient(180deg, rgba(31,42,64,.98), rgba(17,25,41,.98));
+  border-color:rgba(226,184,90,.16);
+}
+.ph-hero {
+  border-color:rgba(175,133,232,.36);
+  background:
+    radial-gradient(130% 120% at 0% 0%, rgba(107,66,151,.35), transparent 56%),
+    linear-gradient(180deg, rgba(31,37,64,.98), rgba(18,24,41,.99));
+  box-shadow:0 12px 30px rgba(0,0,0,.24);
+}
+.ph-tile {
+  border-radius:18px;
+  background:linear-gradient(155deg, color-mix(in srgb, var(--c) 12%, rgba(31,42,64,.98)), rgba(17,25,41,.98) 72%);
+  box-shadow:0 10px 26px rgba(0,0,0,.15);
+}
+.ph-activity, .ph-day {
+  border-color:rgba(226,184,90,.14);
+  background:linear-gradient(180deg, rgba(29,40,61,.96), rgba(17,25,41,.98));
+}
