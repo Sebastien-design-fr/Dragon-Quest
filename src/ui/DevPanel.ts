@@ -86,6 +86,8 @@ export function toggleDevPanel(app: App): void {
     check('Poussières', view.backdrop.layers.motes, v => { view.backdrop.layers.motes = v; }),
     check('Teinte de nuit', view.backdrop.layers.tint, v => { view.backdrop.layers.tint = v; }),
     check('Points d’ancrage', view.showAnchors, v => { view.showAnchors = v; }),
+    h('div', { class: 'dv-label' }, 'Performances (LOT 7)'),
+    check('Résolution adaptative', view.adaptive, v => { view.adaptive = v; }),
     stats);
   document.body.append(panel);
 
@@ -106,7 +108,8 @@ export function toggleDevPanel(app: App): void {
       `canvas ${s.canvas} · densité ${s.renderDpr} (écran ${window.devicePixelRatio})`,
       `texture ${d.tex}`,
       `lumière scène ${view.backdrop.scene.ambient.map(x => Math.round(x * 255)).join(',')} · dir ${view.backdrop.scene.dir.map(x => x.toFixed(2)).join(',')}`,
-      `contextes WebGL ${MeshRenderer.contexts} · mémoire ${mem()} · images ${Assets.stats().loaded}`
+      `contexte WebGL partagé ${MeshRenderer.contexts} · dragons dessinés ${MeshRenderer.renderers} · mémoire ${mem()} · images ${Assets.stats().loaded}`,
+      `résolution adaptative ${view.adaptive ? `${Math.round(view.adaptiveScale * 100)} %` : 'désactivée'}`
     ].join('\n');
   };
   tick();

@@ -183,35 +183,31 @@ function opaqueCells(img: CanvasImageSource, cols: number, rows: number): Uint8A
   return out;
 }
 
-/** Rendu WebGL du maillage dans un canvas hors écran, recopié ensuite dans le canvas 2D. */
-export class MeshRenderer {
-  /** Mipmaps (réduction propre de l'illustration, sans scintillement). Désactivables pour comparer. */
-  static mipmaps = true;
-  /** Nombre de contextes WebGL ouverts (panneau développeur). */
-  static contexts = 0;
-  readonly canvas = document.createElement('canvas');
-  private gl: WebGLRenderingContext;
-  /** WebGL 2 : mipmaps sur des images de toutes tailles. */
-  readonly webgl2: boolean;
-  private texMip: boolean | null = null;
-  /** Taille de la texture envoyée (après éventuelle mise en puissance de 2). */
-  texInfo = '';
-  private prog: WebGLProgram;
-  private posBuf: WebGLBuffer;
-  private uvBuf: WebGLBuffer;
-  private idxBuf: WebGLBuffer;
-  private tex: WebGLTexture;
-  private texImg: unknown = null;
-  private mesh: SpriteSkin | null = null;
-  private uMat: WebGLUniformLocation;
-  private u: Record<string, WebGLUniformLocation | null> = {};
-  /** Éclairage de l'image en cours (null = rendu brut). */
-  lighting: { u: LightUniforms; mirrored: boolean } | null = null;
-  private texW = 1; private texH = 1;
-
-  static create(): MeshRenderer | null {
-    try { return new MeshRenderer(); } catch { return null; }
+/**
+ * Contexte WebGL unique partagé par tous les dragons (LOT 7) : vue principale, poses peintes (couché, vol),
+ * dragons invités. Un seul programme compilé ; chaque dragon garde ses propres tampons et sa texture.
+ * Chaque rendu dessine dans le coin haut-gauche du canvas partagé, recopié aussitôt dans le canvas 2D du dragon.
+ */
+class SharedGL {
+  private static inst: SharedGL | null | undefined;
+  static get(): SharedGL | null {
+    if (SharedGL.inst === undefined) { try { SharedGL.inst = new SharedGL(); } catch { SharedGL.inst = null; } }
+    return SharedGL.inst;
   }
+  static get current(): SharedGL | null { return SharedGL.inst ?? null; }
+
+  readonly canvas = document.createElement('canvas');
+  readonly gl: WebGLRenderingContext;
+  readonly webgl2: boolean;
+  /** Incrémenté à chaque restauration du contexte : les ressources des dragons sont alors recréées. */
+  gen = 0;
+  lost = false;
+  prog!: WebGLProgram;
+  uMat!: WebGLUniformLocation;
+  u: Record<string, WebGLUniformLocation | null> = {};
+  pLoc = 0; uvLoc = 1;
+  aniso: EXT_texture_filter_anisotropic | null = null;
+  readonly mat = new Float32Array(9);
 
   private constructor() {
     const opts = { premultipliedAlpha: true, alpha: true, antialias: true, preserveDrawingBuffer: false };
@@ -220,8 +216,13 @@ export class MeshRenderer {
     if (!gl) throw new Error('WebGL indisponible');
     this.gl = gl;
     this.webgl2 = !!gl2;
-    MeshRenderer.contexts++;
-    this.canvas.addEventListener('webglcontextlost', () => { MeshRenderer.contexts--; this.released = true; });
+    this.canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); this.lost = true; });
+    this.canvas.addEventListener('webglcontextrestored', () => { this.build(); this.lost = false; this.gen++; });
+    this.build();
+  }
+
+  private build(): void {
+    const gl = this.gl;
     const vs = `attribute vec2 p; attribute vec2 uv; uniform mat3 m; varying vec2 vUv;
       void main(){ vec3 q = m * vec3(p, 1.0); gl_Position = vec4(q.xy, 0.0, 1.0); vUv = uv; }`;
     // Éclairage non destructif (l'image source n'est jamais modifiée) :
@@ -262,26 +263,96 @@ export class MeshRenderer {
         gl_FragColor = vec4(col * c.a, c.a);
       }`;
     const sh = (type: number, src: string) => {
-      const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s);
-      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? 'shader');
-      return s;
+      const sx = gl.createShader(type)!; gl.shaderSource(sx, src); gl.compileShader(sx);
+      if (!gl.getShaderParameter(sx, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sx) ?? 'shader');
+      return sx;
     };
     const prog = gl.createProgram()!;
     gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs));
     gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs));
+    gl.bindAttribLocation(prog, 0, 'p');
+    gl.bindAttribLocation(prog, 1, 'uv');
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error('programme WebGL');
     this.prog = prog;
     this.uMat = gl.getUniformLocation(prog, 'm')!;
+    this.u = {};
     for (const n of ['uTexel', 'uAmbient', 'uAmbientMix', 'uDir', 'uLight', 'uLightStr', 'uRim', 'uRimW', 'uRimC', 'uTop', 'uBottom', 'uExposure', 'uGlow', 'uGlowC', 'uLit']) this.u[n] = gl.getUniformLocation(prog, n);
-    this.posBuf = gl.createBuffer()!;
-    this.uvBuf = gl.createBuffer()!;
-    this.idxBuf = gl.createBuffer()!;
-    this.tex = gl.createTexture()!;
+    this.aniso = gl.getExtension('EXT_texture_filter_anisotropic');
+    gl.useProgram(prog);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.clearColor(0, 0, 0, 0);
+  }
+
+  /**
+   * Zone de dessin W×H en haut à gauche du canvas partagé. Le canvas ne fait que grandir
+   * (pas de réallocation à chaque image quand des dragons de tailles différentes se succèdent) ;
+   * il revient à la bonne taille si une zone beaucoup plus petite est demandée longtemps.
+   */
+  private small = 0;
+  target(W: number, H: number): void {
+    const c = this.canvas, gl = this.gl;
+    if (c.width < W || c.height < H) { c.width = Math.max(c.width, W); c.height = Math.max(c.height, H); this.small = 0; }
+    else if (W * H < c.width * c.height * 0.5) { if (++this.small > 600) { c.width = W; c.height = H; this.small = 0; } }
+    else this.small = 0;
+    gl.viewport(0, c.height - H, W, H);
+    gl.enable(gl.SCISSOR_TEST);
+    gl.scissor(0, c.height - H, W, H);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+  }
+}
+
+/** Rendu WebGL du maillage d'un dragon (contexte partagé), recopié ensuite dans le canvas 2D. */
+export class MeshRenderer {
+  /** Mipmaps (réduction propre de l'illustration, sans scintillement). Désactivables pour comparer. */
+  static mipmaps = true;
+  /** Contextes WebGL ouverts (panneau développeur) : 1 au plus, partagé. */
+  static get contexts(): number { const s = SharedGL.current; return s && !s.lost ? 1 : 0; }
+  /** Dragons utilisant le contexte partagé (panneau développeur). */
+  static renderers = 0;
+  private readonly s: SharedGL;
+  get webgl2(): boolean { return this.s.webgl2; }
+  private texMip: boolean | null = null;
+  /** Taille de la texture envoyée (après éventuelle mise en puissance de 2). */
+  texInfo = '';
+  private posBuf: WebGLBuffer | null = null;
+  private uvBuf: WebGLBuffer | null = null;
+  private idxBuf: WebGLBuffer | null = null;
+  private tex: WebGLTexture | null = null;
+  private gen = -1;
+  private texImg: unknown = null;
+  private mesh: SpriteSkin | null = null;
+  /** Éclairage de l'image en cours (null = rendu brut). */
+  lighting: { u: LightUniforms; mirrored: boolean } | null = null;
+  private texW = 1; private texH = 1;
+  private released = false;
+
+  static create(): MeshRenderer | null {
+    const s = SharedGL.get();
+    return s ? new MeshRenderer(s) : null;
+  }
+
+  private constructor(s: SharedGL) {
+    this.s = s;
+    MeshRenderer.renderers++;
+    this.alloc();
+  }
+
+  /** Tampons et texture propres à ce dragon, dans le contexte partagé. */
+  private alloc(): void {
+    const gl = this.s.gl;
+    this.posBuf = gl.createBuffer();
+    this.uvBuf = gl.createBuffer();
+    this.idxBuf = gl.createBuffer();
+    this.tex = gl.createTexture();
+    this.gen = this.s.gen;
   }
 
   setMesh(mesh: SpriteSkin, img: TexImageSource): void {
-    const gl = this.gl;
+    if (this.released) return;
+    if (this.gen !== this.s.gen) { this.alloc(); this.texImg = null; }
+    const gl = this.s.gl;
     this.mesh = mesh;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuf);
     gl.bufferData(gl.ARRAY_BUFFER, mesh.uv, gl.STATIC_DRAW);
@@ -298,7 +369,7 @@ export class MeshRenderer {
 
   /** Envoi de l'illustration au GPU, avec mipmaps (WebGL 2 : directement ; WebGL 1 : image redimensionnée en puissance de 2). */
   private upload(img: TexImageSource & { width: number; height: number }): void {
-    const gl = this.gl;
+    const gl = this.s.gl;
     const mip = MeshRenderer.mipmaps;
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
@@ -318,17 +389,16 @@ export class MeshRenderer {
     if (mip) {
       gl.generateMipmap(gl.TEXTURE_2D);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-      const aniso = gl.getExtension('EXT_texture_filter_anisotropic');
-      if (aniso) gl.texParameterf(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT, 4);
+      if (this.s.aniso) gl.texParameterf(gl.TEXTURE_2D, this.s.aniso.TEXTURE_MAX_ANISOTROPY_EXT, 4);
     } else gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    this.texInfo = `${w}×${h}${mip ? ' + mipmaps' : ''}${this.webgl2 ? ' (WebGL 2)' : ' (WebGL 1)'}`;
+    this.texInfo = `${w}×${h}${mip ? ' + mipmaps' : ''}${this.webgl2 ? ' (WebGL 2)' : ' (WebGL 1)'} · contexte partagé`;
   }
 
   private applyLighting(): void {
-    const gl = this.gl, U = this.u, L = this.lighting;
+    const gl = this.s.gl, U = this.s.u, L = this.lighting;
     if (!L || !L.u.enabled) { gl.uniform1f(U.uLit, 0); return; }
     const u = L.u;
     gl.uniform1f(U.uLit, 1);
@@ -349,46 +419,47 @@ export class MeshRenderer {
     gl.uniform3f(U.uGlowC, u.glowColor[0], u.glowColor[1], u.glowColor[2]);
   }
 
-  /** Libère le contexte WebGL (vue supprimée, changement de stade) : évite d'en accumuler. */
+  /** Libère les tampons et la texture de ce dragon (le contexte partagé reste ouvert pour les autres). */
   release(): void {
     if (this.released) return;
     this.released = true;
-    this.gl.getExtension('WEBGL_lose_context')?.loseContext();
-    this.canvas.width = this.canvas.height = 1;
+    MeshRenderer.renderers--;
+    const gl = this.s.gl;
+    if (this.gen === this.s.gen && !this.s.lost) {
+      gl.deleteBuffer(this.posBuf); gl.deleteBuffer(this.uvBuf); gl.deleteBuffer(this.idxBuf); gl.deleteTexture(this.tex);
+    }
+    this.posBuf = this.uvBuf = this.idxBuf = this.tex = null;
+    this.mesh = null; this.texImg = null;
   }
-  private released = false;
 
-  get ready(): boolean { return !!this.mesh && !this.gl.isContextLost(); }
+  get ready(): boolean { return !!this.mesh && !this.released && !this.s.lost; }
 
-  /** Dessine le maillage (coordonnées monde) avec la matrice caméra donnée, dans un canvas W x H. */
+  /**
+   * Dessine le maillage (coordonnées monde) avec la matrice caméra donnée, dans la zone W×H en haut à gauche
+   * du canvas partagé : l'appelant la recopie aussitôt (drawImage(canvas, 0, 0, W, H, 0, 0, W, H)).
+   */
   render(cam: Mat2D, W: number, H: number): HTMLCanvasElement {
-    const gl = this.gl, mesh = this.mesh!;
-    if (this.canvas.width !== W || this.canvas.height !== H) { this.canvas.width = W; this.canvas.height = H; }
-    gl.viewport(0, 0, W, H);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(this.prog);
+    const s = this.s, gl = s.gl, mesh = this.mesh!;
+    if (this.gen !== s.gen) this.setMesh(mesh, this.texImg as TexImageSource); // contexte restauré : ressources recréées
+    s.target(W, H);
+    gl.useProgram(s.prog);
     this.applyLighting();
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     // monde -> pixels (caméra) -> espace de découpe
-    const sx = 2 / W, sy = -2 / H;
-    gl.uniformMatrix3fv(this.uMat, false, new Float32Array([
-      cam.a * sx, cam.b * sy, 0,
-      cam.c * sx, cam.d * sy, 0,
-      cam.e * sx - 1, cam.f * sy + 1, 1
-    ]));
-    const pLoc = gl.getAttribLocation(this.prog, 'p'), uvLoc = gl.getAttribLocation(this.prog, 'uv');
+    const sx = 2 / W, sy = -2 / H, m = s.mat;
+    m[0] = cam.a * sx; m[1] = cam.b * sy; m[2] = 0;
+    m[3] = cam.c * sx; m[4] = cam.d * sy; m[5] = 0;
+    m[6] = cam.e * sx - 1; m[7] = cam.f * sy + 1; m[8] = 1;
+    gl.uniformMatrix3fv(s.uMat, false, m);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.posBuf);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, mesh.positions);
-    gl.enableVertexAttribArray(pLoc);
-    gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(s.pLoc);
+    gl.vertexAttribPointer(s.pLoc, 2, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuf);
-    gl.enableVertexAttribArray(uvLoc);
-    gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(s.uvLoc);
+    gl.vertexAttribPointer(s.uvLoc, 2, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.idxBuf);
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
     gl.drawElements(gl.TRIANGLES, mesh.indices.length, gl.UNSIGNED_SHORT, 0);
-    return this.canvas;
+    return s.canvas;
   }
 }

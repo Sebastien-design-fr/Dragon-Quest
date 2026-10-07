@@ -46,7 +46,7 @@ export interface FamilyContext {
   training: Training | null;
 }
 
-export const APP_VERSION = '0.15.1';
+export const APP_VERSION = '0.17.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */

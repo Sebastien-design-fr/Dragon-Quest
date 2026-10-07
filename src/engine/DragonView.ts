@@ -25,6 +25,15 @@ import { MeshRenderer, SpriteSkin } from './SpriteSkin.js';
 import { Backdrop, type BackdropDef } from './Backdrop.js';
 import { drawEvolutionBackLayers, drawEvolutionRing, evolutionConfig, evolutionFrame, evolutionMarks, rgba, type EvoFrame, type EvolutionConfig, type RGB } from './Evolution.js';
 
+/** Repère identité partagé (racine du squelette) : aucune allocation par image. */
+const IDENT = new Mat2D();
+
+/** Exécute une tâche quand le navigateur est inoccupé (préparation des poses sans à-coup). */
+const whenIdle = (fn: () => void) => {
+  const w = window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void };
+  if (w.requestIdleCallback) w.requestIdleCallback(fn, { timeout: 2000 }); else setTimeout(fn, 250);
+};
+
 /** Taches de saleté : [ancrage, décalage x, y, rayon, intensité] (unités : échelle des effets). */
 const DIRT_SPOTS: Array<[string, number, number, number, number]> = [
   ['body_center', -40, 10, 34, 1], ['body_center', 40, -20, 26, 0.8], ['chest_anchor', 0, 10, 22, 0.9],
@@ -131,6 +140,10 @@ export class DragonView {
   private divisor = 1;
   /** Vitesse de lecture (panneau développeur : 0,25× à 2×). */
   timeScale = 1;
+  /** LOT 7 : résolution adaptative (baisse la densité de rendu si l'appareil ne tient pas la cadence). */
+  adaptive = true;
+  private adapt = { scale: 1, slow: 0, fast: 0, ups: 0 };
+  get adaptiveScale(): number { return this.adapt.scale; }
   /** Panneau développeur : pose peinte forcée, comparaisons avant / après. */
   debugPose: PoseId | null = null;
   debug = { capDpr2: false, noMipmaps: false };
@@ -146,6 +159,7 @@ export class DragonView {
   readonly stats: ViewStats = { fps: 0, frameMs: 0, renderDpr: 1, canvas: '', refreshHz: 60, divisor: 1 };
   private tmp = new Mat2D();
   private tmp2 = new Mat2D();
+  private tmp3 = new Mat2D();
   private camM = new Mat2D();
   /** Illustration déformable (os souples) et son rendu WebGL. */
   private skin: SpriteSkin | null = null;
@@ -284,6 +298,30 @@ export class DragonView {
     // la boucle en cours peut maintenant utiliser la pose peinte
     const loop = this.animator.baseId;
     if (loop && this.clipFor(loop) !== loop) void this.animator.play(this.clipFor(loop));
+    // LOT 7 : maillages et textures des poses préparés à l'avance, une pose à la fois, quand l'appareil est inoccupé
+    // (sinon le premier coucher ou le premier vol provoque un à-coup visible)
+    const views = this.poseViews, queue = Object.values(views).filter((v): v is DragonView => !!v);
+    const next = () => {
+      if (this.poseViews !== views) return;
+      // jamais pendant une évolution ou un vol : on attend un moment calme
+      if (this.evo || this.flight) { setTimeout(() => whenIdle(next), 1200); return; }
+      const v = queue.shift();
+      if (!v) return;
+      void v.prewarm().then(() => setTimeout(() => whenIdle(next), 150));
+    };
+    setTimeout(() => whenIdle(next), 1500);
+  }
+
+  /** Prépare le maillage et envoie la texture au GPU (rendu minuscule hors écran). */
+  async prewarm(): Promise<void> {
+    const d = this.drawables.find(x => x.part?.shape === 'sprite');
+    if (d?.partPath) { await Assets.acquire(d.partPath); Assets.release(d.partPath); }
+    this.ensureSkin();
+    if (!this.skin || !this.mesh?.ready || !this.skeleton) return;
+    this.skeleton.update(IDENT);
+    this.skin.update();
+    this.mesh.lighting = null;
+    this.mesh.render(this.camM, 4, 4);
   }
 
   /** Vue définitivement retirée (dragon invité) : arrête la boucle, libère images et contextes WebGL. */
@@ -637,15 +675,38 @@ export class DragonView {
       this.stats.frameMs += (performance.now() - t0 - this.stats.frameMs) * 0.1;
       this.stats.refreshHz = Math.round(hz);
       this.stats.divisor = this.divisor;
+      this.adaptResolution(dt, hz / this.divisor);
     };
     this.raf = requestAnimationFrame(tick);
   }
   stop(): void { cancelAnimationFrame(this.raf); this.last = 0; }
 
+  /**
+   * Résolution adaptative : si la cadence reste nettement sous la cible (et que ce n'est pas un simple
+   * ralentissement du navigateur), la densité de rendu baisse par paliers de 15 % (plancher 1,25) ;
+   * elle remonte prudemment quand la marge revient (deux essais au plus, pour éviter le va-et-vient).
+   */
+  private adaptResolution(dt: number, target: number): void {
+    const A = this.adapt;
+    if (!this.adaptive || this.isPoseChild) return;
+    const fps = this.stats.fps, budget = 1000 / target;
+    const struggling = fps < target * 0.8 && (fps >= 12 || this.stats.frameMs > budget * 0.5);
+    A.slow = struggling ? A.slow + dt : 0;
+    A.fast = fps > target * 0.95 ? A.fast + dt : 0;
+    const native = Math.min(window.devicePixelRatio || 1, this.quality.maxResolution);
+    const floor = Math.min(1, 1.25 / native);
+    if (A.slow > 2.5 && A.scale > floor + 1e-3) {
+      A.scale = Math.max(floor, A.scale * 0.85); A.slow = 0; A.fast = 0; this.resize();
+    } else if (A.fast > 15 && A.scale < 1 && A.ups < 2) {
+      A.scale = Math.min(1, A.scale / 0.85); A.ups++; A.fast = 0; this.resize();
+    }
+  }
+
   private resize(): void {
     const r = this.canvas.getBoundingClientRect();
     // Densité réelle de l'écran (plafonnée par la qualité) : pas d'agrandissement flou par le navigateur.
-    this.dpr = Math.min(window.devicePixelRatio || 1, this.debug.capDpr2 ? 2 : this.quality.maxResolution);
+    // Résolution adaptative : facteur appliqué si l'appareil ne tient pas la cadence.
+    this.dpr = Math.min(window.devicePixelRatio || 1, this.debug.capDpr2 ? 2 : this.quality.maxResolution) * (this.adaptive ? this.adapt.scale : 1);
     this.canvas.width = Math.max(1, Math.round(r.width * this.dpr));
     this.canvas.height = Math.max(1, Math.round(r.height * this.dpr));
     this.smoothing(this.ctx);
@@ -694,7 +755,7 @@ export class DragonView {
     this.lifeTick(dt, sk);
     this.applySprings(dt, sk);
     this.applyFlightBody(dt, sk);
-    sk.update(new Mat2D());
+    sk.update(IDENT);
     this.skin?.update();
 
     for (const t of this.tempEmitters) if (this.time > t.until) this.particles.removeEmitter(t.id);
@@ -745,7 +806,7 @@ export class DragonView {
     this.camM.f -= this.lift * H;
 
     if (evo) {
-      const m = new Mat2D();
+      const m = this.tmp3;
       const bc = this.anchorWorld('body_center', m) ? this.camM.point(m.e, m.f) : this.camM.point(0, -this.cam.h * 0.3);
       drawEvolutionBackLayers(ctx, evo.c, evo.f, W, H, bc, feet.y, Math.abs(this.camM.d) * this.cam.w * 0.42, this.time);
     }
@@ -802,9 +863,9 @@ export class DragonView {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalCompositeOperation = 'source-over';
     g.clearRect(0, 0, W, H);
-    g.drawImage(src, 0, 0);
+    g.drawImage(src, 0, 0, W, H, 0, 0, W, H);
     g.globalCompositeOperation = 'source-atop';
-    const m = new Mat2D();
+    const m = this.tmp3;
     const k = this.rig?.fxScale ?? 2;
     for (const [anchor, dx, dy, r, a] of DIRT_SPOTS) {
       if (!this.anchorWorld(anchor, m)) continue;
@@ -900,7 +961,9 @@ export class DragonView {
         const gl = this.mesh.render(this.camM, W, H);
         // copie pixel pour pixel : aucun filtrage nécessaire (le lissage « high » coûterait cher pour rien)
         ctx.imageSmoothingQuality = 'low';
-        ctx.drawImage(this.dirt > 0.04 ? this.withDirt(gl, W, H) : gl, 0, 0);
+        // zone W×H en haut à gauche du canvas WebGL partagé
+        if (this.dirt > 0.04) ctx.drawImage(this.withDirt(gl, W, H), 0, 0);
+        else ctx.drawImage(gl, 0, 0, W, H, 0, 0, W, H);
         ctx.imageSmoothingQuality = 'high';
       } else if (d.part) {
         this.camM.multiply(bone.world, this.tmp).apply(ctx);
@@ -948,7 +1011,7 @@ export class DragonView {
       const mine = sk.bone(b.def.name);
       if (mine) Object.assign(mine.offset, b.offset);
     }
-    sk.update(new Mat2D());
+    sk.update(IDENT);
     this.skin?.update();
     this.camM.copy(main.camM);
     this.lightU = main.lightU;
