@@ -13,7 +13,7 @@ export function runSetup(root: HTMLElement, link: Transport, reminders: Reminder
   clear(tabs);
   clear(hud);
   hud.append(
-    h('img', { class: 'brand-mark', src: 'assets/brand/dragon-mission-logo.png', alt: 'Dragon Mission' }),
+    h('img', { class: 'brand-mark', src: 'assets/brand/dragon-mission-logo.svg', alt: 'Dragon Mission' }),
     h('div', { class: 'hud-id' }, h('div', { class: 'hud-stage' }, 'Dragon Mission'), h('div', { class: 'hud-level' }, 'Bienvenue'))
   );
 
@@ -33,7 +33,7 @@ export function runSetup(root: HTMLElement, link: Transport, reminders: Reminder
       if (step === 'role') {
         card.append(
           h('div', { class: 'setup-brand' },
-            h('img', { src: 'assets/brand/dragon-mission-logo.png', alt: 'Dragon Mission' }),
+            h('img', { src: 'assets/brand/dragon-mission-logo.svg', alt: 'Dragon Mission' }),
             h('div', null, h('h2', null, 'Dragon Mission'), h('p', { class: 'muted' }, 'Des missions réelles. Un dragon qui grandit avec toi.'))),
           h('h3', null, 'Qui utilise ce téléphone ?'),
           h('p', { class: 'muted' }, 'Chaque téléphone de la maison a un rôle. Ce choix est définitif (sauf réinstallation).'),
