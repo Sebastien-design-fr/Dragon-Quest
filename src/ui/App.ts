@@ -37,7 +37,7 @@ export interface FamilyContext {
   duo: Duo | null;
 }
 
-export const APP_VERSION = '0.9.0';
+export const APP_VERSION = '0.10.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -103,7 +103,8 @@ export class App {
     });
     const nightTint = () => { view.backdrop.night = isNight() ? 1 : 0; };
     nightTint();
-    window.setInterval(nightTint, 60000);
+    window.setInterval(() => { nightTint(); this.bedtime(); }, 60000);
+    setTimeout(() => this.bedtime(), 5000);
 
     state.events.on('change', d => {
       this.view.setQuality(catalog.quality[d.settings.quality], d.settings.effects);
@@ -282,6 +283,7 @@ export class App {
 
   async act(anim: string): Promise<void> {
     if (this.sleeping && anim !== 'sleep') this.toggleSleep(false);
+    if (anim === 'hover') { await this.view.fly(); return; }
     await this.view.play(anim);
   }
 
@@ -292,11 +294,30 @@ export class App {
     if (this.sleeping && !was && comp?.tuck()) this.say(sayFor('tuck'), null, 4000);
     void this.view.play(this.sleeping ? 'sleep' : this.baseLoop());
     if (was && !this.sleeping) setTimeout(() => this.playPendingVisit(), 2000);
+    if (was && !this.sleeping) this.autoSlept = false;
     if (was && !this.sleeping && force === undefined) {
+      this.wokenAt = Date.now();
       void this.view.play('wake');
       if (isNight()) this.say(sayFor('wake'), null, 4000);
     }
     this.current?.refresh?.();
+  }
+
+  /** Couché tout seul vers 21 h 30 (bâillement puis dodo), réveillé le matin. */
+  private autoSlept = false;
+  /** Réveillé à la main la nuit : on le laisse debout 30 min avant de le recoucher. */
+  private wokenAt = 0;
+  private bedtime(): void {
+    if (!this.showingOwn || this.visits.active || this.evolving) return;
+    const h = new Date().getHours() + new Date().getMinutes() / 60;
+    const night = h >= 21.5 || h < 7;
+    if (night && !this.sleeping && Date.now() - this.wokenAt > 30 * 60000) {
+      void this.view.play('yawn');
+      setTimeout(() => { if (!this.sleeping) { this.autoSlept = true; this.sleeping = true; void this.view.play('sleep'); this.current?.refresh?.(); } }, 2600);
+    } else if (!night && this.sleeping && this.autoSlept) {
+      this.toggleSleep(false);
+      void this.view.play('wake').then(() => this.view.play('stretch'));
+    }
   }
 
   /** Boucle de repos selon son état : triste s'il est négligé. */

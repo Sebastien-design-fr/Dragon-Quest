@@ -363,6 +363,116 @@ const clips = {};
   clips.shake = { duration: D, loop: false, tracks: t, events: [{ t: 0.1, type: 'emit', preset: 'bubbles', anchor: 'body_center' }, { t: 0.5, type: 'emit', preset: 'shine', anchor: 'body_center' }] };
 }
 
+
+// ================= Comportements au repos (joués au hasard) =================
+// S'étirer : il allonge les pattes avant, creuse le dos, tend le cou, puis se secoue un peu.
+{
+  const D = 2.6;
+  const t = {
+    body: { y: mix(D, [[0, 0], [0.7, 6], [1.6, 6], [2.2, 0]]), rot: mix(D, [[0, 0], [0.7, 4], [1.6, 4], [2.2, 0]]) },
+    spine: { sy: mix(D, [[0, 1], [0.7, 0.94], [1.6, 0.94], [2.2, 1]]) },
+    neck1: { rot: mix(D, [[0, 0], [0.7, 14], [1.6, 14], [2.2, -2], [2.6, 0]]) },
+    neck2: { rot: mix(D, [[0, 0], [0.7, 8], [1.6, 8], [2.2, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.7, -6], [1.6, -6], [2.2, 0]]) },
+    legFront: { x: mix(D, [[0, 0], [0.7, 45], [1.6, 45], [2.2, 0]]), rot: mix(D, [[0, 0], [0.7, 14], [1.6, 14], [2.2, 0]]) },
+    wing1: { rot: mix(D, [[0, 0], [0.8, -5], [1.6, -5], [2.2, 0]]) },
+    wing2: { rot: mix(D, [[0, 0], [0.8, 14], [1.4, 18], [1.8, 6], [2.2, 0]]) },
+    wingFar: { rot: mix(D, [[0, 0], [0.8, 10], [1.6, 10], [2.2, 0]]) }
+  };
+  tailWave(t, D, 4, 1.3, (tt, i) => (tt > 0.7 && tt < 1.6 ? 4 + i : 0), 0.05);
+  clips.stretch = { duration: D, loop: false, tracks: t };
+}
+// Bâiller : tête vers le ciel, cou en arrière, petit tremblement, puis il se détend.
+{
+  const D = 2.4;
+  const tr = tt => (tt > 0.6 && tt < 1.5 ? 1.2 * Math.sin(tt * 38) : 0);
+  const t = {
+    body: { y: mix(D, [[0, 0], [0.6, -2], [1.5, -2], [2.0, 2], [2.4, 0]]) },
+    spine: { sy: mix(D, [[0, 1], [0.6, 1.06], [1.5, 1.06], [2.0, 0.98], [2.4, 1]]) },
+    neck1: { rot: mix(D, [[0, 0], [0.6, -10], [1.5, -10], [2.0, 4], [2.4, 0]]) },
+    neck2: { rot: mix(D, [[0, 0], [0.6, -8], [1.5, -8], [2.0, 3], [2.4, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.6, -24], [1.5, -24], [2.0, 6], [2.4, 0]], tr, 0.04) },
+    wing2: { rot: mix(D, [[0, 0], [0.6, 6], [1.5, 6], [2.0, -2], [2.4, 0]]) }
+  };
+  tailWave(t, D, 2, 1.2);
+  clips.yawn = { duration: D, loop: false, tracks: t };
+}
+// Se gratter : la patte arrière s'agite, la tête se penche.
+{
+  const D = 2.0;
+  const sc = tt => (tt > 0.4 && tt < 1.6 ? 14 * Math.sin((tt - 0.4) * 30) : 0);
+  const t = {
+    body: { rot: mix(D, [[0, 0], [0.4, 3], [1.6, 3], [2.0, 0]]), y: mix(D, [[0, 0], [0.4, 3], [1.6, 3], [2.0, 0]]) },
+    legRear: { y: mix(D, [[0, 0], [0.4, -55], [1.6, -55], [2.0, 0]]), x: mix(D, [[0, 0], [0.4, 40], [1.6, 40], [2.0, 0]]), rot: mix(D, [[0, 0], [0.4, -20], [1.6, -20], [2.0, 0]], sc, 0.03) },
+    neck1: { rot: mix(D, [[0, 0], [0.4, 8], [1.6, 8], [2.0, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.4, 10], [1.6, 10], [2.0, 0]], tt => sc(tt) * 0.15, 0.03) }
+  };
+  tailWave(t, D, 3, 0.8);
+  clips.scratch = { duration: D, loop: false, tracks: t };
+}
+// Regarder autour : la tête se lève, s'abaisse, observe.
+{
+  const D = 3.2;
+  const t = {
+    neck1: { rot: mix(D, [[0, 0], [0.6, -8], [1.4, -8], [2.0, 8], [2.6, 8], [3.2, 0]]) },
+    neck2: { rot: mix(D, [[0, 0], [0.6, -6], [1.4, -6], [2.0, 6], [2.6, 6], [3.2, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.6, -14], [1.4, -10], [2.0, 12], [2.6, 10], [3.2, 0]]) },
+    wing2: { rot: mix(D, [[0, 0], [0.6, 3], [2.6, 3], [3.2, 0]]) }
+  };
+  tailWave(t, D, 2.5, 1.6);
+  clips.look_around = { duration: D, loop: false, tracks: t };
+}
+// Renifler le sol : museau au sol, petits coups de tête.
+{
+  const D = 2.4;
+  const sn = tt => (tt > 0.6 && tt < 1.8 ? 3 * Math.sin(tt * 26) : 0);
+  const t = {
+    body: { rot: mix(D, [[0, 0], [0.6, 3], [1.8, 3], [2.4, 0]]) },
+    neck1: { rot: mix(D, [[0, 0], [0.6, 22], [1.8, 22], [2.4, 0]]) },
+    neck2: { rot: mix(D, [[0, 0], [0.6, 16], [1.8, 16], [2.4, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.6, 22], [1.8, 22], [2.4, 0]], sn, 0.03) }
+  };
+  tailWave(t, D, 3, 0.9);
+  clips.sniff = { duration: D, loop: false, tracks: t };
+}
+// Coup de queue : la queue fouette l'air.
+{
+  const D = 1.6;
+  const t = {
+    body: { rot: wave(D, tt => 1.2 * Math.sin(tt * 8) * Math.max(0, 1 - tt / D), 0.04) },
+    wing2: { rot: wave(D, tt => 3 * Math.sin(tt * 8) * Math.max(0, 1 - tt / D), 0.04) }
+  };
+  tailWave(t, D, 14, 0.55, (tt) => 0, 0.03);
+  clips.tail_swish = { duration: D, loop: false, tracks: t };
+}
+
+// ================= Clips pour les poses peintes =================
+// Couché (image « couché ») : seulement la respiration et un frémissement de queue.
+{
+  const D = 6;
+  const t = {
+    body: { sy: wave(D, tt => 1 + 0.012 * sin(tt, 3)) },
+    spine: { sy: wave(D, tt => 1 + 0.035 * sin(tt, 3)) },
+    head: { rot: wave(D, tt => 0.8 * sin(tt, D, 0.4)) }
+  };
+  tailWave(t, D, 0.8, D);
+  clips.sleep_pose = { duration: D, loop: true, tracks: t, events: [{ t: 1.0, type: 'emit', preset: 'sleepZ', anchor: 'head_anchor' }, { t: 4.0, type: 'emit', preset: 'sleepZ', anchor: 'head_anchor' }] };
+}
+// En vol (images « ailes hautes / basses ») : le corps monte et descend au rythme des battements.
+{
+  const D = 3.4;
+  const lift = [[0, 0], [0.4, 6], [0.8, -40], [2.6, -46], [3.2, 0]];
+  const bob = t2 => (t2 > 0.7 && t2 < 2.8 ? 5 * sin(t2, 0.5) : 0);
+  const t = {
+    body: { y: mix(D, lift, bob, 0.03), rot: mix(D, [[0, 0], [0.8, -2], [2.6, -2], [3.2, 0]]) },
+    ground: { y: mix(D, lift.map(([a, v]) => [a, Math.min(0, v + 6)]), bob, 0.03) },
+    neck1: { rot: wave(D, t2 => 2 * sin(t2, 0.5, 0.6), 0.04) },
+    head: { rot: wave(D, t2 => -2 * sin(t2, 0.5, 0.9), 0.04) }
+  };
+  tailWave(t, D, 6, 0.9, () => 0, 0.05);
+  clips.fly_pose = { duration: D, loop: false, tracks: t, events: [{ t: 3.2, type: 'emit', preset: 'dust', anchor: 'front_leg_anchor' }] };
+}
+
 for (const [id, c] of Object.entries(clips)) {
   for (const tr of Object.values(c.tracks)) for (const k of Object.keys(tr)) if (!tr[k].length) delete tr[k];
   const clip = { id: `${id}@sprite`, note: 'Généré par scripts/build-sprite-clips.mjs', duration: c.duration, loop: c.loop, tracks: c.tracks, ...(c.events ? { events: c.events } : {}) };

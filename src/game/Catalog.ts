@@ -22,9 +22,11 @@ export class Catalog {
   fits: { categories: Record<string, FitTable>; items: Record<string, FitTable> } = { categories: {}, items: {} };
   /** Décors derrière le dragon, par stade. */
   backdrops: Record<string, BackdropDef> = {};
+  /** Poses peintes disponibles : variante -> stade -> poses. */
+  poses: Record<string, Record<string, string[]>> = {};
 
   async load(): Promise<void> {
-    const [st, cat, rar, col, eq, fx, q, bd, ft, bgs] = await Promise.all([
+    const [st, cat, rar, col, eq, fx, q, bd, ft, bgs, ps] = await Promise.all([
       loadJSON<{ stages: StageDef[]; xp: { base: number; step?: number; growth?: number } }>('data/stages.json'),
       loadJSON<{ categories: CategoryDef[] }>('data/categories.json'),
       loadJSON<{ rarities: RarityDef[] }>('data/rarities.json'),
@@ -34,7 +36,8 @@ export class Catalog {
       loadJSON<Record<QualityLevel, QualityPreset>>('data/quality.json'),
       loadJSON<{ badges: BadgeDef[] }>('data/badges.json').catch(() => ({ badges: [] as BadgeDef[] })),
       loadJSON<{ categories: Record<string, FitTable>; items: Record<string, FitTable> }>('data/fits.json').catch(() => ({ categories: {}, items: {} })),
-      loadJSON<{ stages: Record<string, BackdropDef> }>('data/backgrounds.json').catch(() => ({ stages: {} as Record<string, BackdropDef> }))
+      loadJSON<{ stages: Record<string, BackdropDef> }>('data/backgrounds.json').catch(() => ({ stages: {} as Record<string, BackdropDef> })),
+      loadJSON<{ poses: Record<string, Record<string, string[]>> }>('data/poses.json').catch(() => ({ poses: {} }))
     ]);
     this.stages = [...st.stages].sort((a, b) => a.minLevel - b.minLevel);
     this.xp = st.xp;
@@ -46,6 +49,7 @@ export class Catalog {
     this.badges = bd.badges;
     this.fits = { categories: ft.categories ?? {}, items: ft.items ?? {} };
     this.backdrops = bgs.stages ?? {};
+    this.poses = ps.poses ?? {};
     for (const item of eq.items) this.validate(item) && this.items.set(item.id, item);
   }
 

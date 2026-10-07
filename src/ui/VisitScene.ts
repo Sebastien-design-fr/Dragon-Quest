@@ -31,6 +31,7 @@ export class VisitScene {
     const g = new DragonView(this.canvas, app.view.dependencies);
     this.guest = g;
     g.showBackdrop = false;
+    g.idleLife = false;
     g.setQuality(app.view.quality, app.view.effectsEnabled);
     // L'invité arrive par la droite et se pose face à notre dragon.
     g.mirrored = true;

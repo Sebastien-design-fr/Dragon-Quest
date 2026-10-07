@@ -53,7 +53,11 @@ export interface DragonViewDeps {
   rarities: Map<string, RarityDef>;
   fits?: { categories: Record<string, FitTable>; items: Record<string, FitTable> };
   backdrops?: Record<string, BackdropDef>;
+  /** Poses peintes disponibles : variante -> stade -> ['sleep', 'flyUp', 'flyDown']. */
+  poses?: Record<string, Record<string, string[]>>;
 }
+
+type PoseId = 'sleep' | 'flyUp' | 'flyDown';
 
 export class DragonView {
   readonly canvas: HTMLCanvasElement;
@@ -107,6 +111,19 @@ export class DragonView {
   private look = { x: 0, y: 0, tx: 0, ty: 0, until: 0 };
   /** Décor derrière le dragon. */
   readonly backdrop = new Backdrop();
+  /** Poses peintes (couché, ailes hautes, ailes basses) : vues filles dessinées dans ce canvas. */
+  private poseViews: Partial<Record<PoseId, DragonView>> = {};
+  private poseW = { sleep: 0, fly: 0 };
+  private isPoseChild = false;
+  /** Vie au repos : petits comportements joués au hasard. */
+  idleLife = true;
+  private idleTimer = 8;
+  /** Ressorts (queue, ailes, tête) : ils suivent le corps avec un léger retard. */
+  private springs = new Map<string, { v: number; vel: number }>();
+  private prevBody = { y: 0, x: 0 };
+  /** Vol mis en scène : trajectoire dans la scène. */
+  private flight: { t: number; dur: number; baseMirror: boolean } | null = null;
+  private lift = 0;
   /** Appelé à chaque animation lancée (sons). */
   onClip: ((clip: string) => void) | null = null;
   /** Appelé quand un clip demande le changement de stade (animation EVOLUTION). */
@@ -130,11 +147,12 @@ export class DragonView {
   /** Quel dragon est affiché : 'dragon' (enfant) ou 'dragonne' (parent). */
   variant = 'dragon';
 
-  async setStage(stage: StageDef, instant = false, variant = this.variant): Promise<void> {
+  async setStage(stage: StageDef, instant = false, variant = this.variant, rigPath?: string): Promise<void> {
     this.variant = variant;
     // Rig propre à la variante s'il existe (data/rigs/<stade>.<variante>.json), sinon celui du dragon.
     const own = variant !== 'dragon' ? stage.rig.replace(/\.sprite\.json$/, `.${variant}.json`) : null;
-    const rig = (own && own !== stage.rig ? await loadJSON<RigDef>(own).catch(() => null) : null) ?? await loadJSON<RigDef>(stage.rig);
+    const rig = rigPath ? await loadJSON<RigDef>(rigPath)
+      : (own && own !== stage.rig ? await loadJSON<RigDef>(own).catch(() => null) : null) ?? await loadJSON<RigDef>(stage.rig);
     this.stage = stage;
     this.rig = rig;
     this.skeleton = new Skeleton(rig);
@@ -158,12 +176,38 @@ export class DragonView {
     if (instant) this.cam = { ...rig.camera };
     this.setEquipment(this.equipment);
     this.refreshPermanentEffects();
+    if (!this.isPoseChild) void this.loadPoses(stage, variant);
   }
+
+  /** Charge les poses peintes du stade (si elles existent) comme vues filles. */
+  private async loadPoses(stage: StageDef, variant: string): Promise<void> {
+    for (const v of Object.values(this.poseViews)) v?.dispose();
+    this.poseViews = {};
+    const list = (this.deps.poses?.[variant]?.[stage.id] ?? []) as PoseId[];
+    for (const pose of list) {
+      const child = new DragonView(document.createElement('canvas'), this.deps);
+      child.isPoseChild = true;
+      child.idleLife = false;
+      child.showBackdrop = false;
+      try {
+        await child.setStage(stage, true, variant, `data/rigs/${stage.id}.${variant}.${pose}.json`);
+      } catch { continue; }
+      if (this.stage !== stage || this.variant !== variant) return; // stade changé entre-temps
+      child.setEquipment(this.equipment);
+      this.poseViews[pose] = child;
+    }
+    // la boucle en cours peut maintenant utiliser la pose peinte
+    const loop = this.animator.baseId;
+    if (loop && this.clipFor(loop) !== loop) void this.animator.play(this.clipFor(loop));
+  }
+
+  private dispose(): void { this.stageAssets.dispose(); this.equipAssets.dispose(); }
 
   // ---------------- Équipements ----------------
   /** Remplace l'ensemble des équipements portés (prévisualisation boutique comprise). */
   setEquipment(list: EquipmentDef[]): void {
     this.equipment = list;
+    for (const v of Object.values(this.poseViews)) v?.setEquipment(list);
     if (!this.rig || !this.stage || !this.skeleton) return;
     const previous = this.equipAssets;
     this.equipAssets = new AssetScope();
@@ -244,7 +288,9 @@ export class DragonView {
   }
 
   private clipFor(id: string): string {
-    const base = id.split('@')[0];
+    let base = id.split('@')[0];
+    if (base === 'sleep' && this.poseViews.sleep) base = 'sleep_pose';
+    if (base === 'hover' && this.poseViews.flyUp && this.poseViews.flyDown) base = 'fly_pose';
     if (this.rig?.kind === 'sprite' && this.deps.library.get(base + '@sprite')) return base + '@sprite';
     return base;
   }
@@ -324,6 +370,12 @@ export class DragonView {
     };
   }
 
+  /** Vol mis en scène : décolle, fait un tour de la scène en se retournant, se repose. */
+  fly(): Promise<void> {
+    this.flight = { t: 0, dur: 3.4, baseMirror: this.mirrored };
+    return this.play('hover');
+  }
+
   // ---------------- Boucle ----------------
   start(): void {
     const tick = (now: number) => {
@@ -357,6 +409,8 @@ export class DragonView {
     this.ensureSkin();
     this.animator.update(dt, sk);
     this.applyLook(dt, sk);
+    this.lifeTick(dt);
+    this.applySprings(dt, sk);
     sk.update(new Mat2D());
     this.skin?.update();
 
@@ -380,60 +434,44 @@ export class DragonView {
     this.camM.e = W / 2 - (this.cam.x + this.cam.w / 2) * sx + this.placement.x * W + shakeX;
     // le sol (y = 0) reste à la même hauteur quelle que soit la taille
     this.camM.f = H / 2 - (this.cam.y + this.cam.h / 2) * s0 + shakeY;
+    this.flightTick(dt);
 
     // Décor (sol aligné sous les pattes du dragon)
     const feet = this.camM.point(0, 0);
     if (this.showBackdrop) this.backdrop.draw(ctx, W, H, feet.y, this.camM.e - W / 2, this.time, dt, this.effectsEnabled && this.quality.permanentEffects);
 
-    // Ombre au sol
+    // Ombre au sol (plus petite quand il vole)
     this.camM.apply(ctx);
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillStyle = `rgba(0,0,0,${0.35 * (1 - Math.min(0.7, this.lift * 3))})`;
     const fx = this.rig.fxScale ?? this.rig.scale;
-    ctx.beginPath(); ctx.ellipse(0, 4 * fx, this.rig.bounds.w * 0.32, 10 * fx, 0, 0, Math.PI * 2); ctx.fill();
+    const sh = 1 - Math.min(0.5, this.lift * 2);
+    ctx.beginPath(); ctx.ellipse(0, 4 * fx, this.rig.bounds.w * 0.32 * sh, 10 * fx * sh, 0, 0, Math.PI * 2); ctx.fill();
+
+    // En vol : tout le dragon monte (le décor et l'ombre restent au sol)
+    this.camM.f -= this.lift * H;
 
     if (this.layers.magicalEffect) { this.camM.apply(ctx); this.particles.draw(ctx, 'magical'); }
 
     ctx.filter = this.tired ? 'grayscale(0.75) brightness(0.62) contrast(0.92)' : 'none';
     this.animator.speed = this.tired ? 0.6 : 1;
-    const style = { palette: this.rig.palette, params: this.rig.params, time: this.time, effects: this.effectsEnabled && this.quality.permanentEffects };
-    for (const d of this.drawables) {
-      if (this.layers[d.layer] === false) continue;
-      const bone = sk.bone(d.bone);
-      if (!bone) continue;
-      if (d === this.skinPart && this.mesh?.ready) {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        const gl = this.mesh.render(this.camM, W, H);
-        ctx.drawImage(this.dirt > 0.04 ? this.withDirt(gl, W, H) : gl, 0, 0);
-      } else if (d.part) {
-        this.camM.multiply(bone.world, this.tmp).apply(ctx);
-        const img = d.partPath ? Assets.peek(d.partPath) : null;
-        if (img) ctx.drawImage(img, -d.part.pivot[0] * d.part.w, -d.part.pivot[1] * d.part.h, d.part.w, d.part.h);
-        else drawPart(ctx, d.part, style);
-      } else if (d.equip) {
-        const e = d.equip;
-        const anchorM = this.anchorWorld(e.anchor, this.tmp2);
-        if (!anchorM) continue;
-        const img = e.path ? Assets.peek(e.path) : null;
-        const f = img ? e.fit : null;
-        const s = this.rig.scale;
-        let rot = e.rot + (f?.rotation ?? 0);
-        if (this.quality.secondaryMotion && e.def.animationProfile === 'sway') rot += Math.sin(this.time * 2.4 + e.phase) * (f ? 2 : 7);
-        Mat2D.fromTRS(e.dx + (f?.x ?? 0) * s, e.dy + (f?.y ?? 0) * s, rot, f?.flipX ? -1 : 1, 1, this.tmp);
-        this.camM.multiply(anchorM.multiply(this.tmp, this.tmp), this.tmp).apply(ctx);
-        if (img) {
-          // Image définitive : proportions de l'image, découpe éventuelle, point d'accroche.
-          const [c0, c1] = f?.crop ?? [0, 1];
-          const sw = img.width * (c1 - c0);
-          const w = f?.width !== undefined ? f.width * s : e.w;
-          const hh = w * img.height / sw;
-          const [px, py] = f?.pivot ?? [0.5, 0.5];
-          ctx.drawImage(img, img.width * c0, 0, sw, img.height, -px * w, -py * hh, w, hh);
-        } else drawEquipment(ctx, e.def.placeholder?.shape ?? 'box', e.w, e.h, {
-          color: e.color, tint: e.def.placeholder?.tint, time: this.time,
-          glow: this.effectsEnabled && (e.def.animationProfile === 'pulse' || e.glow > 0.5) ? e.glow : 0
-        });
-      }
+    // Poses peintes : fondu entre l'image debout et l'image couchée / en vol.
+    const pv = this.poseViews;
+    const base = this.animator.baseId ?? '', act = this.animator.actionId ?? '';
+    const wantSleep = pv.sleep && base.startsWith('sleep') && !act ? 1 : 0;
+    const wantFly = pv.flyUp && pv.flyDown && (act.startsWith('fly_pose') || !!this.flight) ? 1 : 0;
+    const kw = Math.min(1, dt * 4);
+    this.poseW.sleep = lerp(this.poseW.sleep, wantSleep, kw);
+    this.poseW.fly = lerp(this.poseW.fly, wantFly, kw * 1.5);
+    const wBase = Math.max(0, 1 - this.poseW.sleep - this.poseW.fly);
+    if (wBase > 0.01) this.drawDragon(ctx, W, H, wBase);
+    if (this.poseW.sleep > 0.01 && pv.sleep) pv.sleep.renderPose(ctx, this, W, H, this.poseW.sleep);
+    if (this.poseW.fly > 0.01 && pv.flyUp && pv.flyDown) {
+      // battements : ailes hautes / ailes basses, presque nets avec un court fondu
+      const ph = Math.min(1, Math.max(0, (Math.sin(this.time * Math.PI * 4) + 1) / 2 * 3 - 1));
+      if (1 - ph > 0.01) pv.flyUp.renderPose(ctx, this, W, H, this.poseW.fly * (1 - ph));
+      if (ph > 0.01) pv.flyDown.renderPose(ctx, this, W, H, this.poseW.fly * ph);
     }
+    ctx.globalAlpha = 1;
 
     ctx.filter = 'none';
     if (this.layers.foregroundEffect) { this.camM.apply(ctx); this.particles.draw(ctx, 'foreground'); }
@@ -515,6 +553,125 @@ export class DragonView {
   emit(preset: string, anchor = 'head_anchor'): void {
     const src = this.anchorSource(anchor, this.deps.presets.get(preset))();
     if (src) this.particles.burst(preset, src.x, src.y, src.scale);
+  }
+
+  /** Dessine le dragon (illustration déformée + équipements) avec une opacité donnée. */
+  private drawDragon(ctx: CanvasRenderingContext2D, W: number, H: number, alpha: number): void {
+    const sk = this.skeleton!, rig = this.rig!;
+    ctx.globalAlpha = alpha;
+    const style = { palette: rig.palette, params: rig.params, time: this.time, effects: this.effectsEnabled && this.quality.permanentEffects };
+    for (const d of this.drawables) {
+      if (this.layers[d.layer] === false) continue;
+      const bone = sk.bone(d.bone);
+      if (!bone) continue;
+      if (d === this.skinPart && this.mesh?.ready) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        const gl = this.mesh.render(this.camM, W, H);
+        ctx.drawImage(this.dirt > 0.04 ? this.withDirt(gl, W, H) : gl, 0, 0);
+      } else if (d.part) {
+        this.camM.multiply(bone.world, this.tmp).apply(ctx);
+        const img = d.partPath ? Assets.peek(d.partPath) : null;
+        if (img) ctx.drawImage(img, -d.part.pivot[0] * d.part.w, -d.part.pivot[1] * d.part.h, d.part.w, d.part.h);
+        else drawPart(ctx, d.part, style);
+      } else if (d.equip) {
+        const e = d.equip;
+        const anchorM = this.anchorWorld(e.anchor, this.tmp2);
+        if (!anchorM) continue;
+        const img = e.path ? Assets.peek(e.path) : null;
+        const f = img ? e.fit : null;
+        const s = rig.scale;
+        let rot = e.rot + (f?.rotation ?? 0);
+        if (this.quality.secondaryMotion && e.def.animationProfile === 'sway') rot += Math.sin(this.time * 2.4 + e.phase) * (f ? 2 : 7);
+        Mat2D.fromTRS(e.dx + (f?.x ?? 0) * s, e.dy + (f?.y ?? 0) * s, rot, f?.flipX ? -1 : 1, 1, this.tmp);
+        this.camM.multiply(anchorM.multiply(this.tmp, this.tmp), this.tmp).apply(ctx);
+        if (img) {
+          const [c0, c1] = f?.crop ?? [0, 1];
+          const sw = img.width * (c1 - c0);
+          const w = f?.width !== undefined ? f.width * s : e.w;
+          const hh = w * img.height / sw;
+          const [px, py] = f?.pivot ?? [0.5, 0.5];
+          ctx.drawImage(img, img.width * c0, 0, sw, img.height, -px * w, -py * hh, w, hh);
+        } else drawEquipment(ctx, e.def.placeholder?.shape ?? 'box', e.w, e.h, {
+          color: e.color, tint: e.def.placeholder?.tint, time: this.time,
+          glow: this.effectsEnabled && (e.def.animationProfile === 'pulse' || e.glow > 0.5) ? e.glow : 0
+        });
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /** Vue fille (pose peinte) : même caméra et mêmes mouvements que la vue principale, dessinée dans son canvas. */
+  private renderPose(ctx: CanvasRenderingContext2D, main: DragonView, W: number, H: number, alpha: number): void {
+    const sk = this.skeleton;
+    if (!sk || !this.rig) return;
+    this.time = main.time;
+    this.dirt = main.dirt;
+    this.ensureSkin();
+    sk.resetPose();
+    for (const b of main.skeleton!.bones) {
+      const mine = sk.bone(b.def.name);
+      if (mine) Object.assign(mine.offset, b.offset);
+    }
+    sk.update(new Mat2D());
+    this.skin?.update();
+    this.camM.copy(main.camM);
+    this.drawDragon(ctx, W, H, alpha);
+  }
+
+  /** Petits comportements au repos, joués de temps en temps. */
+  private lifeTick(dt: number): void {
+    if (!this.idleLife || this.isPoseChild) return;
+    const base = this.animator.baseId ?? '';
+    if (this.animator.actionId || !base.startsWith('idle') || this.flight) { this.idleTimer = Math.max(this.idleTimer, 4); return; }
+    this.idleTimer -= dt;
+    if (this.idleTimer > 0) return;
+    this.idleTimer = 9 + Math.random() * 12;
+    const r = Math.random();
+    if (r < 0.06) { void this.fly(); return; }
+    const pick = ['look_around', 'tail_swish', 'sniff', 'stretch', 'yawn', 'scratch', 'look_around', 'tail_swish'];
+    void this.animator.play(this.clipFor(pick[Math.floor(Math.random() * pick.length)]));
+  }
+
+  /** Ressorts amortis : la queue et les ailes traînent un peu derrière les mouvements du corps. */
+  private applySprings(dt: number, sk: Skeleton): void {
+    if (!this.quality.secondaryMotion || dt <= 0) return;
+    const body = sk.bone('body');
+    if (!body) return;
+    const vy = (body.offset.y - this.prevBody.y) / dt;
+    const vx = (body.offset.x - this.prevBody.x) / dt + (this.flight ? 60 : 0);
+    this.prevBody.y = body.offset.y; this.prevBody.x = body.offset.x;
+    const chain: Array<[string, number, number]> = [
+      ['tail1', 0.010, 0.004], ['tail2', 0.018, 0.007], ['tail3', 0.026, 0.010], ['tail4', 0.032, 0.012], ['tail5', 0.038, 0.014],
+      ['wing2', -0.03, 0], ['wingFar', -0.02, 0], ['head', 0.012, 0]
+    ];
+    for (const [name, gy, gx] of chain) {
+      const b = sk.bone(name);
+      if (!b) continue;
+      const target = b.offset.rot + Math.max(-14, Math.min(14, vy * gy + vx * gx));
+      let st = this.springs.get(name);
+      if (!st) { st = { v: target, vel: 0 }; this.springs.set(name, st); }
+      const k = 140, c = 15;
+      st.vel += (k * (target - st.v) - c * st.vel) * dt;
+      st.v += st.vel * dt;
+      b.offset.rot = st.v;
+    }
+  }
+
+  /** Trajectoire du vol : il monte, file d'un côté, se retourne, revient et se pose. */
+  private flightTick(dt: number): void {
+    const f = this.flight;
+    if (!f) { this.lift = lerp(this.lift, 0, Math.min(1, dt * 4)); return; }
+    f.t += dt;
+    const u = Math.min(1, f.t / f.dur);
+    const ease = (x: number) => x * x * (3 - 2 * x);
+    const up = u < 0.2 ? ease(u / 0.2) : u > 0.82 ? ease((1 - u) / 0.18) : 1;
+    this.lift = 0.14 * up;
+    const cruise = u < 0.2 ? 0 : u > 0.82 ? 1 : (u - 0.2) / 0.62;
+    const x = 0.15 * Math.sin(cruise * Math.PI * 2);
+    const dx = Math.cos(cruise * Math.PI * 2);
+    this.placement.x = this.placeTarget.x + x;
+    this.mirrored = u > 0.2 && u < 0.82 && dx < 0 ? !f.baseMirror : f.baseMirror;
+    if (u >= 1) { this.flight = null; this.mirrored = f.baseMirror; }
   }
 
   /** Regard : s'ajoute à l'animation en cours (tête et cou), avec un retour progressif au repos. */

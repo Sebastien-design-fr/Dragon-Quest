@@ -26,6 +26,14 @@
     "hover@sprite.json",
     "wake@sprite.json",
     "welcome@sprite.json",
-    "shake@sprite.json"
+    "shake@sprite.json",
+    "stretch@sprite.json",
+    "yawn@sprite.json",
+    "scratch@sprite.json",
+    "look_around@sprite.json",
+    "sniff@sprite.json",
+    "tail_swish@sprite.json",
+    "sleep_pose@sprite.json",
+    "fly_pose@sprite.json"
   ]
 }
