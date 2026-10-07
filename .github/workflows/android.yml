@@ -76,15 +76,15 @@ jobs:
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
           $BT/apksigner sign --ks signing/quete-du-dragon.keystore --ks-key-alias quete \
             --ks-pass pass:"$SIGNING_PASSWORD" --key-pass pass:"$SIGNING_PASSWORD" \
-            --out quete-du-dragon.apk android/app/build/outputs/apk/debug/app-debug.apk
-          $BT/apksigner verify --print-certs quete-du-dragon.apk | head -3
+            --out lumia.apk android/app/build/outputs/apk/debug/app-debug.apk
+          $BT/apksigner verify --print-certs lumia.apk | head -3
         env:
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD || 'quetedudragon' }}
 
       - uses: actions/upload-artifact@v4
         with:
-          name: quete-du-dragon-apk
-          path: quete-du-dragon.apk
+          name: lumia-apk
+          path: lumia.apk
 
       # Branche de test du moteur graphique : pré-release à part, qui ne remplace PAS le lien « latest » de la famille.
       - name: APK de test (visual-engine-upgrade)
@@ -106,7 +106,7 @@ jobs:
           name: Quête du Dragon 0.18 — test (build ${{ github.run_number }})
           prerelease: true
           make_latest: false
-          files: quete-du-dragon.apk
+          files: lumia.apk
 
       - name: APK séparé Lumia
         if: github.ref == 'refs/heads/lumia-test'
@@ -116,7 +116,7 @@ jobs:
           name: Lumia 0.18 — application séparée (build ${{ github.run_number }})
           prerelease: true
           make_latest: false
-          files: quete-du-dragon.apk
+          files: lumia.apk
 
       - name: Release (branche main et tags uniquement)
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
