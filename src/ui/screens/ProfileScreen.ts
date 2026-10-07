@@ -59,7 +59,7 @@ export class ProfileScreen implements Screen {
         h('div', { class: 'cp-avatar' }, icon(ICONS.dragon, 34)),
         h('div', { class: 'grow' },
           h('h2', { class: 'cp-name' }, name),
-          h('div', { class: 'small muted' }, `${app.stageLabel(stage.label)} · niveau ${app.state.data.level}`),
+          h('div', { class: 'small muted' }, `${app.stageLabel(stage.label)} · niveau ${app.state.data.level}${stage.sizeMeters ? ` · ~${String(stage.sizeMeters).replace('.', ',')} m` : ''}`),
           title ? h('span', { class: 'badge title-badge cp-title' }, icon(ICONS.star, 12), ' ', title) : null)),
       bond ? h('div', { class: 'cp-bond' },
         h('div', { class: 'row' }, icon(ICONS.heart, 16), h('span', { class: 'grow' }, `Amitié : ${bond.label}`), h('span', { class: 'small muted' }, `niveau ${bond.level}`)),
