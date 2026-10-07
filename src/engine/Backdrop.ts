@@ -165,13 +165,13 @@ export class Backdrop {
     const g = c.getContext('2d')!;
     const floorY = Math.min(H * 0.95, feetY);
     const bg = g.createRadialGradient(W * 0.5, floorY - H * 0.25, 10, W * 0.5, floorY - H * 0.25, Math.max(W, H) * 0.8);
-    bg.addColorStop(0, def.warm); bg.addColorStop(0.45, mixHex(def.warm, def.cool, 0.6)); bg.addColorStop(1, '#0b0a0d');
+    bg.addColorStop(0, def.warm); bg.addColorStop(0.45, mixHex(def.warm, def.cool, 0.6)); bg.addColorStop(1, '#0d1730');
     g.fillStyle = bg; g.fillRect(0, 0, W, H);
     // parois rocheuses lointaines
     let seed = 11;
     const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
     for (let layer = 0; layer < 3; layer++) {
-      g.fillStyle = `rgba(10,8,12,${0.35 + layer * 0.2})`;
+      g.fillStyle = `rgba(9,18,38,${0.35 + layer * 0.2})`;
       g.beginPath(); g.moveTo(0, 0);
       const steps = 14;
       for (let i = 0; i <= steps; i++) {
@@ -192,7 +192,7 @@ export class Backdrop {
     }
     // sol
     const fl = g.createLinearGradient(0, floorY - H * 0.06, 0, H);
-    fl.addColorStop(0, mixHex(def.warm, '#000000', 0.55)); fl.addColorStop(1, '#0b0a0d');
+    fl.addColorStop(0, mixHex(def.warm, '#000000', 0.55)); fl.addColorStop(1, '#0d1730');
     g.fillStyle = fl;
     g.beginPath(); g.moveTo(0, floorY + H * 0.02); g.quadraticCurveTo(W / 2, floorY - H * 0.07, W, floorY + H * 0.02); g.lineTo(W, H); g.lineTo(0, H); g.fill();
     // cailloux
@@ -203,7 +203,7 @@ export class Backdrop {
     }
     // vignette
     const v = g.createRadialGradient(W / 2, H * 0.55, Math.min(W, H) * 0.3, W / 2, H * 0.55, Math.max(W, H) * 0.75);
-    v.addColorStop(0, 'rgba(11,10,13,0)'); v.addColorStop(1, 'rgba(11,10,13,0.9)');
+    v.addColorStop(0, 'rgba(13,23,48,0)'); v.addColorStop(1, 'rgba(8,16,34,0.78)');
     g.fillStyle = v; g.fillRect(0, 0, W, H);
     this.painted = c; this.paintedKey = key;
     return c;
