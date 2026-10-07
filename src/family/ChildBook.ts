@@ -73,6 +73,7 @@ export class ChildBook {
     this.data.confiscated = null;
     this.data.lastPenalty = null;
     this.data.missStreak = 0;
+    this.data.shields = 0;
     this.data.energy = ENERGY.max;
     this.companion?.setSick(false);
   }
@@ -402,7 +403,6 @@ export class ChildBook {
         this.companion?.onPerfectDay();
         this.data.gems += 2;
         this.rollWeek(); this.data.week.perfect++;
-        if (s > 0 && s % 7 === 0 && this.data.shields < 2) { this.data.shields++; this.events.emit('toast', 'Bouclier de série gagné : il protégera ta série un jour d’oubli.'); }
         if (s === 7 || s === 30 || s === 100) this.companion?.remember('streak' + s, `${s} jours de suite`, `Toutes les missions faites ${s} jours d’affilée.`);
         if (this.data.stats.perfectDays === 1) this.companion?.remember('perfect1', 'Première journée parfaite', 'Toutes les missions du jour faites pour la première fois.');
         if (s > 0 && s % 7 === 0) { this.reward(50, 50); this.events.emit('toast', `Série de ${s} jours ! Bonus +50 XP, +50 or`); }
