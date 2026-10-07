@@ -1,6 +1,6 @@
 {
   "name": "dragon-mission",
-  "version": "0.19.2",
+  "version": "0.19.3",
   "private": true,
   "description": "Dragon Mission : dragons évolutifs, animés et personnalisables, avec missions familiales validées par les parents.",
   "type": "module",
