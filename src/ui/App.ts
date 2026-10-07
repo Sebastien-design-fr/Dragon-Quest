@@ -46,7 +46,7 @@ export interface FamilyContext {
   training: Training | null;
 }
 
-export const APP_VERSION = '0.19.0';
+export const APP_VERSION = '0.19.1';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -657,7 +657,7 @@ export class App {
       const c = this.selectedChild ? this.family.hub?.child(this.selectedChild) : null;
       const snap = c?.snapshot;
       put(this.hud,
-        h('img', { class: 'brand-mark', src: 'assets/brand/dragon-mission-logo.png', alt: 'Dragon Mission' }),
+        h('img', { class: 'brand-mark', src: 'assets/brand/dragon-mission-logo.svg', alt: 'Dragon Mission' }),
         h('div', { class: 'hud-id' },
           h('div', { class: 'hud-stage' }, c ? c.name : 'Espace parent'),
           h('div', { class: 'hud-level' }, snap ? `${snap.stageLabel} · niveau ${snap.level}` : c ? 'En attente de son téléphone' : 'Aucun enfant relié')),
@@ -672,7 +672,7 @@ export class App {
     const stage = (this.evolving && this.evoFrom) || this.stageOverride || this.state.stage;
     const need = this.state.xpToNext();
     this.hud.append(
-      h('img', { class: 'brand-mark', src: 'assets/brand/dragon-mission-logo.png', alt: 'Dragon Mission' }),
+      h('img', { class: 'brand-mark', src: 'assets/brand/dragon-mission-logo.svg', alt: 'Dragon Mission' }),
       h('div', { class: 'hud-id' },
         h('div', { class: 'hud-stage' }, this.stageLabel(stage.label), this.stageOverride ? h('em', null, ' (aperçu)') : null),
         h('div', { class: 'hud-level' }, `Niveau ${d.level}${this.family.book?.titleText() ? ' · ' + this.family.book.titleText() : ''}`)),
