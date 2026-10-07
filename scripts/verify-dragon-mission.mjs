@@ -26,4 +26,16 @@ if (cap.appId !== 'fr.dragonmission.app' || cap.appName !== 'Dragon Mission') {
 }
 if (!existsSync('www/assets/brand/dragon-mission-logo.svg')) throw new Error('Logo SVG absent');
 
-console.log('Dragon Mission: assets, identité Android et désactivation des anciens visuels validés.');
+const html = readFileSync('www/index.html','utf8');
+const theme = readFileSync('www/css/mission-theme.css','utf8');
+const themePos = html.indexOf('css/mission-theme.css');
+const devPos = html.indexOf('css/dev.css');
+if (themePos < 0 || themePos < devPos) throw new Error('Le thème Dragon Mission doit être chargé en dernier');
+if (!theme.includes('min-height: 0 !important') || !theme.includes('touch-action: pan-y !important')) {
+  throw new Error('Correctif de défilement Android absent');
+}
+if (!theme.includes('--mission-blue') || !theme.includes('#152446')) {
+  throw new Error('Nouvelle identité visuelle Dragon Mission absente');
+}
+
+console.log('Dragon Mission: assets, identité, thème final et défilement Android validés.');
