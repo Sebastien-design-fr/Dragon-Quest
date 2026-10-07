@@ -1,6 +1,6 @@
 {
-  "appId": "fr.questedudragon.app",
-  "appName": "Quête du Dragon",
+  "appId": "fr.lumia.gardiens",
+  "appName": "Lumia",
   "webDir": "www",
   "android": {
     "backgroundColor": "#0b0a0d"
