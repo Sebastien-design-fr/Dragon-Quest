@@ -53,10 +53,10 @@ export function thoughts(book: ChildBook | null, c: Companion, childName: string
 
   // 2. Missions restantes : encouragement uniquement, jamais de perte de progression.
   if (book) {
-    const cost = book.pendingCost();
-    if (cost.count && now.getHours() >= 19) out.push({
+    const count = book.pendingCount();
+    if (count && now.getHours() >= 19) out.push({
       id: 'evening',
-      text: `Il reste ${cost.count} mission${cost.count > 1 ? 's' : ''}. Encore un petit effort pour gagner les récompenses du jour !`,
+      text: `Il reste ${count} mission${count > 1 ? 's' : ''}. Encore un petit effort pour gagner les récompenses du jour !`,
       action: 'missions',
       priority: 78
     });
