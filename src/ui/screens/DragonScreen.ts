@@ -4,6 +4,7 @@ import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon, put } from '../dom.js';
 import { playGemGame } from '../MiniGame.js';
 import { openSheet } from './common.js';
+import { Sound } from '../../engine/Sound.js';
 import { todayKey } from '../../family/model.js';
 import { fill, journeyFor, landmarks } from '../../family/Expedition.js';
 import { openLair } from '../Lair.js';
@@ -210,6 +211,7 @@ export class DragonScreen implements Screen {
       if (e.steps >= goal && !e.opened) nodes.push(h('button', { class: 'btn primary chest-btn', onclick: () => {
         const loot = book.openChest();
         if (!loot) return;
+        void Sound.play('chest', { user: true });
         close();
         void app.act('roar');
         app.view.emit('evolutionBurst', 'body_center');

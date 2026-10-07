@@ -201,5 +201,5 @@ export interface SaveData {
   gold: number;
   owned: string[];
   equipped: Record<CategoryId, string>;
-  settings: { quality: QualityLevel; effects: boolean };
+  settings: { quality: QualityLevel; effects: boolean; sound?: boolean; volume?: number };
 }

@@ -19,6 +19,7 @@ import { ParticleSystem } from './Particles.js';
 import { drawEquipment, drawPart } from './Placeholders.js';
 import { Skeleton } from './Skeleton.js';
 import { MeshRenderer, SpriteSkin } from './SpriteSkin.js';
+import { Backdrop, type BackdropDef } from './Backdrop.js';
 
 /** Taches de saleté : [ancrage, décalage x, y, rayon, intensité] (unités : échelle des effets). */
 const DIRT_SPOTS: Array<[string, number, number, number, number]> = [
@@ -51,6 +52,7 @@ export interface DragonViewDeps {
   categories: Map<string, CategoryDef>;
   rarities: Map<string, RarityDef>;
   fits?: { categories: Record<string, FitTable>; items: Record<string, FitTable> };
+  backdrops?: Record<string, BackdropDef>;
 }
 
 export class DragonView {
@@ -96,6 +98,10 @@ export class DragonView {
   private static mesh: MeshRenderer | null | undefined;
   /** Regard : direction visée par la tête (-1..1), suivie en douceur. */
   private look = { x: 0, y: 0, tx: 0, ty: 0, until: 0 };
+  /** Décor derrière le dragon. */
+  readonly backdrop = new Backdrop();
+  /** Appelé à chaque animation lancée (sons). */
+  onClip: ((clip: string) => void) | null = null;
   /** Appelé quand un clip demande le changement de stade (animation EVOLUTION). */
   onSwapStage: (() => Promise<void> | void) | null = null;
 
@@ -130,6 +136,7 @@ export class DragonView {
     }
     previous.dispose();
     this.camTarget = { ...rig.camera };
+    this.backdrop.setStage(stage.id, this.deps.backdrops?.[stage.id] ?? null, Assets.background(stage.id));
     // La boucle en cours (repos, sommeil) bascule sur la variante adaptée au nouveau type de dragon.
     const loop = this.animator.baseId;
     if (loop && this.clipFor(loop) !== loop) void this.animator.play(this.clipFor(loop));
@@ -215,7 +222,11 @@ export class DragonView {
 
   // ---------------- Animations ----------------
   /** Joue une animation ; un dragon « illustration entière » utilise sa variante <id>@sprite si elle existe. */
-  play(id: string): Promise<void> { return this.animator.play(this.clipFor(id)); }
+  play(id: string): Promise<void> {
+    const clip = this.deps.library.get(this.clipFor(id));
+    if (clip && !clip.loop) this.onClip?.(id.split('@')[0]);
+    return this.animator.play(this.clipFor(id));
+  }
 
   private clipFor(id: string): string {
     const base = id.split('@')[0];
@@ -348,6 +359,10 @@ export class DragonView {
     this.camM.a = s; this.camM.b = 0; this.camM.c = 0; this.camM.d = s;
     this.camM.e = W / 2 - (this.cam.x + this.cam.w / 2) * s + shakeX;
     this.camM.f = H / 2 - (this.cam.y + this.cam.h / 2) * s + shakeY;
+
+    // Décor (sol aligné sous les pattes du dragon)
+    const feet = this.camM.point(0, 0);
+    this.backdrop.draw(ctx, W, H, feet.y, this.camM.e - W / 2, this.time, dt, this.effectsEnabled && this.quality.permanentEffects);
 
     // Ombre au sol
     this.camM.apply(ctx);

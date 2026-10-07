@@ -3,6 +3,7 @@ import type { EquipmentDef, StageDef } from '../core/types.js';
 import type { DragonView } from '../engine/DragonView.js';
 import type { ChildBook } from '../family/ChildBook.js';
 import { isNight, type Companion } from '../family/Companion.js';
+import { Sound } from '../engine/Sound.js';
 import { sayFor, thoughts, type Thought, type ThoughtAction } from '../family/Thoughts.js';
 import type { ParentHub } from '../family/ParentHub.js';
 import type { Reminders } from '../family/Reminders.js';
@@ -72,6 +73,27 @@ export class App {
       ? [new ValidationsScreen(this), new ParentMissionsScreen(this), new FamilyScreen(this)]
       : [new DragonScreen(this), new MissionsScreen(this), new ShopScreen(this), new InventoryScreen(this), new SettingsScreen(this)];
     this.buildTabs();
+
+    // Sons : réglages, animations, or et gemmes gagnés.
+    const applySound = () => { Sound.muted = state.data.settings.sound === false; Sound.volume = state.data.settings.volume ?? 0.7; };
+    applySound();
+    view.onClip = clip => Sound.forClip(clip, view.stage?.id ?? 'adult');
+    Sound.warm(['purr', 'chirp', 'coins', 'gem']);
+    let lastGold = state.data.gold;
+    state.events.on('change', d => {
+      applySound();
+      if (!this.isParent && d.gold > lastGold) void Sound.play('coins', { user: true });
+      lastGold = d.gold;
+    });
+    let lastGems = family.book?.data.gems ?? 0;
+    family.book?.events.on('change', () => {
+      const g = family.book!.data.gems;
+      if (g > lastGems) void Sound.play('gem', { user: true });
+      lastGems = g;
+    });
+    const nightTint = () => { view.backdrop.night = isNight() ? 1 : 0; };
+    nightTint();
+    window.setInterval(nightTint, 60000);
 
     state.events.on('change', d => {
       this.view.setQuality(catalog.quality[d.settings.quality], d.settings.effects);

@@ -1,6 +1,7 @@
 // Accès aux définitions de jeu (toutes issues de www/data/). L'interface ne connaît aucun
 // équipement en dur : elle interroge ce catalogue, qui découvre tout dans les JSON.
 import { loadJSON } from '../core/data.js';
+import type { BackdropDef } from '../engine/Backdrop.js';
 import type { BadgeDef } from '../family/badges.js';
 import type {
   CategoryDef, CollectionDef, EquipmentDef, FitTable, ParticlePreset, QualityLevel, QualityPreset, RarityDef, StageDef
@@ -19,9 +20,11 @@ export class Catalog {
   badges: BadgeDef[] = [];
   /** Placements des équipements : par catégorie (défaut) et par objet. */
   fits: { categories: Record<string, FitTable>; items: Record<string, FitTable> } = { categories: {}, items: {} };
+  /** Décors derrière le dragon, par stade. */
+  backdrops: Record<string, BackdropDef> = {};
 
   async load(): Promise<void> {
-    const [st, cat, rar, col, eq, fx, q, bd, ft] = await Promise.all([
+    const [st, cat, rar, col, eq, fx, q, bd, ft, bgs] = await Promise.all([
       loadJSON<{ stages: StageDef[]; xp: { base: number; step?: number; growth?: number } }>('data/stages.json'),
       loadJSON<{ categories: CategoryDef[] }>('data/categories.json'),
       loadJSON<{ rarities: RarityDef[] }>('data/rarities.json'),
@@ -30,7 +33,8 @@ export class Catalog {
       loadJSON<{ presets: ParticlePreset[] }>('data/effects.json'),
       loadJSON<Record<QualityLevel, QualityPreset>>('data/quality.json'),
       loadJSON<{ badges: BadgeDef[] }>('data/badges.json').catch(() => ({ badges: [] as BadgeDef[] })),
-      loadJSON<{ categories: Record<string, FitTable>; items: Record<string, FitTable> }>('data/fits.json').catch(() => ({ categories: {}, items: {} }))
+      loadJSON<{ categories: Record<string, FitTable>; items: Record<string, FitTable> }>('data/fits.json').catch(() => ({ categories: {}, items: {} })),
+      loadJSON<{ stages: Record<string, BackdropDef> }>('data/backgrounds.json').catch(() => ({ stages: {} as Record<string, BackdropDef> }))
     ]);
     this.stages = [...st.stages].sort((a, b) => a.minLevel - b.minLevel);
     this.xp = st.xp;
@@ -41,6 +45,7 @@ export class Catalog {
     this.quality = q;
     this.badges = bd.badges;
     this.fits = { categories: ft.categories ?? {}, items: ft.items ?? {} };
+    this.backdrops = bgs.stages ?? {};
     for (const item of eq.items) this.validate(item) && this.items.set(item.id, item);
   }
 

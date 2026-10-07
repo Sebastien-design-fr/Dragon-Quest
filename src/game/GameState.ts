@@ -28,7 +28,7 @@ export class GameState {
     return {
       version: SAVE_VERSION, updatedAt: Date.now(),
       stage: this.catalog.stages[0]?.id ?? 'baby', level: 1, xp: 0, gold: 100,
-      owned: [], equipped: {}, settings: { quality: 'HIGH', effects: true }
+      owned: [], equipped: {}, settings: { quality: 'HIGH', effects: true, sound: true, volume: 0.7 }
     };
   }
 
@@ -156,4 +156,5 @@ export class GameState {
   // ---------- Réglages ----------
   setQuality(q: QualityLevel): void { this.data.settings.quality = q; this.commit(); }
   setEffects(on: boolean): void { this.data.settings.effects = on; this.commit(); }
+  setSound(on: boolean, volume = this.data.settings.volume ?? 0.7): void { this.data.settings.sound = on; this.data.settings.volume = volume; this.commit(); }
 }

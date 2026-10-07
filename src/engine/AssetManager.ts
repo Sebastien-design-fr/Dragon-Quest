@@ -10,7 +10,7 @@ import { loadJSON } from '../core/data.js';
 import type { EquipmentDef, StageId } from '../core/types.js';
 
 export type Img = HTMLImageElement | ImageBitmap;
-const EXTENSIONS = ['webp', 'png'];
+const EXTENSIONS = ['webp', 'png', 'jpg'];
 
 interface Entry { refs: number; promise: Promise<Img | null>; image: Img | null }
 
@@ -34,6 +34,9 @@ class AssetManagerImpl {
   equipment(def: EquipmentDef, stage: StageId): string | null {
     const dir = `assets/equipment/${def.category}/${def.asset}`;
     return this.firstAvailable(`${dir}_${stage}`) ?? this.firstAvailable(dir);
+  }
+  background(stage: StageId): string | null {
+    return this.firstAvailable(`assets/backgrounds/bg_${stage}`);
   }
   equipmentIcon(def: EquipmentDef): string | null {
     return this.firstAvailable(`assets/equipment/${def.category}/${def.asset}_icon`) ?? this.equipment(def, 'adult');

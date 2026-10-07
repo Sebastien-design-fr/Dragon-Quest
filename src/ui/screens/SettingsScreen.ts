@@ -1,6 +1,7 @@
 import type { QualityLevel } from '../../core/types.js';
 import { Assets } from '../../engine/AssetManager.js';
 import { LAYERS } from '../../engine/DragonView.js';
+import { Sound } from '../../engine/Sound.js';
 import { APP_VERSION, type App, type Screen } from '../App.js';
 import { ICONS, clear, h } from '../dom.js';
 import { deviceSetupCard, membersCard } from './family.js';
@@ -30,6 +31,17 @@ export function qualityCard(app: App): HTMLElement {
     h('p', { class: 'small muted' }, 'Basse : aucune particule, 30 images/s. Idéal pour les téléphones modestes.'),
     seg,
     toggle('Effets lumineux et particules', s.effects, v => app.state.setEffects(v)));
+}
+
+export function soundCard(app: App): HTMLElement {
+  const s = app.state.data.settings;
+  const vol = h('input', { type: 'range', min: '0', max: '100', step: '5', value: String(Math.round((s.volume ?? 0.7) * 100)), 'aria-label': 'Volume',
+    onchange: (e: Event) => { app.state.setSound(true, Number((e.target as HTMLInputElement).value) / 100); void Sound.play('chirp', { user: true }); } });
+  return h('section', { class: 'card' },
+    h('h3', null, 'Sons'),
+    toggle('Sons du dragon', s.sound !== false, v => { app.state.setSound(v); if (v) void Sound.play('chirp', { user: true }); }),
+    h('label', { class: 'field-col' }, h('span', { class: 'small' }, 'Volume'), vol),
+    h('p', { class: 'small muted' }, 'Le dragon reste silencieux la nuit (22 h – 7 h), sauf quand tu le touches.'));
 }
 
 /** Version de l'appli : 7 appuis activent les outils de test. */
@@ -86,6 +98,7 @@ export class SettingsScreen implements Screen {
     el.append(
       deviceSetupCard(this.app, rerender),
       membersCard(this.app),
+      soundCard(this.app),
       qualityCard(this.app));
     if (this.app.devMode) el.append(devToolsCard(this.app));
     el.append(versionLine(this.app, rerender));
