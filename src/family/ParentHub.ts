@@ -122,20 +122,11 @@ export class ParentHub {
     this.save();
   }
 
-  /** Avertissement : retire de l'or à l'enfant (50 au maximum) et un peu d'énergie au dragon. */
   /** Vitrine des vraies récompenses de l'enfant. */
   async setRewards(childId: string, rewards: Reward[]): Promise<void> {
     await this.link.send(childId, 'rewards.set', { rewards }, null);
     const c = this.data.children[childId];
     if (c?.snapshot) c.snapshot.rewards = rewards;
-    this.save();
-  }
-
-  /** Sévérité des sanctions pour les missions oubliées. */
-  async setSeverity(childId: string, severity: 'doux' | 'normal' | 'strict'): Promise<void> {
-    await this.link.send(childId, 'rules', { severity }, null);
-    const c = this.data.children[childId];
-    if (c?.snapshot) c.snapshot.severity = severity;
     this.save();
   }
 
@@ -147,12 +138,13 @@ export class ParentHub {
     this.events.emit('toast', 'Friandise envoyée');
   }
 
-  async warn(childId: string, gold: number, reason: string): Promise<void> {
-    const g = Math.min(50, Math.max(0, Math.round(gold)));
-    await this.link.send(childId, 'warning', { gold: g, reason }, {
-      title: 'Avertissement', body: `−${g} or${reason ? ` — « ${reason} »` : ''}. Ton dragon perd aussi un peu d’énergie.`, tag: newId('warn-'), channel: 'missions'
+  /** Message parental sans sanction : aucune monnaie ni énergie n'est retirée. */
+  async warn(childId: string, _gold: number, reason: string): Promise<void> {
+    const message = reason.trim().slice(0, 80);
+    await this.link.send(childId, 'warning', { gold: 0, reason: message }, {
+      title: 'Un message de tes parents', body: message || 'Continue comme ça !', tag: newId('msg-'), channel: 'missions'
     });
-    this.log(`Avertissement à ${this.child(childId)?.name ?? 'l’enfant'} : −${g} or (${reason})`);
+    this.log(`Message envoyé à ${this.child(childId)?.name ?? 'l’enfant'} : ${message || 'encouragement'}`);
     this.save();
   }
 
