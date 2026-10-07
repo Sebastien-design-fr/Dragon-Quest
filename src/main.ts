@@ -56,6 +56,8 @@ async function boot(): Promise<void> {
   let companion: Companion | null = null;
   if (linkState.role === 'parent') {
     hub = new ParentHub(link);
+    // La maman (ou le papa) a sa propre dragonne : un tamagotchi qui grandit avec les soins.
+    companion = new Companion(state, 'parent');
     hub.syncMembers(linkState.members);
     await hub.sync();
     link.onInbox(() => void hub!.sync());

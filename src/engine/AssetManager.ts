@@ -28,8 +28,10 @@ class AssetManagerImpl {
   }
 
   // ----- Conventions de nommage -----
-  dragonPart(stage: StageId, key: string): string | null {
-    return this.firstAvailable(`assets/dragon/${stage}/dragon_${stage}_${key}`);
+  /** variant : 'dragon' (celui de l'enfant) ou 'dragonne' (celui de la maman) — repli sur 'dragon'. */
+  dragonPart(stage: StageId, key: string, variant = 'dragon'): string | null {
+    return (variant !== 'dragon' ? this.firstAvailable(`assets/${variant}/${stage}/${variant}_${stage}_${key}`) : null)
+      ?? this.firstAvailable(`assets/dragon/${stage}/dragon_${stage}_${key}`);
   }
   equipment(def: EquipmentDef, stage: StageId): string | null {
     const dir = `assets/equipment/${def.category}/${def.asset}`;

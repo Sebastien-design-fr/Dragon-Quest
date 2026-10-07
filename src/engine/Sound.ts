@@ -62,10 +62,10 @@ class SoundManager {
   stop(id: SoundId): void { try { this.playing.get(id)?.stop(); } catch { /* déjà fini */ } this.playing.delete(id); }
 
   /** Son associé à une animation du dragon, selon son stade. */
-  forClip(clip: string, stage: string): void {
+  forClip(clip: string, stage: string, variant = 'dragon'): void {
     const roar: SoundId = stage === 'baby' ? 'baby' : stage === 'young' ? 'roar_young' : stage === 'adult' ? 'roar_adult' : 'roar_legendary';
     const voice: SoundId = stage === 'baby' ? 'baby' : 'chirp';
-    const pitch = stage === 'baby' ? 1.15 : stage === 'young' ? 1.05 : stage === 'legendary' ? 0.92 : 1;
+    const pitch = (stage === 'baby' ? 1.15 : stage === 'young' ? 1.05 : stage === 'legendary' ? 0.92 : 1) * (variant === 'dragonne' ? 1.1 : 1);
     const map: Record<string, () => void> = {
       happy: () => void this.play(voice, { user: true, rate: pitch }),
       welcome: () => void this.play(voice, { user: true, rate: pitch }),
@@ -75,7 +75,7 @@ class SoundManager {
       attack: () => void this.play('attack', { user: true, rate: pitch }),
       fire: () => void this.play('fire', { user: true, rate: pitch }),
       ring: () => void this.play('fire', { user: true, rate: pitch * 1.1 }),
-      roar: () => void this.play(roar, { user: true }),
+      roar: () => void this.play(roar, { user: true, rate: variant === 'dragonne' ? 1.1 : 1 }),
       level_up: () => void this.play('levelup', { user: true }),
       evolution: () => void this.play('evolution', { user: true }),
       wake: () => void this.play('grumble', { user: true, rate: pitch }),

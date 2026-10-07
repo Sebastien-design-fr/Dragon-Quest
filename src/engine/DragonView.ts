@@ -118,8 +118,14 @@ export class DragonView {
   }
 
   // ---------------- Stade ----------------
-  async setStage(stage: StageDef, instant = false): Promise<void> {
-    const rig = await loadJSON<RigDef>(stage.rig);
+  /** Quel dragon est affiché : 'dragon' (enfant) ou 'dragonne' (parent). */
+  variant = 'dragon';
+
+  async setStage(stage: StageDef, instant = false, variant = this.variant): Promise<void> {
+    this.variant = variant;
+    // Rig propre à la variante s'il existe (data/rigs/<stade>.<variante>.json), sinon celui du dragon.
+    const own = variant !== 'dragon' ? stage.rig.replace(/\.sprite\.json$/, `.${variant}.json`) : null;
+    const rig = (own && own !== stage.rig ? await loadJSON<RigDef>(own).catch(() => null) : null) ?? await loadJSON<RigDef>(stage.rig);
     this.stage = stage;
     this.rig = rig;
     this.skeleton = new Skeleton(rig);
@@ -131,7 +137,7 @@ export class DragonView {
     this.skinPart = null;
     for (const b of rig.bones) {
       if (!b.part) continue;
-      const partPath = this.stageAssets.use(Assets.dragonPart(stage.id, b.part.key));
+      const partPath = this.stageAssets.use(Assets.dragonPart(stage.id, b.part.key, variant));
       this.drawables.push({ z: b.part.z, layer: 'base', bone: b.name, part: b.part, partPath });
     }
     previous.dispose();

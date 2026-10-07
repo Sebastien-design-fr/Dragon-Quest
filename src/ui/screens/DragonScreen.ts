@@ -14,7 +14,7 @@ export class DragonScreen implements Screen {
   id = 'dragon'; label = 'Dragon'; icon = ICONS.dragon;
   private el: HTMLElement | null = null;
   private showAllBadges = false;
-  constructor(private app: App) {}
+  constructor(private app: App) { if (app.isParent) this.label = 'Dragonne'; }
 
   mount(el: HTMLElement): void { this.el = el; this.refresh(); }
   unmount(): void { this.el = null; }
@@ -40,9 +40,9 @@ export class DragonScreen implements Screen {
     put(el,
       comp ? this.companionCards(comp, today.filter(t => t.status === 'done').length) : null,
       h('section', { class: 'card stage-card' },
-        h('div', { class: 'row' }, h('h2', { class: 'grow' }, stage.label), book?.titleText() ? h('span', { class: 'badge title-badge' }, book.titleText()) : null),
+        h('div', { class: 'row' }, h('h2', { class: 'grow' }, app.stageLabel(stage.label)), book?.titleText() ? h('span', { class: 'badge title-badge' }, book.titleText()) : null),
         h('p', { class: 'muted' }, stage.tagline),
-        next ? h('p', { class: 'small' }, `Prochaine évolution : ${next.label}, au niveau ${next.minLevel} (encore ${levelsLeft} niveau${levelsLeft > 1 ? 'x' : ''}).`) : h('p', { class: 'small' }, 'Stade ultime atteint.')),
+        next ? h('p', { class: 'small' }, `Prochaine évolution : ${app.stageLabel(next.label)}, au niveau ${next.minLevel} (encore ${levelsLeft} niveau${levelsLeft > 1 ? 'x' : ''}).`) : h('p', { class: 'small' }, 'Stade ultime atteint.')),
       book ? h('section', { class: `card energy ${en.level}` },
         h('div', { class: 'row' },
           icon(ICONS.flame, 20),
@@ -110,13 +110,14 @@ export class DragonScreen implements Screen {
     if (!d.name) {
       const input = h('input', { type: 'text', maxlength: '18', placeholder: 'Pyros, Nyx, Ember…', 'aria-label': 'Nom du dragon' });
       out.push(h('section', { class: 'card name-card' },
-        h('h3', null, 'Ton dragon n’a pas encore de nom'),
-        h('p', { class: 'small muted' }, 'Choisis-le bien : il le portera toute sa vie, et il t’appellera par ton prénom.'),
+        h('h3', null, app.isParent ? 'Ta dragonne n’a pas encore de nom' : 'Ton dragon n’a pas encore de nom'),
+        h('p', { class: 'small muted' }, app.isParent ? 'Choisis-le bien : elle le portera toute sa vie.' : 'Choisis-le bien : il le portera toute sa vie, et il t’appellera par ton prénom.'),
         h('div', { class: 'row' }, input, h('button', { class: 'btn primary', onclick: () => {
           if (!input.value.trim()) return;
           comp.setName(input.value);
           void app.act('happy');
-          app.say(`${comp.name}… j’adore ! Merci${app.family.book?.childName ? ', ' + app.family.book.childName : ''} !`, null, 5000);
+          const who = app.family.book?.childName ?? app.family.linkState.deviceName;
+          app.say(`${comp.name}… j’adore ! Merci${who ? ', ' + who : ''} !`, null, 5000);
         } }, 'Valider'))));
     }
 
@@ -129,7 +130,7 @@ export class DragonScreen implements Screen {
         h('div', { class: 'bond' }, h('div', { class: 'small' }, `Amitié : ${bond.label}`),
           h('div', { class: 'bar bond-bar' }, h('div', { class: 'fill', style: { width: `${Math.round(bond.progress * 100)}%` } })))),
       h('div', { class: 'gauges' }, gauge('Faim', d.hunger, ICONS.meat), gauge('Propreté', d.clean, ICONS.drop), gauge('Humeur', d.mood, ICONS.heart)),
-      comp.xpBonus() > 1 ? h('p', { class: 'small good' }, 'Dragon heureux : tes missions rapportent +10 % d’XP.')
+      app.isParent ? null : comp.xpBonus() > 1 ? h('p', { class: 'small good' }, 'Dragon heureux : tes missions rapportent +10 % d’XP.')
         : h('p', { class: 'small muted' }, 'Bien nourri, propre et de bonne humeur, il te donne +10 % d’XP sur tes missions.')));
 
     const rations = Object.values(d.food).reduce((a, b) => a + b, 0);
@@ -152,6 +153,9 @@ export class DragonScreen implements Screen {
       ? 'Mode lavage : frotte les écailles avec ton doigt jusqu’à ce qu’il brille.'
       : 'Astuce : frotte-le doucement avec ton doigt pour le caresser.'));
     if (book) out.push(this.expeditionCard(comp));
+    if (app.isParent) out.push(h('p', { class: 'small muted care-hint' },
+      `Chaque soin la fait grandir : encore ${comp.careXpLeft()} XP possibles aujourd’hui. Des rations arrivent chaque matin.`),
+      h('button', { class: 'btn', onclick: () => app.show('inventory') }, 'Mes équipements'));
     out.push(h('div', { class: 'row lair-row' },
       h('button', { class: 'btn grow', onclick: () => openLair(app) }, icon(ICONS.dragon, 18), ' Sa grotte'),
       h('button', { class: 'btn grow', onclick: () => void shareCard(app) }, icon(ICONS.star, 18), ' Partager')));

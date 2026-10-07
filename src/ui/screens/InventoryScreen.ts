@@ -4,6 +4,7 @@ import { categoryChips, rarityBadge, thumb } from './common.js';
 
 export class InventoryScreen implements Screen {
   id = 'inventory'; label = 'Inventaire'; icon = ICONS.inventory;
+  hidden = false;
   private el: HTMLElement | null = null;
   private filter: string | null = null;
   constructor(private app: App) {}

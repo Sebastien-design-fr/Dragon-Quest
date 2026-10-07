@@ -20,7 +20,10 @@ import { SettingsScreen } from './screens/SettingsScreen.js';
 import { ShopScreen } from './screens/ShopScreen.js';
 import { ValidationsScreen } from './screens/ValidationsScreen.js';
 
-export interface Screen { id: string; label: string; icon: string; mount(el: HTMLElement): void; unmount?(): void; refresh?(): void; badge?(): number }
+export interface Screen { id: string; label: string; icon: string; hidden?: boolean; mount(el: HTMLElement): void; unmount?(): void; refresh?(): void; badge?(): number }
+
+/** Écrans du parent qui montrent SON dragon (la dragonne) au lieu de celui de l'enfant. */
+const OWN_SCREENS = new Set(['dragon', 'shop', 'inventory']);
 
 export interface FamilyContext {
   link: Transport;
@@ -31,7 +34,7 @@ export interface FamilyContext {
   companion: Companion | null;
 }
 
-export const APP_VERSION = '0.6.0';
+export const APP_VERSION = '0.7.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -69,20 +72,22 @@ export class App {
     this.tabs = root.querySelector('#tabs')!;
     this.tray = document.querySelector('#sim-tray')!;
 
+    const inventory = new InventoryScreen(this);
+    if (this.isParent) inventory.hidden = true;
     this.screens = this.isParent
-      ? [new ValidationsScreen(this), new ParentMissionsScreen(this), new FamilyScreen(this)]
+      ? [new ValidationsScreen(this), new ParentMissionsScreen(this), new DragonScreen(this), new ShopScreen(this), new FamilyScreen(this), inventory]
       : [new DragonScreen(this), new MissionsScreen(this), new ShopScreen(this), new InventoryScreen(this), new SettingsScreen(this)];
     this.buildTabs();
 
     // Sons : réglages, animations, or et gemmes gagnés.
     const applySound = () => { Sound.muted = state.data.settings.sound === false; Sound.volume = state.data.settings.volume ?? 0.7; };
     applySound();
-    view.onClip = clip => Sound.forClip(clip, view.stage?.id ?? 'adult');
+    view.onClip = clip => Sound.forClip(clip, view.stage?.id ?? 'adult', view.variant);
     Sound.warm(['purr', 'chirp', 'coins', 'gem']);
     let lastGold = state.data.gold;
     state.events.on('change', d => {
       applySound();
-      if (!this.isParent && d.gold > lastGold) void Sound.play('coins', { user: true });
+      if (this.showingOwn && d.gold > lastGold) void Sound.play('coins', { user: true });
       lastGold = d.gold;
     });
     let lastGems = family.book?.data.gems ?? 0;
@@ -97,13 +102,13 @@ export class App {
 
     state.events.on('change', d => {
       this.view.setQuality(catalog.quality[d.settings.quality], d.settings.effects);
-      if (this.isParent) { this.refresh(); return; }
+      if (!this.showingOwn) { this.refresh(); return; }
       if (!this.stageOverride && !this.evolving && this.view.stage?.id !== d.stage) void this.view.setStage(state.stage, true);
       this.syncEquipment();
       this.refresh();
     });
-    state.events.on('levelUp', ({ level }) => { if (!this.isParent) { this.toast(`Niveau ${level} !`); void this.act('level_up'); } });
-    state.events.on('evolve', ({ to }) => { if (!this.isParent) this.evolve(to); });
+    state.events.on('levelUp', ({ level }) => { if (this.showingOwn) { this.toast(`Niveau ${level} !`); void this.act('level_up'); } });
+    state.events.on('evolve', ({ to }) => { if (this.showingOwn) this.evolve(to); });
 
     const book = family.book, hub = family.hub;
     const tiredNow = () => (book?.data.energy ?? 100) < 25 || !!family.companion?.data.sick;
@@ -111,7 +116,7 @@ export class App {
     if (book) this.view.tired = tiredNow();
     book?.events.on('toast', t => this.toast(t));
     book?.events.on('story', t => setTimeout(() => this.say(t, null, 10000), 900));
-    hub?.events.on('change', () => { this.showChildDragon(); this.refresh(); });
+    hub?.events.on('change', () => { if (!this.showingOwn) this.showChildDragon(); this.refresh(); });
     hub?.events.on('toast', t => this.toast(t));
 
     if (family.link instanceof SimTransport) {
@@ -135,25 +140,26 @@ export class App {
     cv.addEventListener('pointerleave', () => { view.lookAt(null); this.endStroke(); });
 
     const comp = family.companion;
-    if (comp && !this.isParent) {
+    if (comp) {
       comp.events.on('change', () => { this.applyCare(); this.refresh(); this.queueReminders(); });
       comp.events.on('toast', t => this.toast(t));
       comp.events.on('react', r => {
+        if (!this.showingOwn) return;
         if (r.anim) void this.act(r.anim);
         if (r.fx) view.emit(r.fx, r.fx === 'shine' ? 'body_center' : 'head_anchor');
         if (r.say) this.say(sayFor(r.say), null, 4000);
       });
       if (isNight() && comp.data.tucked) this.sleeping = true; // déjà couché ce soir
       this.applyCare();
-      void view.play(this.sleeping ? 'sleep' : this.baseLoop());
+      if (this.showingOwn) void view.play(this.sleeping ? 'sleep' : this.baseLoop());
       const away = comp.greet();
-      setTimeout(() => {
+      if (!this.isParent) setTimeout(() => {
         if (away && !this.sleeping) { void this.act('welcome'); this.say(sayFor('welcome'), null, 5000); }
         else this.think(true);
       }, 1500);
       window.setInterval(() => { comp.tick(); this.applyCare(); this.think(false); }, 40000);
       // Malade : il éternue de petits nuages de fumée.
-      window.setInterval(() => { if (comp.data.sick && !this.sleeping) view.emit('sneeze', 'mouth_anchor'); }, 9000);
+      window.setInterval(() => { if (this.showingOwn && comp.data.sick && !this.sleeping) view.emit('sneeze', 'mouth_anchor'); }, 9000);
       document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(() => this.think(true), 1200); });
     }
 
@@ -162,11 +168,22 @@ export class App {
   }
 
   get isParent(): boolean { return this.family.linkState.role === 'parent'; }
+  /** Le dragon affiché est-il celui de l'utilisateur de ce téléphone ? (parent : seulement sur ses écrans à lui). */
+  get showingOwn(): boolean { return !this.isParent || (!!this.current && OWN_SCREENS.has(this.current.id)); }
+  /** Variante d'illustration du dragon de ce téléphone. */
+  get ownVariant(): string { return this.isParent ? 'dragonne' : 'dragon'; }
+  /** Nom du stade adapté (« Dragonne adulte »…). */
+  stageLabel(label: string): string {
+    if (this.ownVariant !== 'dragonne') return label;
+    return label.replace(/Bébé dragon/i, 'Bébé dragonne').replace(/Jeune dragon/i, 'Jeune dragonne').replace(/\bDragon\b/, 'Dragonne');
+  }
 
   private buildTabs(): void {
     clear(this.tabs);
     this.tabs.style.gridTemplateColumns = `repeat(${this.screens.length}, minmax(0, 1fr))`;
-    for (const s of this.screens) {
+    const visible = this.screens.filter(sc => !sc.hidden);
+    this.tabs.style.gridTemplateColumns = `repeat(${visible.length}, minmax(0, 1fr))`;
+    for (const s of visible) {
       const badge = s.badge?.() ?? 0;
       this.tabs.append(h('button', { class: 'tab', 'data-id': s.id, onclick: () => this.show(s.id) },
         h('span', { class: 'tab-icon' }, icon(s.icon, 22), badge ? h('span', { class: 'tab-badge' }, String(badge)) : null),
@@ -181,7 +198,9 @@ export class App {
     this.current?.unmount?.();
     if (this.preview) { this.preview = null; this.syncEquipment(); }
     clear(this.screenEl);
+    const wasOwn = this.showingOwn;
     this.current = next;
+    if (this.isParent && wasOwn !== this.showingOwn) void this.switchDragon();
     next.mount(this.screenEl);
     this.screenEl.scrollTop = 0;
     this.buildTabs();
@@ -201,8 +220,23 @@ export class App {
   }
 
   // ----- Dragon -----
+  /** Parent : bascule entre le dragon de l'enfant et sa propre dragonne. */
+  private async switchDragon(): Promise<void> {
+    this.bubble.classList.remove('show');
+    if (this.showingOwn) {
+      await this.view.setStage(this.state.stage, true, this.ownVariant);
+      this.syncEquipment();
+      this.applyCare();
+      void this.view.play(this.sleeping ? 'sleep' : this.baseLoop());
+      setTimeout(() => this.think(true), 900);
+    } else {
+      this.showChildDragon();
+    }
+    this.renderHud();
+  }
+
   syncEquipment(): void {
-    if (this.isParent) return;
+    if (!this.showingOwn) return;
     this.view.setEquipment(this.state.equippedDefs(this.preview));
   }
 
@@ -210,14 +244,18 @@ export class App {
 
   /** Parent : affiche le dragon de l'enfant sélectionné (d'après son dernier état reçu). */
   showChildDragon(): void {
-    if (!this.isParent) return;
+    if (!this.isParent || this.showingOwn) return;
     const snap = this.selectedChild ? this.family.hub?.child(this.selectedChild)?.snapshot : null;
     const stage = (snap && this.catalog.stage(snap.stage)) || this.catalog.stages[0];
-    if (this.view.stage?.id !== stage.id) void this.view.setStage(stage, true).then(() => this.applyChildEquipment());
+    if (this.view.stage?.id !== stage.id || this.view.variant !== 'dragon') void this.view.setStage(stage, true, 'dragon').then(() => this.applyChildEquipment());
     else this.applyChildEquipment();
   }
   private applyChildEquipment(): void {
     const snap = this.selectedChild ? this.family.hub?.child(this.selectedChild)?.snapshot : null;
+    // Son état vu par le parent : saleté, maladie, fatigue.
+    this.view.dirt = snap?.companion ? Math.max(0, Math.min(1, (70 - snap.companion.clean) / 70)) : 0;
+    this.view.tired = !!snap?.sick || (snap?.energy ?? 100) < 25;
+    void this.view.play(snap?.sick || (snap?.companion && snap.companion.mood < 25) ? 'sad' : 'idle');
     const defs = (snap?.equipped ?? []).map(id => this.catalog.item(id)).filter((d): d is EquipmentDef => !!d);
     this.view.setEquipment(defs);
   }
@@ -246,7 +284,7 @@ export class App {
   /** Reporte l'état du compagnon sur le dragon affiché (saleté, tristesse). */
   private applyCare(): void {
     const c = this.family.companion;
-    if (!c || this.isParent) return;
+    if (!c || !this.showingOwn) return;
     this.view.tired = (this.family.book?.data.energy ?? 100) < 25 || c.data.sick;
     this.view.dirt = Math.max(0, Math.min(1, (70 - c.data.clean) / 70));
     if (!this.sleeping) { const loop = this.baseLoop(); if (this.view.animator.baseId?.split('@')[0] !== loop) void this.view.play(loop); }
@@ -254,7 +292,11 @@ export class App {
 
   private queueReminders(): void {
     clearTimeout(this.remindTimer);
-    this.remindTimer = window.setTimeout(() => void this.family.book?.refreshReminders(), 4000);
+    this.remindTimer = window.setTimeout(() => {
+      const c = this.family.companion;
+      if (this.family.book) void this.family.book.refreshReminders();
+      else if (c) void this.family.reminders.reschedule([], () => 'done', { name: c.name, line: () => '' }, c.careNotifs());
+    }, 4000);
   }
 
   // ----- Bulles de pensée -----
@@ -284,11 +326,11 @@ export class App {
   /** Choisit une pensée : les rappels importants d'abord, sans répéter la même trop souvent. */
   think(force: boolean): void {
     const comp = this.family.companion;
-    if (!comp || this.isParent || this.evolving) return;
+    if (!comp || !this.showingOwn || this.evolving) return;
     if (!force && this.bubble.classList.contains('show')) return;
     if (this.sleeping && !isNight()) return;
     const now = Date.now();
-    const list = thoughts(this.family.book, comp, this.family.book?.childName ?? '');
+    const list = thoughts(this.family.book, comp, this.family.book?.childName ?? this.family.linkState.deviceName ?? '');
     const fresh = (t: Thought) => now - (this.shownAt.get(t.id) ?? 0) > (t.priority >= 85 ? 3 : t.priority >= 60 ? 8 : 20) * 60000;
     let t = list.find(x => x.priority >= 60 && fresh(x));
     if (!t) {
@@ -314,7 +356,7 @@ export class App {
     const view = this.view;
     if (kind !== 'up') view.lookAt(e.clientX, e.clientY);
     const comp = this.family.companion;
-    if (!comp || this.isParent) return;
+    if (!comp || !this.showingOwn) return;
     if (kind === 'down') {
       if (view.hitTest(e.clientX, e.clientY)) this.stroke = { x: e.clientX, y: e.clientY, dist: 0, moved: 0, pets: 0 };
       return;
@@ -383,7 +425,7 @@ export class App {
   // ----- HUD -----
   renderHud(): void {
     clear(this.hud);
-    if (this.isParent) {
+    if (this.isParent && !this.showingOwn) {
       const c = this.selectedChild ? this.family.hub?.child(this.selectedChild) : null;
       const snap = c?.snapshot;
       put(this.hud,
@@ -401,7 +443,7 @@ export class App {
     const need = this.state.xpToNext();
     this.hud.append(
       h('div', { class: 'hud-id' },
-        h('div', { class: 'hud-stage' }, stage.label, this.stageOverride ? h('em', null, ' (aperçu)') : null),
+        h('div', { class: 'hud-stage' }, this.stageLabel(stage.label), this.stageOverride ? h('em', null, ' (aperçu)') : null),
         h('div', { class: 'hud-level' }, `Niveau ${d.level}${this.family.book?.titleText() ? ' · ' + this.family.book.titleText() : ''}`)),
       h('div', { class: 'hud-xp' },
         h('div', { class: 'bar' }, h('div', { class: 'fill', style: { width: `${Math.min(100, (d.xp / need) * 100)}%` } })),

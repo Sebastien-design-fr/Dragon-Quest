@@ -36,7 +36,8 @@ export function openLair(app: App): void {
   const cave = new Image();
   cave.src = `assets/backgrounds/bg_${app.state.data.stage}.webp`;
   const dragon = new Image();
-  dragon.src = `assets/dragon/${app.state.data.stage}/dragon_${app.state.data.stage}_full.webp`;
+  const st = app.state.data.stage, vr = app.ownVariant;
+  dragon.src = vr === 'dragon' ? `assets/dragon/${st}/dragon_${st}_full.webp` : `assets/${vr}/${st}/${vr}_${st}_full.webp`;
 
   // Débris placés au sol (positions stables d'une ouverture à l'autre).
   let debris: Debris[] = [];

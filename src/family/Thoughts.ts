@@ -82,7 +82,8 @@ export function thoughts(book: ChildBook | null, c: Companion, childName: string
     `${c.name === 'Ton dragon' ? 'Tu ne m’as pas encore donné de nom…' : `${c.name}… j’adore ce nom.`}`,
     'Gratte-moi derrière les cornes, s’il te plaît !',
     'Si tu fais tes missions, je deviendrai le plus grand dragon du royaume.'
-  ].map((text, i) => ({ id: 'idle' + i, text, action: (i === 4 ? 'pet' : null) as ThoughtAction, priority: 10 })));
+  ].map((text, i) => ({ id: 'idle' + i, text, action: (i === 4 ? 'pet' : null) as ThoughtAction, priority: 10 }))
+    .filter(t => book || !/missions/.test(t.text)));
   return out.sort((a, b) => b.priority - a.priority);
 }
 

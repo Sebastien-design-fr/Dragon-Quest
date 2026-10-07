@@ -66,6 +66,8 @@ interface Data {
   debris: number;
   lairDay: string;
   tidied: number;
+  /** Mode parent (tamagotchi) : XP gagné par les soins aujourd'hui. */
+  careXp: number;
 }
 
 const KEY = 'quete-du-dragon:companion';
@@ -80,20 +82,26 @@ export class Companion {
   readonly events = new EventBus<{ change: void; toast: string; react: { anim?: string; fx?: string; anchor?: string; say?: string } }>();
   data: Data;
 
-  constructor(private state: GameState) {
+  /**
+   * mode 'child' : les rations viennent des missions.
+   * mode 'parent' : tamagotchi pur — les soins font grandir le dragon (XP plafonné par jour), rations chaque matin.
+   */
+  constructor(private state: GameState, readonly mode: 'child' | 'parent' = 'child', storageKey = KEY) {
+    this.key = storageKey;
     const now = Date.now();
     const defaults: Data = {
       name: null, hunger: 80, clean: 85, mood: 75, bond: 0, updatedAt: now,
       food: { ration: 3, meat: 0, fish: 1, fireFruit: 0, treat: 0 },
-      day: todayKey(), pets: 0, petBond: 0, played: false, tucked: false, album: [], lastOpen: now, seenStage: null, sick: false, decor: [], debris: 2, lairDay: todayKey(), tidied: 0
+      day: todayKey(), pets: 0, petBond: 0, played: false, tucked: false, album: [], lastOpen: now, seenStage: null, sick: false, decor: [], debris: 2, lairDay: todayKey(), tidied: 0, careXp: 0
     };
-    const saved = readStore<Partial<Data>>(KEY, {});
+    const saved = readStore<Partial<Data>>(storageKey, {});
     this.data = { ...defaults, ...saved, food: { ...defaults.food, ...(saved.food ?? {}) } };
     this.tick();
     if (!this.data.seenStage) this.data.seenStage = state.data.stage;
   }
 
-  save(): void { writeStore(KEY, this.data); this.events.emit('change', undefined); }
+  private key: string;
+  save(): void { writeStore(this.key, this.data); this.events.emit('change', undefined); }
 
   // ---------- Temps qui passe ----------
   /** Applique la baisse des jauges depuis la dernière mise à jour (heure par heure, jour / nuit). */
@@ -119,7 +127,10 @@ export class Companion {
       d.debris = Math.min(8, (d.debris ?? 0) + Math.min(3, days));
       d.lairDay = todayKey();
     }
-    if (d.day !== todayKey()) { d.day = todayKey(); d.pets = 0; d.petBond = 0; d.played = false; d.tucked = false; }
+    if (d.day !== todayKey()) {
+      d.day = todayKey(); d.pets = 0; d.petBond = 0; d.played = false; d.tucked = false; d.careXp = 0;
+      if (this.mode === 'parent') { d.food.ration = Math.min(8, d.food.ration + 3); }
+    }
   }
 
   /** À l'ouverture de l'appli : s'il ne l'a pas vue depuis longtemps, il lui fait la fête. */
@@ -133,10 +144,10 @@ export class Companion {
   }
 
   // ---------- Lecture ----------
-  get name(): string { return this.data.name || 'Ton dragon'; }
+  get name(): string { return this.data.name || (this.mode === 'parent' ? 'Ta dragonne' : 'Ton dragon'); }
   wellbeing(): number { const d = this.data; return Math.round((d.hunger + d.clean + d.mood) / 3); }
   /** Bonus d'XP des missions : un dragon heureux et bien soigné apprend plus vite. */
-  xpBonus(): number { const d = this.data; return !d.sick && d.hunger >= 50 && d.clean >= 50 && d.mood >= 50 ? 1.1 : 1; }
+  xpBonus(): number { const d = this.data; return this.mode !== 'parent' && !d.sick && d.hunger >= 50 && d.clean >= 50 && d.mood >= 50 ? 1.1 : 1; }
   sad(): boolean { return this.data.sick || this.data.mood < 25 || this.wellbeing() < 30; }
 
   bondLevel(): { level: number; label: string; next: number | null; progress: number } {
@@ -190,6 +201,7 @@ export class Companion {
     d.hunger = clamp(d.hunger + f.hunger);
     d.mood = clamp(d.mood + f.mood);
     this.addBond(f.bond + (wasHungry ? 1 : 0));
+    if (wasHungry) this.careXp(12);
     this.events.emit('react', { anim: 'eat', say: id === 'fireFruit' || id === 'treat' ? 'yum' : 'thanks-food' });
     this.save();
     return 'ok';
@@ -211,7 +223,7 @@ export class Companion {
     const before = d.clean;
     d.clean = clamp(d.clean + amount * 9);
     if (before < 100 && d.clean >= 100) {
-      if (before < 60) this.addBond(2);
+      if (before < 60) { this.addBond(2); this.careXp(20); }
       d.mood = clamp(d.mood + 8);
       this.events.emit('react', { anim: 'shake', say: 'clean' });
       this.save();
@@ -225,13 +237,13 @@ export class Companion {
     const d = this.data;
     d.pets++;
     d.mood = clamp(d.mood + (d.pets <= 20 ? 1.5 : 0.3));
-    if (d.pets % 6 === 0 && d.petBond < 3) { d.petBond++; this.addBond(1); }
+    if (d.pets % 6 === 0 && d.petBond < 3) { d.petBond++; this.addBond(1); this.careXp(6); }
   }
 
   tuck(): boolean {
     this.tick();
     if (!isNight() && new Date().getHours() < 20) return false;
-    if (!this.data.tucked) { this.data.tucked = true; this.data.mood = clamp(this.data.mood + 10); this.addBond(2); this.save(); }
+    if (!this.data.tucked) { this.data.tucked = true; this.data.mood = clamp(this.data.mood + 10); this.addBond(2); this.careXp(15); this.save(); }
     return true;
   }
 
@@ -239,12 +251,14 @@ export class Companion {
     this.tick();
     if (this.data.sick) return 'sick';
     if (this.data.played) return 'played';
+    if (this.mode === 'parent') return 'ok';
     return missionsDoneToday > 0 ? 'ok' : 'locked';
   }
 
   finishGame(score: number): number {
     const gold = Math.min(40, Math.round(score * 1.5));
     this.data.played = true;
+    this.careXp(25);
     this.data.mood = clamp(this.data.mood + 20);
     this.addBond(3);
     if (gold) this.state.addGold(gold);
@@ -261,6 +275,7 @@ export class Companion {
     if (this.data.decor.includes(id) || this.state.data.gold < price) return false;
     this.state.addGold(-price);
     this.data.decor.push(id);
+    this.careXp(10);
     this.data.mood = clamp(this.data.mood + 10);
     this.addBond(1);
     if (this.data.decor.length === 1) this.remember('lair1', 'Première décoration', 'La grotte commence à ressembler à un vrai chez-soi.');
@@ -273,6 +288,7 @@ export class Companion {
     this.data.tidied++;
     this.data.mood = clamp(this.data.mood + 2);
     if (this.data.tidied % 5 === 0) this.addBond(1);
+    this.careXp(3);
     this.save();
   }
 
@@ -290,6 +306,18 @@ export class Companion {
   }
 
   // ---------- Amitié et souvenirs ----------
+  /** Mode parent : XP des soins (plafonné à 100 par jour). */
+  static CARE_XP_CAP = 100;
+  private careXp(n: number): void {
+    if (this.mode !== 'parent' || n <= 0) return;
+    const left = Companion.CARE_XP_CAP - this.data.careXp;
+    const gain = Math.max(0, Math.min(n, left));
+    if (!gain) return;
+    this.data.careXp += gain;
+    this.state.addXp(gain);
+  }
+  careXpLeft(): number { return Math.max(0, Companion.CARE_XP_CAP - this.data.careXp); }
+
   private addBond(n: number): void {
     if (n <= 0) return;
     const before = this.bondLevel().level;
