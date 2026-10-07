@@ -1,5 +1,5 @@
 import { Assets } from '../../engine/AssetManager.js';
-import { PENALTY, energyLabel, type Severity } from '../../family/badges.js';
+import { energyLabel } from '../../family/badges.js';
 import { rewardText, type MissionStatus } from '../../family/model.js';
 import type { ParentHub } from '../../family/ParentHub.js';
 import type { App, Screen } from '../App.js';
@@ -123,8 +123,7 @@ export class ValidationsScreen implements Screen {
     root.append(this.daySummary(c));
 
     // ---- Actions ----
-    const sev: Severity = c.snapshot?.severity ?? 'normal';
-    const alert = !!(c.snapshot?.sick || c.snapshot?.confiscated);
+
     const pet = c.snapshot?.companion?.name;
     const tile = (cls: string, path: string, title: string, hint: string, open: () => void, dot = false) =>
       h('button', { class: `ph-tile ${cls}`, onclick: open },
@@ -135,10 +134,7 @@ export class ValidationsScreen implements Screen {
     root.append(h('div', { class: 'ph-tiles' },
       tile('gift', ICONS.gift, 'Coup de cœur', 'Un bonus surprise', () => this.giftSheet(id, c.name)),
       tile('treat', ICONS.heart, 'Friandise', pet ? `Un régal pour ${pet}` : 'Pour son dragon', () => this.treatSheet(id, c.name)),
-      tile('warn', ICONS.hand, 'Avertissement', 'Retirer de l’or', () => this.warnSheet(id, c.name)),
-      tile('rules', ICONS.shield, 'Sanctions',
-        alert ? (c.snapshot?.sick ? 'Son dragon est malade' : 'Un objet confisqué') : `Mode ${PENALTY[sev].label.toLowerCase()}`,
-        () => this.rulesSheet(id), alert)));
+      tile('gift', ICONS.star, 'Encourager', 'Un petit mot positif', () => this.encourageSheet(id, c.name))));
 
     root.append(this.activityLink(hub));
   }
@@ -431,55 +427,22 @@ export class ValidationsScreen implements Screen {
     });
   }
 
-  private warnSheet(id: string, name: string): void {
+  private encourageSheet(id: string, name: string): void {
     const hub = this.app.family.hub!;
-    openSheet('Avertissement', close => {
-      const confirmBox = h('div', { class: 'ph-confirm', hidden: true });
-      const send = h('button', { class: 'btn danger ph-wide' }, 'Envoyer l’avertissement');
-      const disarm = () => { confirmBox.hidden = true; send.hidden = false; };
-      const reason = h('input', { type: 'text', maxlength: '80', placeholder: 'Chambre pas rangée malgré 3 rappels', value: this.warnReason,
-        oninput: (e: Event) => { this.warnReason = (e.target as HTMLInputElement).value; disarm(); } });
-      send.addEventListener('click', () => {
-        if (this.warnReason.trim().length < 3) { this.app.toast('Indiquez le motif.'); reason.focus(); return; }
-        clear(confirmBox);
-        confirmBox.append(
-          h('p', { class: 'small' }, `Envoyer un avertissement à ${name} : −${this.warnAmount} or, motif « ${this.warnReason.trim()} » ?`),
-          h('div', { class: 'ph-decide' },
-            h('button', { class: 'btn', onclick: disarm }, 'Annuler'),
-            h('button', { class: 'btn ph-danger-fill', onclick: async () => {
-              await hub.warn(id, this.warnAmount, this.warnReason.trim());
-              this.warnReason = '';
-              this.app.toast('Avertissement envoyé');
-              close();
-            } }, 'Confirmer')));
-        confirmBox.hidden = false; send.hidden = true;
-      });
+    openSheet('Encourager', close => {
+      const msg = h('input', { type: 'text', maxlength: '80', placeholder: 'Continue comme ça !', value: this.warnReason,
+        oninput: (e: Event) => { this.warnReason = (e.target as HTMLInputElement).value; } });
       return [
-        h('p', { class: 'small muted' }, `Retire de l’or à ${name} et un peu d’énergie à son dragon. Jamais de niveau ni d’objet. Le motif lui est affiché.`),
-        this.segmented([10, 25, 50], this.warnAmount, n => `−${n} or`, n => { this.warnAmount = n; disarm(); }),
-        h('label', { class: 'field-col' }, h('span', { class: 'small' }, 'Motif (obligatoire)'), reason),
-        send, confirmBox
+        h('p', { class: 'small muted' }, `Envoie un message positif à ${name}. Aucun XP ni monnaie n'est retiré.`),
+        h('label', { class: 'field-col' }, h('span', { class: 'small' }, 'Message'), msg),
+        h('button', { class: 'btn primary ph-wide', onclick: async () => {
+          const message = this.warnReason.trim() || 'Continue comme ça !';
+          await hub.warn(id, 0, message);
+          this.warnReason = '';
+          this.app.toast('Encouragement envoyé');
+          close();
+        } }, icon(ICONS.heart, 18), 'Envoyer')
       ];
-    });
-  }
-
-  private rulesSheet(id: string): void {
-    const hub = this.app.family.hub!;
-    const c = hub.child(id);
-    const sev: Severity = c?.snapshot?.severity ?? 'normal';
-    openSheet('Missions oubliées', () => {
-      const text = h('p', { class: 'small' }, PENALTY[sev].text);
-      const out: Node[] = [
-        h('p', { class: 'small muted' }, 'Chaque matin, l’appli fait le bilan de la veille. Les missions non faites coûtent de l’XP et de l’or, rendent le dragon triste, puis malade si les oublis se répètent. Une journée parfaite efface tout.'),
-        this.segmented(['doux', 'normal', 'strict'] as Severity[], sev, k => PENALTY[k].label, k => {
-          text.textContent = PENALTY[k].text;
-          void hub.setSeverity(id, k).then(() => this.app.toast(`Sanctions : ${PENALTY[k].label}`));
-        }),
-        text
-      ];
-      if (c?.snapshot?.sick) out.push(h('p', { class: 'small bad' }, `Son dragon est malade (${c.snapshot.missStreak ?? 0} jours d’oubli d’affilée).`));
-      if (c?.snapshot?.confiscated) out.push(h('p', { class: 'small bad' }, `Équipement confisqué : ${this.app.catalog.item(c.snapshot.confiscated)?.name ?? ''}.`));
-      return out;
     });
   }
 
