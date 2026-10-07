@@ -1,10 +1,8 @@
-import { energyLabel } from '../../family/badges.js';
 import type { Companion } from '../../family/Companion.js';
 import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon, put } from '../dom.js';
 import { openSheet } from './common.js';
 import { Sound } from '../../engine/Sound.js';
-import { todayKey } from '../../family/model.js';
 import { fill, journeyFor, landmarks } from '../../family/Expedition.js';
 import { openLair } from '../Lair.js';
 import { shareCard } from '../ShareCard.js';
