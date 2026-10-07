@@ -292,15 +292,6 @@ export class ChildBook {
     if (this.companion?.data.sick) this.companion.setSick(false);
   }
 
-  /** Série en cours juste avant le jour donné. */
-  private streakBefore(key: string): number {
-    const set = new Set(this.data.streakDays);
-    const d = parseKey(key); d.setDate(d.getDate() - 1);
-    let n = 0;
-    while (set.has(todayKey(d)) && n < 400) { n++; d.setDate(d.getDate() - 1); }
-    return n;
-  }
-
   // ---------- Gemmes, récompenses réelles, expédition ----------
   /** Après chaque mission réussie : gemmes, étape d'expédition, statistiques de la semaine. */
   private progress(m: Mission | undefined): void {
