@@ -33,6 +33,8 @@ export function openLair(app: App): void {
   let W = 0, H = 0;
   const resize = () => { W = root.clientWidth; H = root.clientHeight * 0.74; canvas.width = W * dpr; canvas.height = root.clientHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); layoutDebris(); };
 
+  const cave = new Image();
+  cave.src = `assets/backgrounds/bg_${app.state.data.stage}.webp`;
   const dragon = new Image();
   dragon.src = `assets/dragon/${app.state.data.stage}/dragon_${app.state.data.stage}_full.webp`;
 
@@ -83,7 +85,11 @@ export function openLair(app: App): void {
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016; last = now; t += dt;
     const has = (id: string) => comp.lair().owned.includes(id);
     ctx.fillStyle = '#0b0a0d'; ctx.fillRect(0, 0, W, H / 0.74);
-    drawCave(ctx, W, H, has('torches') || has('crystals') || has('lanterns') ? 1 : 0.55);
+    if (cave.complete && cave.naturalWidth) {
+      const k = Math.max(W / cave.naturalWidth, H / cave.naturalHeight);
+      ctx.drawImage(cave, (W - cave.naturalWidth * k) / 2, H - cave.naturalHeight * k * 0.95, cave.naturalWidth * k, cave.naturalHeight * k);
+      if (!(has('torches') || has('crystals') || has('lanterns'))) { ctx.fillStyle = 'rgba(8,6,10,0.35)'; ctx.fillRect(0, 0, W, H); }
+    } else drawCave(ctx, W, H, has('torches') || has('crystals') || has('lanterns') ? 1 : 0.55);
     if (has('banner')) drawBanner(ctx, W * 0.26, H * 0.2, H * 0.24, t);
     if (has('torches')) { drawTorch(ctx, W * 0.1, H * 0.36, t); drawTorch(ctx, W * 0.9, H * 0.36, t + 1.3); }
     if (has('lanterns')) drawLanterns(ctx, W, H, t);

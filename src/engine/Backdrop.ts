@@ -15,7 +15,7 @@ interface Mote { x: number; y: number; vx: number; vy: number; life: number; max
 
 export class Backdrop {
   private def: BackdropDef | null = null;
-  private img: HTMLImageElement | null = null;
+  private img: HTMLImageElement | HTMLCanvasElement | null = null;
   private painted: HTMLCanvasElement | null = null;
   private paintedKey = '';
   private motes: Mote[] = [];
@@ -32,7 +32,7 @@ export class Backdrop {
     if (imagePath) {
       const im = new Image();
       im.decoding = 'async';
-      im.onload = () => { if (this.stageId === stageId) this.img = im; };
+      im.onload = () => { if (this.stageId === stageId) this.img = soften(im); };
       im.src = imagePath;
     }
   }
@@ -42,7 +42,7 @@ export class Backdrop {
     const def = this.def;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (!def) return;
-    const iw = this.img?.naturalWidth || 1536, ih = this.img?.naturalHeight || 1024;
+    const iw = this.img?.width || 1536, ih = this.img?.height || 1024;
     // « cover » un peu agrandi (marge pour la parallaxe et la respiration lente)
     const zoom = 1.06 + Math.sin(time * 0.05) * 0.01;
     const s = Math.max(W / iw, H / ih) * zoom;
@@ -159,6 +159,18 @@ export class Backdrop {
     this.painted = c; this.paintedKey = key;
     return c;
   }
+}
+
+/** Profondeur de champ : décor légèrement flou et assombri pour que le dragon ressorte. */
+function soften(im: HTMLImageElement): HTMLCanvasElement | HTMLImageElement {
+  try {
+    const c = document.createElement('canvas');
+    c.width = im.naturalWidth; c.height = im.naturalHeight;
+    const g = c.getContext('2d')!;
+    g.filter = 'blur(2px) brightness(0.8) saturate(0.95)';
+    g.drawImage(im, 0, 0);
+    return c;
+  } catch { return im; }
 }
 
 function mixHex(a: string, b: string, t: number): string {

@@ -31,7 +31,7 @@ export interface FamilyContext {
   companion: Companion | null;
 }
 
-export const APP_VERSION = '0.5.0';
+export const APP_VERSION = '0.6.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
