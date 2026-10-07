@@ -134,7 +134,8 @@
         "bob": 0.024,
         "tilt": 9,
         "flapPeriod": 0.42,
-        "impact": 0.025
+        "impact": 0.025,
+        "landingDust": 2
       }
     },
     "young": {
@@ -175,7 +176,8 @@
         "bob": 0.021,
         "tilt": 8,
         "flapPeriod": 0.5,
-        "impact": 0.03
+        "impact": 0.03,
+        "landingDust": 2
       }
     },
     "adult": {
@@ -284,7 +286,7 @@
         "tilt": 5,
         "flapPeriod": 0.74,
         "impact": 0.045,
-        "landingDust": 2,
+        "landingDust": 3,
         "shake": 5
       }
     },

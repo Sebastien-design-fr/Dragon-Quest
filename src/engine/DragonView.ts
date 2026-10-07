@@ -975,8 +975,11 @@ export class DragonView {
     if (!f.dustUp && P.airborne) { f.dustUp = true; this.emit('dust', 'front_leg_anchor'); this.emit('dust', 'rear_leg_anchor'); }
     if (!f.dustDown && P.touchdown) {
       f.dustDown = true;
-      this.emit('dust', 'front_leg_anchor'); this.emit('dust', 'rear_leg_anchor');
-      if (c.landingDust > 1) { this.emit('dustHeavy', 'front_leg_anchor'); this.emit('dustHeavy', 'rear_leg_anchor'); }
+      // poussière à l'atterrissage pour tous les stades ; landingDust = nombre de nuages par patte
+      for (let i = 0; i < Math.max(1, Math.round(c.landingDust)); i++) {
+        this.emit('dustLand', 'front_leg_anchor'); this.emit('dustLand', 'rear_leg_anchor');
+      }
+      this.emit('dustLand', 'front_leg_far_anchor'); this.emit('dustLand', 'rear_leg_far_anchor');
       this.impact.vel -= c.impact * 14;           // écrasement léger à l'impact, amorti ensuite
       if (c.shake > 0) this.shake = Math.max(this.shake, c.shake);
     }
