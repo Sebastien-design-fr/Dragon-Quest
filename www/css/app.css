@@ -314,3 +314,15 @@ details p { margin-top: 6px; line-height: 1.45; }
 .decor { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
 .decor.owned { border-color: #4f6b3a; opacity: .75; }
 .exp-map { width: 100%; height: auto; aspect-ratio: 320 / 190; flex-shrink: 0; }
+/* Visite d'un autre dragon */
+.guest-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.visit-panel { position: absolute; left: 6px; right: 6px; bottom: 6px; z-index: 6; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 4px 6px; padding: 6px 8px; border-radius: 12px; background: rgba(21,19,26,.78); border: 1px solid rgba(217,168,74,.6); }
+.visit-title { grid-column: 1 / 3; color: var(--gold-soft); font-family: var(--display); font-size: 12px; }
+.visit-tricks { display: flex; gap: 5px; overflow-x: auto; }
+.visit-tricks .chip { white-space: nowrap; padding: 4px 9px; font-size: 12px; }
+.visit-tricks .chip.locked { opacity: .45; }
+.visit-panel .btn { padding: 4px 10px; font-size: 12px; }
+.friend-card h3 { margin: 0; }
+.gift-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; max-height: 34dvh; overflow: auto; }
+.gift { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
+.gift.on { border-color: var(--gold); background: #231d17; }

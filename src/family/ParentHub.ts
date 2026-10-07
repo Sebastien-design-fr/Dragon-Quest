@@ -87,9 +87,12 @@ export class ParentHub {
         return true;
       }
       default:
-        return false;
+        return this.onOther?.(msg) ?? false;
     }
   }
+
+  /** Messages destinés à d'autres modules (rencontres entre dragons…). */
+  onOther: ((msg: LinkMessage) => boolean) | null = null;
 
   // ---------- Décisions ----------
   async decide(requestId: string, approved: boolean, bonus?: number): Promise<void> {

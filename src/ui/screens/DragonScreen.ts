@@ -153,6 +153,7 @@ export class DragonScreen implements Screen {
       ? 'Mode lavage : frotte les écailles avec ton doigt jusqu’à ce qu’il brille.'
       : 'Astuce : frotte-le doucement avec ton doigt pour le caresser.'));
     if (book) out.push(this.expeditionCard(comp));
+    if (app.family.duo) out.push(this.friendCard(comp));
     if (app.isParent) out.push(h('p', { class: 'small muted care-hint' },
       `Chaque soin la fait grandir : encore ${comp.careXpLeft()} XP possibles aujourd’hui. Des rations arrivent chaque matin.`),
       h('button', { class: 'btn', onclick: () => app.show('inventory') }, 'Mes équipements'));
@@ -160,6 +161,63 @@ export class DragonScreen implements Screen {
       h('button', { class: 'btn grow', onclick: () => openLair(app) }, icon(ICONS.dragon, 18), ' Sa grotte'),
       h('button', { class: 'btn grow', onclick: () => void shareCard(app) }, icon(ICONS.star, 18), ' Partager')));
     return out;
+  }
+
+  /** L'autre dragon de la famille : amitié, visites, cadeaux. */
+  private friendCard(comp: Companion): HTMLElement {
+    const { app } = this;
+    const duo = app.family.duo!;
+    const f = duo.friend();
+    const lv = duo.level();
+    if (!f) return h('section', { class: 'card friend-card' },
+      h('h3', null, app.isParent ? 'Le dragon de votre enfant' : 'La dragonne de tes parents'),
+      h('p', { class: 'small muted' }, 'Les deux dragons se rencontreront dès que vos deux téléphones auront ouvert l’appli à la maison (même Wi-Fi).'));
+    return h('section', { class: 'card friend-card' },
+      h('div', { class: 'row' },
+        h('div', { class: 'grow' }, h('div', { class: 'small muted' }, `${f.variant === 'dragonne' ? 'La dragonne' : 'Le dragon'} de ${f.owner}`), h('div', { class: 'item-name' }, `${f.name} · niveau ${f.level}`)),
+        h('div', { class: 'bond' }, h('div', { class: 'small' }, `${comp.name} & ${f.name} : ${lv.label}`),
+          h('div', { class: 'bar bond-bar' }, h('div', { class: 'fill', style: { width: `${Math.round(lv.progress * 100)}%` } })))),
+      h('p', { class: 'small muted' }, 'Chaque visite et chaque cadeau les rapprochent, et débloque des tours à deux.'),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn primary grow', onclick: () => this.visitSheet(comp) }, `Rendre visite à ${f.name}`),
+        h('span', { class: 'small muted' }, `${duo.visitsLeft()} / 3 aujourd’hui`)));
+  }
+
+  private visitSheet(comp: Companion): void {
+    const { app } = this;
+    const duo = app.family.duo!;
+    const f = duo.friend()!;
+    let gift: { food?: 'meat' | 'fish' | 'fireFruit'; item?: string } | undefined;
+    let price = 0;
+    openSheet(`${comp.name} va voir ${f.name}`, close => {
+      const msg = h('input', { type: 'text', maxlength: '120', placeholder: app.isParent ? 'Je suis fière de toi !' : 'Merci pour tout !' }) as HTMLInputElement;
+      const gifts = h('div', { class: 'gift-list' });
+      const render = () => {
+        const items = app.catalog.shopItems(null, {}).filter(d => !f.owned.includes(d.id) && d.compatibleDragonStages.includes(f.stage) && app.catalog.categories.get(d.category)?.kind !== 'effect').slice(0, 12);
+        const opt = (label: string, cost: number, g: typeof gift) => h('button', {
+          class: `gift${JSON.stringify(g) === JSON.stringify(gift) ? ' on' : ''}`,
+          onclick: () => { gift = g; price = cost; render(); }
+        }, h('span', null, label), h('span', { class: 'small muted' }, cost ? `${cost} or` : ''));
+        gifts.replaceChildren(
+          opt('Pas de cadeau', 0, undefined),
+          opt('Viande grillée', 25, { food: 'meat' }), opt('Poisson des montagnes', 40, { food: 'fish' }), opt('Fruit de feu', 120, { food: 'fireFruit' }),
+          ...items.map(d => opt(d.name, d.price, { item: d.id })));
+      };
+      render();
+      return [
+        h('p', { class: 'small muted' }, `${comp.name} vole jusqu’au téléphone de ${f.owner} et se pose à côté de ${f.name}. Ton message s’affichera dans sa bulle.`),
+        h('label', { class: 'field-col' }, h('span', { class: 'small' }, 'Message (facultatif)'), msg),
+        h('span', { class: 'small' }, `Un cadeau ? (ton or : ${app.state.data.gold})`), gifts,
+        h('div', { class: 'row end' }, h('button', { class: 'btn primary', onclick: async () => {
+          const r = await duo.sendVisit(msg.value, gift, price);
+          if (r === 'limit') { app.toast('Déjà 3 visites aujourd’hui : reviens demain'); return; }
+          if (r === 'gold') { app.toast('Pas assez d’or pour ce cadeau'); return; }
+          close();
+          void app.act('hover');
+          app.say(`Je file voir ${f.name} !`, null, 4000);
+        } }, 'Envoyer'))
+      ];
+    });
   }
 
   private expeditionCard(comp: Companion): HTMLElement {

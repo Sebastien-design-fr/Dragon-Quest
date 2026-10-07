@@ -95,7 +95,14 @@ export class DragonView {
   private skin: SpriteSkin | null = null;
   private skinPart: Drawable | null = null;
   private restAnchors = new Map<string, Mat2D>();
-  private static mesh: MeshRenderer | null | undefined;
+  private mesh: MeshRenderer | null | undefined;
+  /** Position dans la scène (fraction de largeur) et taille relative — pour accueillir un second dragon. */
+  placement = { x: 0, scale: 1 };
+  /** Dragon tourné vers la gauche (invité face à l'hôte). */
+  mirrored = false;
+  placeTarget = { x: 0, scale: 1 };
+  /** Dessiner le décor (faux pour un dragon invité superposé). */
+  showBackdrop = true;
   /** Regard : direction visée par la tête (-1..1), suivie en douceur. */
   private look = { x: 0, y: 0, tx: 0, ty: 0, until: 0 };
   /** Décor derrière le dragon. */
@@ -104,6 +111,8 @@ export class DragonView {
   onClip: ((clip: string) => void) | null = null;
   /** Appelé quand un clip demande le changement de stade (animation EVOLUTION). */
   onSwapStage: (() => Promise<void> | void) | null = null;
+
+  get dependencies(): DragonViewDeps { return this.deps; }
 
   constructor(canvas: HTMLCanvasElement, private deps: DragonViewDeps) {
     this.canvas = canvas;
@@ -291,15 +300,15 @@ export class DragonView {
     const d = this.drawables.find(x => x.part?.shape === 'sprite');
     const img = d?.partPath ? Assets.peek(d.partPath) : null;
     if (!d || !img || !(img as HTMLImageElement).width) return;
-    if (DragonView.mesh === undefined) DragonView.mesh = MeshRenderer.create();
-    if (!DragonView.mesh) return;
+    if (this.mesh === undefined) this.mesh = MeshRenderer.create();
+    if (!this.mesh) return;
     const sk = this.skeleton;
     const skin = new SpriteSkin(sk, sk.bone(d.bone)!, d.part!, img as HTMLImageElement, this.rig.skin.grid);
     if (!skin.boneCount) return;
     // Repères de repos des ancrages (le squelette est encore en pose de repos ici).
     this.restAnchors.clear();
     for (const name of sk.anchorNames()) { const m = sk.anchorWorld(name); if (m) this.restAnchors.set(name, m); }
-    DragonView.mesh.setMesh(skin, img as HTMLImageElement);
+    this.mesh.setMesh(skin, img as HTMLImageElement);
     this.skin = skin;
     this.skinPart = d;
   }
@@ -358,17 +367,23 @@ export class DragonView {
     // Caméra : cadre du stade, interpolé pendant une évolution.
     const k = Math.min(1, dt * 3);
     for (const key of ['x', 'y', 'w', 'h'] as const) this.cam[key] = lerp(this.cam[key], this.camTarget[key], k);
-    const s = Math.min(W / this.cam.w, H / this.cam.h) * 0.94;
+    const s0 = Math.min(W / this.cam.w, H / this.cam.h) * 0.94;
     const shakeX = this.shake > 0 ? (Math.random() - 0.5) * this.shake * this.dpr : 0;
     const shakeY = this.shake > 0 ? (Math.random() - 0.5) * this.shake * this.dpr : 0;
     this.shake = Math.max(0, this.shake - dt * 30);
-    this.camM.a = s; this.camM.b = 0; this.camM.c = 0; this.camM.d = s;
-    this.camM.e = W / 2 - (this.cam.x + this.cam.w / 2) * s + shakeX;
-    this.camM.f = H / 2 - (this.cam.y + this.cam.h / 2) * s + shakeY;
+    const kp = Math.min(1, dt * 2.2);
+    this.placement.x = lerp(this.placement.x, this.placeTarget.x, kp);
+    this.placement.scale = lerp(this.placement.scale, this.placeTarget.scale, kp);
+    const s = s0 * this.placement.scale;
+    const sx = this.mirrored ? -s : s;
+    this.camM.a = sx; this.camM.b = 0; this.camM.c = 0; this.camM.d = s;
+    this.camM.e = W / 2 - (this.cam.x + this.cam.w / 2) * sx + this.placement.x * W + shakeX;
+    // le sol (y = 0) reste à la même hauteur quelle que soit la taille
+    this.camM.f = H / 2 - (this.cam.y + this.cam.h / 2) * s0 + shakeY;
 
     // Décor (sol aligné sous les pattes du dragon)
     const feet = this.camM.point(0, 0);
-    this.backdrop.draw(ctx, W, H, feet.y, this.camM.e - W / 2, this.time, dt, this.effectsEnabled && this.quality.permanentEffects);
+    if (this.showBackdrop) this.backdrop.draw(ctx, W, H, feet.y, this.camM.e - W / 2, this.time, dt, this.effectsEnabled && this.quality.permanentEffects);
 
     // Ombre au sol
     this.camM.apply(ctx);
@@ -385,9 +400,9 @@ export class DragonView {
       if (this.layers[d.layer] === false) continue;
       const bone = sk.bone(d.bone);
       if (!bone) continue;
-      if (d === this.skinPart && DragonView.mesh?.ready) {
+      if (d === this.skinPart && this.mesh?.ready) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        const gl = DragonView.mesh.render(this.camM, W, H);
+        const gl = this.mesh.render(this.camM, W, H);
         ctx.drawImage(this.dirt > 0.04 ? this.withDirt(gl, W, H) : gl, 0, 0);
       } else if (d.part) {
         this.camM.multiply(bone.world, this.tmp).apply(ctx);

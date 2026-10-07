@@ -4,6 +4,7 @@ import { Assets } from './engine/AssetManager.js';
 import { DragonView } from './engine/DragonView.js';
 import { ChildBook } from './family/ChildBook.js';
 import { Companion } from './family/Companion.js';
+import { Duo } from './family/Duo.js';
 import { ParentHub } from './family/ParentHub.js';
 import { Reminders } from './family/Reminders.js';
 import { Catalog } from './game/Catalog.js';
@@ -54,10 +55,13 @@ async function boot(): Promise<void> {
   let book: ChildBook | null = null;
   let hub: ParentHub | null = null;
   let companion: Companion | null = null;
+  let duo: Duo | null = null;
   if (linkState.role === 'parent') {
     hub = new ParentHub(link);
     // La maman (ou le papa) a sa propre dragonne : un tamagotchi qui grandit avec les soins.
     companion = new Companion(state, 'parent');
+    duo = new Duo(link, state, companion, linkState.deviceId, linkState.deviceName, 'parent');
+    hub.onOther = m => duo!.handle(m);
     hub.syncMembers(linkState.members);
     await hub.sync();
     link.onInbox(() => void hub!.sync());
@@ -66,6 +70,8 @@ async function boot(): Promise<void> {
     book.childName = linkState.deviceName;
     companion = new Companion(state);
     book.companion = companion;
+    duo = new Duo(link, state, companion, linkState.deviceId, linkState.deviceName, 'child');
+    book.onOther = m => duo!.handle(m);
     await book.init();
     link.onInbox(() => void book!.sync());
   }
@@ -76,7 +82,8 @@ async function boot(): Promise<void> {
     void (book ?? hub)?.sync();
   });
 
-  new App(root, catalog, state, view, { link, linkState, reminders, book, hub, companion });
+  new App(root, catalog, state, view, { link, linkState, reminders, book, hub, companion, duo });
+  duo?.hello();
 }
 
 boot().catch(err => {

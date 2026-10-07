@@ -628,9 +628,12 @@ export class ChildBook {
         this.queueStatus(0);
         return false;
       default:
-        return false;
+        return this.onOther?.(msg) ?? false;
     }
   }
+
+  /** Messages destinés à d'autres modules (rencontres entre dragons…). */
+  onOther: ((msg: LinkMessage) => boolean) | null = null;
 
   // ---------- État envoyé aux parents ----------
   snapshot(): ChildSnapshot {

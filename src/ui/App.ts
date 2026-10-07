@@ -4,6 +4,8 @@ import type { DragonView } from '../engine/DragonView.js';
 import type { ChildBook } from '../family/ChildBook.js';
 import { isNight, type Companion } from '../family/Companion.js';
 import { Sound } from '../engine/Sound.js';
+import type { Duo } from '../family/Duo.js';
+import { VisitScene } from './VisitScene.js';
 import { sayFor, thoughts, type Thought, type ThoughtAction } from '../family/Thoughts.js';
 import type { ParentHub } from '../family/ParentHub.js';
 import type { Reminders } from '../family/Reminders.js';
@@ -32,9 +34,10 @@ export interface FamilyContext {
   book: ChildBook | null;
   hub: ParentHub | null;
   companion: Companion | null;
+  duo: Duo | null;
 }
 
-export const APP_VERSION = '0.7.0';
+export const APP_VERSION = '0.8.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -64,6 +67,8 @@ export class App {
   private shownAt = new Map<string, number>();
   private remindTimer = 0;
   private stroke: { x: number; y: number; dist: number; moved: number; pets: number } | null = null;
+  /** Visites de l'autre dragon de la famille. */
+  readonly visits = new VisitScene(this);
 
   constructor(readonly root: HTMLElement, readonly catalog: Catalog, readonly state: GameState, readonly view: DragonView, readonly family: FamilyContext) {
     this.hud = root.querySelector('#hud')!;
@@ -163,8 +168,21 @@ export class App {
       document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(() => this.think(true), 1200); });
     }
 
+    const duo = family.duo;
+    duo?.events.on('visit', () => this.playPendingVisit());
+    duo?.events.on('toast', t => this.toast(t));
+    duo?.events.on('change', () => this.current?.refresh?.());
+    setTimeout(() => this.playPendingVisit(), 3500);
+
     this.renderHud();
     this.show(this.screens[0].id);
+  }
+
+  /** Joue la prochaine visite en attente, si notre dragon est affiché et éveillé. */
+  playPendingVisit(): void {
+    const v = this.family.duo?.data.pending[0];
+    if (!v || !this.showingOwn || this.sleeping || this.visits.active || this.evolving) return;
+    void this.visits.start(v);
   }
 
   get isParent(): boolean { return this.family.linkState.role === 'parent'; }
@@ -229,7 +247,9 @@ export class App {
       this.applyCare();
       void this.view.play(this.sleeping ? 'sleep' : this.baseLoop());
       setTimeout(() => this.think(true), 900);
+      setTimeout(() => this.playPendingVisit(), 1800);
     } else {
+      this.visits.end();
       this.showChildDragon();
     }
     this.renderHud();
@@ -271,6 +291,7 @@ export class App {
     const comp = this.family.companion;
     if (this.sleeping && !was && comp?.tuck()) this.say(sayFor('tuck'), null, 4000);
     void this.view.play(this.sleeping ? 'sleep' : this.baseLoop());
+    if (was && !this.sleeping) setTimeout(() => this.playPendingVisit(), 2000);
     if (was && !this.sleeping && force === undefined) {
       void this.view.play('wake');
       if (isNight()) this.say(sayFor('wake'), null, 4000);

@@ -135,6 +135,9 @@ export class GameState {
     return { ok: true };
   }
 
+  /** Objet offert (cadeau d'un autre dragon). */
+  grant(id: string): void { if (this.catalog.item(id) && !this.owns(id)) { this.data.owned.push(id); this.commit(); } }
+
   equip(id: string): ActionResult {
     const def = this.catalog.item(id);
     if (!def || !this.owns(id)) return { ok: false, reason: 'Objet non possédé.' };
