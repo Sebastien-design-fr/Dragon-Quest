@@ -73,7 +73,6 @@ export class ChildBook {
     const saved = readStore<Partial<BookData>>(KEY, {});
     this.data = { ...defaults, ...saved, stats: { ...defaults.stats, ...(saved.stats ?? {}) } };
     // Migration v0.18 : aucune sanction ne doit survivre à la mise à jour.
-    if (this.data.confiscated) state.locked.delete(this.data.confiscated.id);
     this.data.confiscated = null;
     this.data.lastPenalty = null;
     this.data.missStreak = 0;
@@ -292,10 +291,7 @@ export class ChildBook {
     this.data.lastPenalty = null;
     this.data.missStreak = 0;
     this.data.energy = ENERGY.max;
-    if (this.data.confiscated) {
-      this.state.locked.delete(this.data.confiscated.id);
-      this.data.confiscated = null;
-    }
+    this.data.confiscated = null;
     if (this.companion?.data.sick) this.companion.setSick(false);
   }
 
