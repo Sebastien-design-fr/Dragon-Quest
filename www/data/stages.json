@@ -38,8 +38,8 @@
     }
   ],
   "xp": {
-    "base": 190,
-    "step": 26,
-    "note": "XP pour passer du niveau N au suivant = base + step × (N − 1). Avec ~400 XP/semaine : jeune ≈ 3 semaines, adulte ≈ 3 mois, légendaire ≈ 9-10 mois."
+    "base": 160,
+    "step": 24,
+    "note": "XP pour passer du niveau N au suivant = base + step × (N − 1). Courbe v0.18 plus gratifiante au début, puis progressive. Les missions oubliées ne retirent jamais d'XP."
   }
 }
