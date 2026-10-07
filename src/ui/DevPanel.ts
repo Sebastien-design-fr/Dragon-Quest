@@ -20,6 +20,11 @@ const POSES: PoseChoice[] = [
   { id: 'eat', label: 'Manger', run: a => { a.view.debugPose = null; void a.view.play('eat'); } },
   { id: 'roar', label: 'Rugissement', run: a => { a.view.debugPose = null; void a.view.play('roar'); } },
   { id: 'level_up', label: 'Niveau (LEVEL_UP)', run: a => { a.view.debugPose = null; void a.view.play('level_up'); } },
+  { id: 'b_look', label: 'Comportement : regarder', run: a => a.view.life.force('look') },
+  { id: 'b_tilt', label: 'Comportement : pencher la tête', run: a => a.view.life.force('head_tilt') },
+  { id: 'b_wing', label: 'Comportement : ajuster une aile', run: a => a.view.life.force('wing_adjust') },
+  { id: 'b_shift', label: 'Comportement : changer d’appui', run: a => a.view.life.force('shift') },
+  { id: 'b_tail', label: 'Comportement : coup de queue', run: a => a.view.life.force('tail_move') },
   { id: 'evolution', label: 'Évolution (sans changer de stade)', run: a => { a.view.debugPose = null; void a.view.play('evolution'); } }
 ];
 
@@ -90,6 +95,7 @@ export function toggleDevPanel(app: App): void {
       `état ${d.state || '—'}`,
       `variante ${view.variant} · stade ${view.stage?.id ?? '—'} · pose ${d.pose}`,
       `poses chargées ${d.poses.join(', ') || 'aucune'}`,
+      `vie : tempo ${view.life.p.tempo} · dernier comportement ${view.life.last || '—'}`,
       `particules ${d.particles} · qualité ${app.state.data.settings.quality}`,
       `canvas ${s.canvas} · densité ${s.renderDpr} (écran ${window.devicePixelRatio})`,
       `texture ${d.tex}`,

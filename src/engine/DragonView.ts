@@ -19,6 +19,7 @@ import { ParticleSystem } from './Particles.js';
 import { drawEquipment, drawPart } from './Placeholders.js';
 import { Skeleton } from './Skeleton.js';
 import { TintCache, buildUniforms, dragonConfig, shadowBlob, type DragonLightConfig, type LightUniforms, type ShadowConfig, type VisualConfig } from './Lighting.js';
+import { OrganicLife, personalityFor } from './Organic.js';
 import { MeshRenderer, SpriteSkin } from './SpriteSkin.js';
 import { Backdrop, type BackdropDef } from './Backdrop.js';
 
@@ -166,7 +167,8 @@ export class DragonView {
   private isPoseChild = false;
   /** Vie au repos : petits comportements joués au hasard. */
   idleLife = true;
-  private idleTimer = 8;
+  /** Vie organique (LOT 3) : mouvements de fond et micro-comportements, réglés par stade. */
+  readonly life = new OrganicLife();
   /** Ressorts (queue, ailes, tête) : ils suivent le corps avec un léger retard. */
   private springs = new Map<string, { v: number; vel: number }>();
   private prevBody = { y: 0, x: 0 };
@@ -222,6 +224,7 @@ export class DragonView {
     previous.dispose();
     this.camTarget = { ...rig.camera };
     this.dcfg = dragonConfig(this.deps.visual, stage.id, variant);
+    this.life.setPersonality(personalityFor(this.deps.visual as never, stage.id, variant));
     const sc = this.deps.visual?.scenes;
     this.backdrop.sceneOverrides = sc ? { ...sc.default, ...sc[stage.id] } : undefined;
     this.tints.clear();
@@ -520,7 +523,7 @@ export class DragonView {
     this.ensureSkin();
     this.animator.update(dt, sk);
     this.applyLook(dt, sk);
-    this.lifeTick(dt);
+    this.lifeTick(dt, sk);
     this.applySprings(dt, sk);
     sk.update(new Mat2D());
     this.skin?.update();
@@ -559,7 +562,9 @@ export class DragonView {
     if (this.layers.magicalEffect) { this.camM.apply(ctx); this.particles.draw(ctx, 'magical'); }
 
     ctx.filter = this.tired ? 'grayscale(0.75) brightness(0.62) contrast(0.92)' : 'none';
-    this.animator.speed = this.tired ? 0.6 : 1;
+    // boucle de repos à vitesse légèrement variable (cycle non reconnaissable), rythme propre au stade
+    const onIdleLoop = (this.animator.baseId ?? '').startsWith('idle') && !this.animator.actionId;
+    this.animator.speed = (this.tired ? 0.6 : 1) * (onIdleLoop ? this.life.idleRate() * this.life.p.tempo : Math.sqrt(this.life.p.tempo));
     // Poses peintes : fondu entre l'image debout et l'image couchée / en vol.
     const pv = this.poseViews;
     const base = this.animator.baseId ?? '', act = this.animator.actionId ?? '';
@@ -748,18 +753,25 @@ export class DragonView {
     this.drawDragon(ctx, W, H, alpha);
   }
 
-  /** Petits comportements au repos, joués de temps en temps. */
-  private lifeTick(dt: number): void {
-    if (!this.idleLife || this.isPoseChild) return;
+  /** Vie au repos : couches organiques + micro-comportements (table pondérée du stade). */
+  private lifeTick(dt: number, sk: Skeleton): void {
+    if (this.isPoseChild) return;
     const base = this.animator.baseId ?? '';
-    if (this.animator.actionId || !base.startsWith('idle') || this.flight) { this.idleTimer = Math.max(this.idleTimer, 4); return; }
-    this.idleTimer -= dt;
-    if (this.idleTimer > 0) return;
-    this.idleTimer = 9 + Math.random() * 12;
-    const r = Math.random();
-    if (r < 0.06) { void this.fly(); return; }
-    const pick = ['look_around', 'tail_swish', 'sniff', 'stretch', 'yawn', 'scratch', 'look_around', 'tail_swish'];
-    void this.animator.play(this.clipFor(pick[Math.floor(Math.random() * pick.length)]));
+    const act = this.animator.actionId;
+    const sleeping = base.startsWith('sleep');
+    const idle = base.startsWith('idle') && !this.flight;
+    const unit = this.rig?.motionScale ?? 1;
+    // mouvements de fond : aussi pendant une action courte (ils s'atténuent naturellement sous le clip)
+    this.life.apply(dt, sk, !this.idleLife ? (sleeping ? 'sleep' : 'off') : sleeping ? 'sleep' : idle ? 'idle' : 'off', unit);
+    if (!this.idleLife) return;
+    const r = this.life.tick(dt, idle && !act);
+    if (!r) return;
+    if (r.fly) { void this.fly(); return; }
+    if (r.clip) { void this.play(r.clip); return; }
+    if (r.look) {
+      const L = this.look;
+      L.tx = r.look[0]; L.ty = r.look[1]; L.until = this.time + r.look[2];
+    }
   }
 
   /** Lumière de l'image : scène (décor) + dragon (stade / variante) + état (repos, sommeil, niveau…). */
@@ -859,7 +871,7 @@ export class DragonView {
       let st = this.springs.get(name);
       if (!st) { st = { v: target, vel: 0 }; this.springs.set(name, st); }
       // intégration à pas fixe (1/240 s) : même comportement quelle que soit la cadence
-      const k = 140, c = 15, h = 1 / 240;
+      const k = this.life.p.inertia.k, c = this.life.p.inertia.c, h = 1 / 240;
       for (let left = dt; left > 1e-6; left -= h) {
         const step = Math.min(h, left);
         st.vel += (k * (target - st.v) - c * st.vel) * step;

@@ -1,5 +1,5 @@
 {
-  "note": "Intégration du dragon dans le décor (LOT 2). Tout est générique : la lumière de la scène est mesurée sur l'image du décor (sans la modifier), puis combinée avec les réglages du dragon (par stade, éventuellement par variante « dragonne.adult ») et ceux de l'état (repos, sommeil, niveau…). Clés de stade : « default », puis l'identifiant du stade, puis « <variante>.<stade> ». Les valeurs absentes reprennent celles du niveau précédent.",
+  "note": "Intégration du dragon dans le décor (LOT 2). Tout est générique : la lumière de la scène est mesurée sur l'image du décor (sans la modifier), puis combinée avec les réglages du dragon (par stade, éventuellement par variante « dragonne.adult ») et ceux de l'état (repos, sommeil, niveau…). Clés de stade : « default », puis l'identifiant du stade, puis « <variante>.<stade> ». Les valeurs absentes reprennent celles du niveau précédent. « personality » (LOT 3) : vie au repos — tempo, respiration, amplitudes des mouvements de fond, inertie, intervalle et poids des micro-comportements (blink à 0 : pas d’asset yeux fermés).",
   "scenes": {
     "default": {
       "ambientMix": 0.16,
@@ -26,6 +26,41 @@
         "rim": 1.0,
         "topLight": 0.06,
         "bottomShade": 0.1
+      },
+      "personality": {
+        "tempo": 1.0,
+        "breathe": {
+          "amp": 0.012,
+          "period": 3.4
+        },
+        "sway": 0.8,
+        "head": 3,
+        "neck": 2,
+        "tail": 5,
+        "wing": 2.5,
+        "inertia": {
+          "k": 140,
+          "c": 15
+        },
+        "interval": [
+          5,
+          11
+        ],
+        "gesture": 1,
+        "weights": {
+          "look": 3,
+          "head_tilt": 2,
+          "tail_move": 2,
+          "wing_adjust": 1.5,
+          "shift": 1.5,
+          "look_around": 1,
+          "sniff": 0.8,
+          "stretch": 0.6,
+          "yawn": 0.5,
+          "scratch": 0.6,
+          "fly": 0.25,
+          "blink": 0
+        }
       }
     },
     "baby": {
@@ -36,11 +71,68 @@
       },
       "lighting": {
         "rim": 1.1
+      },
+      "personality": {
+        "tempo": 1.22,
+        "breathe": {
+          "amp": 0.014,
+          "period": 2.6
+        },
+        "sway": 1.0,
+        "head": 4.2,
+        "neck": 2.6,
+        "tail": 6.5,
+        "wing": 3.2,
+        "inertia": {
+          "k": 190,
+          "c": 14
+        },
+        "interval": [
+          3.5,
+          8
+        ],
+        "gesture": 1.2,
+        "weights": {
+          "look": 4,
+          "head_tilt": 3.5,
+          "tail_move": 2.5,
+          "sniff": 1.4,
+          "scratch": 0.9,
+          "yawn": 0.7,
+          "stretch": 0.4,
+          "shift": 1,
+          "fly": 0.15
+        }
       }
     },
     "young": {
       "shadow": {
         "ambientOpacity": 0.55
+      },
+      "personality": {
+        "tempo": 1.08,
+        "breathe": {
+          "amp": 0.013,
+          "period": 3.0
+        },
+        "head": 3.4,
+        "tail": 5.5,
+        "wing": 3.0,
+        "inertia": {
+          "k": 160,
+          "c": 15
+        },
+        "interval": [
+          4.5,
+          10
+        ],
+        "gesture": 1.08,
+        "weights": {
+          "look": 3.2,
+          "head_tilt": 2.5,
+          "wing_adjust": 2,
+          "fly": 0.3
+        }
       }
     },
     "adult": {
@@ -50,6 +142,35 @@
       },
       "lighting": {
         "rim": 0.95
+      },
+      "personality": {
+        "tempo": 0.92,
+        "breathe": {
+          "amp": 0.011,
+          "period": 3.8
+        },
+        "sway": 0.7,
+        "head": 2.6,
+        "neck": 1.8,
+        "tail": 4.5,
+        "wing": 2.2,
+        "inertia": {
+          "k": 120,
+          "c": 15
+        },
+        "interval": [
+          6,
+          12
+        ],
+        "gesture": 0.92,
+        "weights": {
+          "look": 2.5,
+          "head_tilt": 1.5,
+          "shift": 2,
+          "wing_adjust": 1.8,
+          "stretch": 0.8,
+          "yawn": 0.4
+        }
       }
     },
     "legendary": {
@@ -61,6 +182,37 @@
       "lighting": {
         "rim": 0.9,
         "topLight": 0.07
+      },
+      "personality": {
+        "tempo": 0.84,
+        "breathe": {
+          "amp": 0.01,
+          "period": 4.3
+        },
+        "sway": 0.6,
+        "head": 2.2,
+        "neck": 1.6,
+        "tail": 4,
+        "wing": 2,
+        "inertia": {
+          "k": 105,
+          "c": 14
+        },
+        "interval": [
+          7,
+          14
+        ],
+        "gesture": 0.85,
+        "weights": {
+          "look": 2.5,
+          "head_tilt": 1.2,
+          "shift": 2.2,
+          "wing_adjust": 2,
+          "look_around": 1.4,
+          "sniff": 0.4,
+          "scratch": 0.3,
+          "stretch": 0.9
+        }
       }
     },
     "dragonne.default": {

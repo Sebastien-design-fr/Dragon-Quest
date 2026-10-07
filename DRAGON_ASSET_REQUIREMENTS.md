@@ -153,7 +153,7 @@ Existant : NORMAL 1536×1022, SLEEP 742×342, WINGS_UP 735×284, WINGS_DOWN 734�
 
 | Comportement | Stades concernés | Raison | Asset qui le débloque |
 |---|---|---|---|
-| BLINK (clignement) | tous | Les yeux font partie de la peinture ; une déformation ne peut pas les fermer proprement | yeux fermés (P1) |
+| BLINK (clignement) — poids 0 dans `personality.weights` du LOT 3 | tous | Les yeux font partie de la peinture ; une déformation ne peut pas les fermer proprement | yeux fermés (P1) |
 | WING_ADJUST ample / repli d’aile debout | tous | L’aile proche est peinte sur le corps : la tourner de plus de quelques degrés étire le dos | aile proche séparée + corps repeint (P1) |
 | Gueule ouverte (rugir, cracher le feu) | tous | Aucune mâchoire séparée ; l’animation actuelle ne fait que lever la tête | gueule ouverte (P1) |
 | Battement de vol en 3 temps | tous | WINGS_MID absent ; une interpolation d’images donnerait une aile fantôme | WINGS_MID (P0) |
