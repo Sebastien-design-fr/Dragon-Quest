@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420">
+<defs>
+ <linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d995ff"/><stop offset=".42" stop-color="#8f3fc8"/><stop offset="1" stop-color="#4c1c6b"/></linearGradient>
+ <linearGradient id="mem" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f3a9de"/><stop offset="1" stop-color="#a64de0"/></linearGradient>
+ <radialGradient id="aura"><stop stop-color="#74c7ff" stop-opacity=".28"/><stop offset="1" stop-color="#74c7ff" stop-opacity="0"/></radialGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur in="SourceAlpha" stdDeviation="8"/><feOffset dy="10"/><feComponentTransfer><feFuncA type="linear" slope=".35"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<ellipse cx="500" cy="350" rx="300" ry="34" fill="#000" opacity=".22"/>
+
+<g filter="url(#shadow)" stroke-linecap="round" stroke-linejoin="round">
+ <!-- tail -->
+ <path d="M385 282 C280 290,210 310,95 286 C38 274,28 225,65 207 C86 197,100 219,83 233 C69 245,78 261,108 264 C210 276,278 242,405 245" fill="none" stroke="url(#body)" stroke-width="34"/>
+ <path d="M112 266 C72 248,73 215,102 200" fill="none" stroke="#f2c86f" stroke-width="5" opacity=".55"/>
+ <!-- far wing -->
+ <path d="M455 232 C408 170,330 121,255 62 C363 89,447 120,525 205 Z" fill="url(#mem)" stroke="#4c1c6b" stroke-width="8"/>
+ <path d="M451 220 C398 170,350 125,292 92 M430 220 C385 190,343 162,305 142" fill="none" stroke="#f2c86f" stroke-width="4" opacity=".55"/>
+ <!-- body -->
+ <ellipse cx="500" cy="277" rx="150" ry="70" fill="url(#body)" stroke="#4c1c6b" stroke-width="9"/>
+ <path d="M400 295 C450 330,550 336,620 300" fill="none" stroke="#ead8f5" stroke-width="25" opacity=".8"/>
+ <path d="M365,210 l-8,-10 l18,7 z" fill="#d995ff" stroke="#4c1c6b" stroke-width="3"/><path d="M341,214 l-8,-12 l18,9 z" fill="#d995ff" stroke="#4c1c6b" stroke-width="3"/><path d="M317,218 l-8,-14 l18,11 z" fill="#d995ff" stroke="#4c1c6b" stroke-width="3"/><path d="M293,222 l-8,-16 l18,13 z" fill="#d995ff" stroke="#4c1c6b" stroke-width="3"/>
+ <!-- near wing -->
+ <path d="M510 250 C500 150,475 100,410 42 C540 69,640 119,674 222 C630 185,587 164,550 154 C585 207,583 245,564 277 Z" fill="url(#mem)" stroke="#4c1c6b" stroke-width="9"/>
+ <path d="M512 232 C500 176,474 116,438 72 M535 235 C535 181,530 132,515 96 M556 242 C575 196,594 160,618 139" fill="none" stroke="#f2c86f" stroke-width="4" opacity=".62"/>
+ <!-- legs -->
+ <path d="M438 310 C420 333,416 353,430 366 C445 371,455 355,460 335" fill="url(#body)" stroke="#4c1c6b" stroke-width="8"/>
+ <path d="M555 316 C545 343,550 366,571 371 C588 370,595 350,593 328" fill="url(#body)" stroke="#4c1c6b" stroke-width="8"/>
+ <path d="M424 366 l-15 9 M438 368 l-5 12 M570 371 l-8 12 M583 368 l8 10" stroke="#f2c86f" stroke-width="5"/>
+ <!-- neck -->
+ <path d="M610 284 C650 270,673 244,700 214 C728 183,759 178,792 194 C761 208,746 230,736 260 C713 300,666 314,617 314 Z" fill="url(#body)" stroke="#4c1c6b" stroke-width="9"/>
+ <!-- head -->
+ <path d="M716 206 C742 170,800 159,842 184 L869 203 L842 226 L800 233 C777 249,744 240,727 225 Z" fill="url(#body)" stroke="#4c1c6b" stroke-width="9"/>
+ <path d="M842 205 l35 7 -31 14" fill="#ead8f5" stroke="#4c1c6b" stroke-width="6"/>
+ <!-- horns -->
+ <path d="M765 181 l-16 -16 l26 7" fill="#f2c86f" stroke="#4c1c6b" stroke-width="5"/>
+ <path d="M795 172 l-8 -24 l19 17" fill="#f2c86f" stroke="#4c1c6b" stroke-width="5"/>
+ <path d="M739 195 l-26 -18 31 5" fill="#d995ff" stroke="#4c1c6b" stroke-width="5"/>
+ <!-- eye -->
+ <ellipse cx="817" cy="198" rx="9" ry="7" fill="#74c7ff" stroke="#111" stroke-width="3"/>
+ <circle cx="819" cy="196" r="2.5" fill="#fff"/>
+ <!-- face accents -->
+ <path d="M788 218 C812 224,831 222,847 213" fill="none" stroke="#f2c86f" stroke-width="4" opacity=".55"/>
+ <path d="M736 214 C755 210,771 205,785 194" fill="none" stroke="#d995ff" stroke-width="5"/>
+</g>
+<title>Dragonne baby</title>
+</svg>
