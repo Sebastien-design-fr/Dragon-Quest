@@ -2,7 +2,7 @@
 // Les rappels passent mieux quand ils viennent de lui : il parle à la première personne, avec affection.
 import type { ChildBook } from './ChildBook.js';
 import { isNight, type Companion } from './Companion.js';
-import { todayKey, type Mission } from './model.js';
+import type { Mission } from './model.js';
 
 export type ThoughtAction = 'missions' | 'feed' | 'wash' | 'pet' | 'sleep' | 'play' | null;
 export interface Thought { id: string; text: string; action: ThoughtAction; priority: number }
