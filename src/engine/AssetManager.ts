@@ -37,8 +37,11 @@ class AssetManagerImpl {
     const dir = `assets/equipment/${def.category}/${def.asset}`;
     return this.firstAvailable(`${dir}_${stage}`) ?? this.firstAvailable(dir);
   }
-  background(stage: StageId): string | null {
-    return this.firstAvailable(`assets/backgrounds/bg_${stage}`);
+  background(_stage: StageId): string | null {
+    // Dragon Mission n'utilise plus les anciens fonds peints de Quête du Dragon
+    // sur l'écran principal : le nouveau décor procédural assure une identité
+    // cohérente et s'adapte à toutes les tailles d'écran.
+    return null;
   }
   equipmentIcon(def: EquipmentDef): string | null {
     return this.firstAvailable(`assets/equipment/${def.category}/${def.asset}_icon`) ?? this.equipment(def, 'adult');
