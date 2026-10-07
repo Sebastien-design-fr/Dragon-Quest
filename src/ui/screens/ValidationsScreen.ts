@@ -58,7 +58,6 @@ export class ValidationsScreen implements Screen {
   private giftAmount = 25;
   private giftMessage = '';
   private treatMessage = '';
-  private warnAmount = 25;
   private warnReason = '';
   /** Un glissement ou une décision est en cours : le prochain rendu est différé. */
   private busy = false;
