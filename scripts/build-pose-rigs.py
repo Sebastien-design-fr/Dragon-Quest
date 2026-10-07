@@ -70,8 +70,33 @@ DEFORM = {
                 'tail': [(45, 40), (32, 42), (18, 40), (6, 30), (4, 15), (12, 5)]},
 }
 
+# Poses « image seule » (une grande image par dragon, scripts/import-single-poses.py) : même composition
+# pour tous les dragons (prompt commun), repères communs, en % de l'image découpée.
+def _a(head, mouth, neck, chest, fl, rl, flf, rlf, lw, rw, tail, tip, center):
+    return {'head_anchor': head, 'mouth_anchor': mouth, 'neck_anchor': neck, 'chest_anchor': chest, 'front_leg_anchor': fl,
+            'rear_leg_anchor': rl, 'front_leg_far_anchor': flf, 'rear_leg_far_anchor': rlf, 'left_wing_anchor': lw,
+            'right_wing_anchor': rw, 'tail_anchor': tail, 'tail_tip_anchor': tip, 'body_center': center}
+ANCHORS_SINGLE = {
+    'flyUp': _a((89, 62, 0), (98, 68, 0), (82, 70, 0), (77, 80, 0), (77, 95, 0), (55, 90, 0), (80, 96, 0), (58, 92, 0), (72, 40, -10), (55, 30, -8), (42, 80, 0), (5, 75, 0), (62, 82, 0)),
+    'flyMid': _a((90, 48, 0), (98, 55, 0), (84, 60, 0), (78, 72, 0), (77, 95, 0), (55, 92, 0), (80, 96, 0), (58, 93, 0), (80, 30, -10), (60, 25, -8), (42, 75, 0), (5, 70, 0), (62, 72, 0)),
+    'flyDown': _a((91, 18, 0), (98, 22, 0), (84, 28, 0), (78, 36, 0), (77, 52, 0), (52, 46, 0), (80, 52, 0), (55, 47, 0), (72, 48, -10), (62, 62, -5), (42, 36, 0), (5, 28, 0), (62, 38, 0)),
+    'sleep': _a((92, 62, 8), (99, 80, 8), (82, 62, 10), (76, 72, 0), (88, 88, 0), (55, 82, 0), (93, 90, 0), (60, 85, 0), (62, 22, -10), (45, 20, -14), (30, 85, 6), (5, 60, 0), (58, 65, 0)),
+}
+DEFORM_SINGLE = {
+    'flyUp': {'spine': [(50, 82), (78, 78)], 'neck': [(78, 76), (84, 70), (89, 64)], 'head': [(89, 64), (99, 68)],
+              'tail': [(50, 85), (35, 82), (20, 82), (8, 78), (3, 68), (10, 64)]},
+    'flyMid': {'spine': [(50, 75), (78, 70)], 'neck': [(78, 68), (84, 60), (89, 52)], 'head': [(89, 52), (99, 56)],
+               'tail': [(50, 78), (35, 72), (20, 72), (8, 70), (3, 60), (10, 55)]},
+    'flyDown': {'spine': [(50, 38), (78, 33)], 'neck': [(78, 32), (85, 24), (90, 18)], 'head': [(90, 18), (99, 22)],
+                'tail': [(50, 38), (35, 38), (20, 32), (8, 26), (3, 20), (10, 15)]},
+    'sleep': {'spine': [(45, 65), (76, 62)], 'neck': [(76, 62), (84, 60), (90, 62)], 'head': [(90, 62), (99, 80)],
+              'tail': [(40, 85), (28, 82), (15, 78), (6, 68), (4, 55), (10, 48)]},
+}
+
 # Taille de la pose par rapport à la largeur du dragon debout.
 WIDTH_RATIO = {'sleep': 1.03, 'flyUp': 1.15}
+# Images seules : la taille est réglée sur la tête et le cou (cohérence avec le dragon debout), pas sur la largeur.
+HEAD_RATIO_SINGLE = {'sleep': 0.8, 'flyUp': 0.74}
 
 
 def r(v):
@@ -146,6 +171,8 @@ def bones_from(segs, fx, fy):
 def main():
     poses_index = {}
     previews = []
+    src_path = os.path.join(ROOT, 'www', 'data', 'pose-sources.json')
+    sources = json.load(open(src_path)) if os.path.exists(src_path) else {}
     for variant, suffix in VARIANTS.items():
         poses_index[variant] = {}
         for stage in STAGES:
@@ -155,40 +182,75 @@ def main():
             # centre du corps debout, au-dessus des pieds (unités écran)
             bc = next(a for a in stand['anchors'] if a['name'] == 'body_center')
             center_h = -bc['y'] * sds
-            paths = {p: os.path.join(ROOT, 'www', 'assets', variant, stage, f'{variant}_{stage}_{p}.webp') for p in ('sleep', 'flyUp', 'flyDown')}
-            if not all(os.path.exists(p) for p in paths.values()):
+            src = sources.get(variant, {}).get(stage, {})
+            single = lambda p: src.get(p) == 'single'
+            all_poses = ('sleep', 'flyUp', 'flyMid', 'flyDown')
+            paths = {p: os.path.join(ROOT, 'www', 'assets', variant, stage, f'{variant}_{stage}_{p}.webp') for p in all_poses}
+            paths = {p: f for p, f in paths.items() if os.path.exists(f) and (p != 'flyMid' or single(p))}
+            if not all(p in paths for p in ('sleep', 'flyUp', 'flyDown')):
                 continue
+            anchors_for = lambda p: ANCHORS_SINGLE[p] if single(p) else ANCHORS[p][variant]
+            deform_for = lambda p: DEFORM_SINGLE[p] if single(p) else DEFORM[p]
             sizes = {p: Image.open(paths[p]).size for p in paths}
             ds, feet = {}, {}
             for p in ('sleep', 'flyUp'):
                 w, h = sizes[p]
-                ds[p] = sb['w'] * WIDTH_RATIO[p] / w
-                cx, cy = ANCHORS[p][variant]['body_center'][:2]
-                if p == 'sleep':
+                if single(p):
+                    sa = {a['name']: (a['x'], a['y']) for a in stand['anchors']}
+                    hd = lambda A, B: math.hypot(A[0] - B[0], A[1] - B[1])
+                    d_stand = (hd(sa['head_anchor'], sa['neck_anchor']) + hd(sa['neck_anchor'], sa['chest_anchor'])) * sds
+                    aa = {n: (v[0] / 100 * w, v[1] / 100 * h) for n, v in anchors_for(p).items()}
+                    d_px = hd(aa['head_anchor'], aa['neck_anchor']) + hd(aa['neck_anchor'], aa['chest_anchor'])
+                    ds[p] = HEAD_RATIO_SINGLE[p] * d_stand / d_px
+                    # doit tenir dans le cadre de la scène (les poses très étalées sont réduites)
+                    cam_w = stand['camera']['w'] * 0.96
+                    if w * ds[p] > cam_w:
+                        ds[p] = cam_w / w
+                else:
+                    ds[p] = sb['w'] * WIDTH_RATIO[p] / w
+                cx, cy = anchors_for(p)['body_center'][:2]
+                if single(p):
+                    # image seule : centrée horizontalement sur la silhouette debout
+                    mid_x = (sb['x'] + sb['w'] / 2) / ds[p]
+                    fx = w / 2 - mid_x
+                    feet[p] = (fx, h * 0.97) if p == 'sleep' else (fx, cy / 100 * h + center_h / ds[p])
+                elif p == 'sleep':
                     feet[p] = (cx / 100 * w, h * 0.97)
                 else:
                     feet[p] = (cx / 100 * w, cy / 100 * h + center_h / ds[p])
-            up, down = alpha(paths['flyUp']), alpha(paths['flyDown'])
-            T, s, score = register(up, down)
-            ds['flyDown'] = ds['flyUp'] / s
-            feet['flyDown'] = T(*feet['flyUp'])
-            print(variant, stage, 'ds', {k: round(v, 3) for k, v in ds.items()}, 'recalage', round(s, 3), round(score, 3))
-            for pose in ('sleep', 'flyUp', 'flyDown'):
+            up = alpha(paths['flyUp'])
+            for other in [p for p in ('flyMid', 'flyDown') if p in paths]:
+                T, s, score = register(up, alpha(paths[other]))
+                ds[other] = ds['flyUp'] / s
+                feet[other] = T(*feet['flyUp'])
+                print(variant, stage, other, 'recalage', round(s, 3), round(score, 3))
+            print(variant, stage, 'ds', {k: round(v, 3) for k, v in ds.items()})
+            for pose in [p for p in all_poses if p in paths]:
                 w, h = sizes[pose]
                 fx, fy = feet[pose]
                 d = ds[pose]
                 P = lambda q: (q[0] / 100 * w, q[1] / 100 * h)
-                anchors = {**ANCHORS[pose][variant], **OVERRIDES.get((pose, variant, stage), {})}
-                df = DEFORM[pose]
+                anchors = {**anchors_for(pose), **OVERRIDES.get((pose, variant, stage), {})}
+                df = deform_for(pose)
                 rad = lambda k: k * w
                 segs = {'spine': ('body', P(df['spine'][0]), P(df['spine'][1]), rad(0.15)),
                         **chain('neck', 'body', [P(q) for q in df['neck']], rad(0.06)),
                         'head': ('neck2', P(df['head'][0]), P(df['head'][1]), rad(0.09)),
                         **chain('tail', 'body', [P(q) for q in df['tail']], rad(0.055))}
+                # taille des équipements : proportionnelle à la taille de la tête/du cou à l'écran (pose vs debout)
+                eq_k = 1.0
+                if single(pose):
+                    sa = {a['name']: (a['x'], a['y']) for a in stand['anchors']}
+                    dist = lambda A, B: math.hypot(A[0] - B[0], A[1] - B[1])
+                    d_stand = (dist(sa['head_anchor'], sa['neck_anchor']) + dist(sa['neck_anchor'], sa['chest_anchor'])) * sds
+                    pa = {n: P(v) for n, v in anchors.items()}
+                    d_pose = (dist(pa['head_anchor'], pa['neck_anchor']) + dist(pa['neck_anchor'], pa['chest_anchor'])) * d
+                    eq_k = d_pose / d_stand if d_stand else 1.0
+                    print('   ', pose, 'équipements ×', round(eq_k, 2))
                 rig = {
                     'id': stage, 'version': 2, 'kind': 'sprite', 'pose': pose,
                     'note': 'Généré par scripts/build-pose-rigs.py',
-                    'scale': round(stand['scale'] * sds / d, 3), 'motionScale': stand['motionScale'], 'fxScale': stand['fxScale'],
+                    'scale': round(stand['scale'] * sds / d * eq_k, 3), 'motionScale': stand['motionScale'], 'fxScale': stand['fxScale'],
                     'params': stand['params'], 'palette': stand['palette'],
                     'bounds': {'x': r(-fx * d), 'y': r(-fy * d), 'w': r(w * d), 'h': r(h * d)},
                     'camera': stand.get('camera'),
@@ -217,14 +279,14 @@ def main():
                         dr.line([a0, b0], fill=(0, 200, 255), width=2)
                     dr.ellipse([fx - 6, fy - 6, fx + 6, fy + 6], outline=(255, 255, 255), width=2)
                     previews.append(bg)
-            poses_index[variant][stage] = ['sleep', 'flyUp', 'flyDown']
+            poses_index[variant][stage] = [p for p in all_poses if p in paths]
     with open(os.path.join(ROOT, 'www', 'data', 'poses.json'), 'w', encoding='utf-8') as f:
         json.dump({'note': 'Poses peintes disponibles (variante -> stade -> poses). Généré par scripts/build-pose-rigs.py', 'poses': poses_index}, f, ensure_ascii=False, indent=1)
     if len(sys.argv) > 1 and previews:
-        B = Image.new('RGB', (3 * 520, 8 * 230), (30, 30, 40))
+        B = Image.new('RGB', (4 * 520, 8 * 230), (30, 30, 40))
         for i, p in enumerate(previews):
             q = p.copy(); q.thumbnail((510, 220))
-            B.paste(q, ((i % 3) * 520 + 5, (i // 3) * 230 + 5))
+            B.paste(q, ((i % 4) * 520 + 5, (i // 4) * 230 + 5))
         B.save(sys.argv[1])
 
 

@@ -10,7 +10,7 @@ Variantes trouvées : dragon, dragonne. Stades trouvés : baby, young, adult, le
 |---|---|---|---|---|---|---|---|---|---|---|
 | dragon | baby | 1236×831 | 472×178 | 470×221 | **manquant** | 457×191 | — | baby.sprite.json (19 / 16 / 26 px) | 13/13 | 22 |
 | dragon | young | 1239×931 | 637×232 | 666×262 | **manquant** | 574×284 | — | young.sprite.json (19 / 16 / 26 px) | 13/13 | 28 |
-| dragon | adult | 1244×1017 | 720×283 | 744×289 | **manquant** | 672×338 | — | adult.sprite.json (19 / 16 / 26 px) | 13/13 | 29 |
+| dragon | adult | 1244×1017 | 1522×631 | 1513×862 | 1512×628 | 1515×806 | — | adult.sprite.json (19 / 16 / 26 px) | 13/13 | 29 |
 | dragon | legendary | 1253×1075 | 760×348 | 742×287 | **manquant** | 742×329 | — | legendary.sprite.json (19 / 16 / 26 px) | 13/13 | 29 |
 | dragonne | baby | 1510×978 | 457×183 | 490×221 | **manquant** | 532×204 | — | baby.dragonne.json (19 / 16 / 30 px) | 13/13 | 22 |
 | dragonne | young | 1524×1024 | 611×227 | 630×264 | **manquant** | 612×289 | — | young.dragonne.json (19 / 16 / 30 px) | 13/13 | 28 |
@@ -35,10 +35,11 @@ Taille de l’illustration sur l’écran Dragon (scène = 60 % de la hauteur), 
 | dragon | young | WINGS_UP | 666×262 | 568 → 746 (×1.312) | 746 | 1.12 | **agrandi ×1.12 : résolution insuffisante, flou** |
 | dragon | young | NORMAL | 1239×931 | 618 → 811 (×1.312) | 811 | 0.65 | réduction : mipmaps recommandés |
 | dragon | young | SLEEP | 637×232 | 636 → 835 (×1.312) | 835 | 1.31 | **agrandi ×1.31 : résolution insuffisante, flou** |
-| dragon | adult | WINGS_DOWN | 672×338 | 555 → 729 (×1.312) | 729 | 1.08 | **agrandi ×1.08 : résolution insuffisante, flou** |
-| dragon | adult | WINGS_UP | 744×289 | 615 → 807 (×1.312) | 807 | 1.08 | **agrandi ×1.08 : résolution insuffisante, flou** |
+| dragon | adult | WINGS_DOWN | 1515×806 | 596 → 782 (×1.312) | 782 | 0.52 | forte réduction : mipmaps indispensables |
+| dragon | adult | WINGS_MID | 1512×628 | 594 → 780 (×1.312) | 780 | 0.52 | forte réduction : mipmaps indispensables |
+| dragon | adult | WINGS_UP | 1513×862 | 595 → 781 (×1.312) | 781 | 0.52 | forte réduction : mipmaps indispensables |
 | dragon | adult | NORMAL | 1244×1017 | 668 → 877 (×1.312) | 877 | 0.70 | réduction : mipmaps recommandés |
-| dragon | adult | SLEEP | 720×283 | 688 → 904 (×1.312) | 904 | 1.25 | **agrandi ×1.25 : résolution insuffisante, flou** |
+| dragon | adult | SLEEP | 1522×631 | 744 → 976 (×1.312) | 976 | 0.64 | réduction : mipmaps recommandés |
 | dragon | legendary | WINGS_DOWN | 742×329 | 630 → 826 (×1.312) | 826 | 1.11 | **agrandi ×1.11 : résolution insuffisante, flou** |
 | dragon | legendary | WINGS_UP | 742×287 | 630 → 826 (×1.312) | 826 | 1.11 | **agrandi ×1.11 : résolution insuffisante, flou** |
 | dragon | legendary | NORMAL | 1253×1075 | 684 → 898 (×1.312) | 898 | 0.72 | réduction : mipmaps recommandés |
@@ -72,10 +73,11 @@ Taille de l’illustration sur l’écran Dragon (scène = 60 % de la hauteur), 
 | dragon | young | WINGS_UP | 666×262 | 497 → 745 (×1.5) | 745 | 1.12 | **agrandi ×1.12 : résolution insuffisante, flou** |
 | dragon | young | NORMAL | 1239×931 | 540 → 810 (×1.5) | 810 | 0.65 | réduction : mipmaps recommandés |
 | dragon | young | SLEEP | 637×232 | 556 → 834 (×1.5) | 834 | 1.31 | **agrandi ×1.31 : résolution insuffisante, flou** |
-| dragon | adult | WINGS_DOWN | 672×338 | 485 → 728 (×1.5) | 728 | 1.08 | **agrandi ×1.08 : résolution insuffisante, flou** |
-| dragon | adult | WINGS_UP | 744×289 | 537 → 806 (×1.5) | 806 | 1.08 | **agrandi ×1.08 : résolution insuffisante, flou** |
+| dragon | adult | WINGS_DOWN | 1515×806 | 520 → 781 (×1.5) | 781 | 0.52 | forte réduction : mipmaps indispensables |
+| dragon | adult | WINGS_MID | 1512×628 | 519 → 779 (×1.5) | 779 | 0.52 | forte réduction : mipmaps indispensables |
+| dragon | adult | WINGS_UP | 1513×862 | 520 → 780 (×1.5) | 780 | 0.52 | forte réduction : mipmaps indispensables |
 | dragon | adult | NORMAL | 1244×1017 | 584 → 876 (×1.5) | 876 | 0.70 | réduction : mipmaps recommandés |
-| dragon | adult | SLEEP | 720×283 | 602 → 902 (×1.5) | 902 | 1.25 | **agrandi ×1.25 : résolution insuffisante, flou** |
+| dragon | adult | SLEEP | 1522×631 | 650 → 975 (×1.5) | 975 | 0.64 | réduction : mipmaps recommandés |
 | dragon | legendary | WINGS_DOWN | 742×329 | 550 → 825 (×1.5) | 825 | 1.11 | **agrandi ×1.11 : résolution insuffisante, flou** |
 | dragon | legendary | WINGS_UP | 742×287 | 550 → 825 (×1.5) | 825 | 1.11 | **agrandi ×1.11 : résolution insuffisante, flou** |
 | dragon | legendary | NORMAL | 1253×1075 | 598 → 897 (×1.5) | 897 | 0.72 | réduction : mipmaps recommandés |
@@ -109,10 +111,11 @@ Taille de l’illustration sur l’écran Dragon (scène = 60 % de la hauteur), 
 | dragon | young | WINGS_UP | 666×262 | 568 → 995 (×1.75) | 995 | 1.49 | **agrandi ×1.49 : résolution insuffisante, flou** |
 | dragon | young | NORMAL | 1239×931 | 618 → 1081 (×1.75) | 1081 | 0.87 | proche du 1:1 |
 | dragon | young | SLEEP | 637×232 | 636 → 1114 (×1.75) | 1114 | 1.75 | **agrandi ×1.75 : résolution insuffisante, flou** |
-| dragon | adult | WINGS_DOWN | 672×338 | 555 → 972 (×1.75) | 972 | 1.45 | **agrandi ×1.45 : résolution insuffisante, flou** |
-| dragon | adult | WINGS_UP | 744×289 | 615 → 1076 (×1.75) | 1076 | 1.45 | **agrandi ×1.45 : résolution insuffisante, flou** |
+| dragon | adult | WINGS_DOWN | 1515×806 | 596 → 1042 (×1.75) | 1042 | 0.69 | réduction : mipmaps recommandés |
+| dragon | adult | WINGS_MID | 1512×628 | 594 → 1040 (×1.75) | 1040 | 0.69 | réduction : mipmaps recommandés |
+| dragon | adult | WINGS_UP | 1513×862 | 595 → 1041 (×1.75) | 1041 | 0.69 | réduction : mipmaps recommandés |
 | dragon | adult | NORMAL | 1244×1017 | 668 → 1170 (×1.75) | 1170 | 0.94 | proche du 1:1 |
-| dragon | adult | SLEEP | 720×283 | 688 → 1205 (×1.75) | 1205 | 1.67 | **agrandi ×1.67 : résolution insuffisante, flou** |
+| dragon | adult | SLEEP | 1522×631 | 744 → 1301 (×1.75) | 1301 | 0.85 | proche du 1:1 |
 | dragon | legendary | WINGS_DOWN | 742×329 | 630 → 1102 (×1.75) | 1102 | 1.49 | **agrandi ×1.49 : résolution insuffisante, flou** |
 | dragon | legendary | WINGS_UP | 742×287 | 630 → 1102 (×1.75) | 1102 | 1.49 | **agrandi ×1.49 : résolution insuffisante, flou** |
 | dragon | legendary | NORMAL | 1253×1075 | 684 → 1197 (×1.75) | 1197 | 0.96 | proche du 1:1 |

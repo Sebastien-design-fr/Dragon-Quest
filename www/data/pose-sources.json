@@ -1,0 +1,10 @@
+{
+ "dragon": {
+  "adult": {
+   "sleep": "single",
+   "flyDown": "single",
+   "flyMid": "single",
+   "flyUp": "single"
+  }
+ }
+}

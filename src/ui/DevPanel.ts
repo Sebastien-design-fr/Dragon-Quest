@@ -13,6 +13,7 @@ const POSES: PoseChoice[] = [
   { id: 'sleep', label: 'Couché (SLEEP)', run: a => { a.view.debugPose = null; void a.view.play('sleep'); } },
   { id: 'fly', label: 'Vol animé (FLY)', run: a => { a.view.debugPose = null; void a.view.play('idle'); void a.view.fly(); } },
   { id: 'flyUp', label: 'Ailes hautes, fixe (WINGS_UP)', run: a => { a.view.debugPose = 'flyUp'; } },
+  { id: 'flyMid', label: 'Ailes au milieu, fixe (WINGS_MID)', run: a => { a.view.debugPose = 'flyMid'; } },
   { id: 'flyDown', label: 'Ailes basses, fixe (WINGS_DOWN)', run: a => { a.view.debugPose = 'flyDown'; } },
   { id: 'sleepPose', label: 'Couché, fixe', run: a => { a.view.debugPose = 'sleep'; } },
   { id: 'happy', label: 'Joie (HAPPY)', run: a => { a.view.debugPose = null; void a.view.play('happy'); } },

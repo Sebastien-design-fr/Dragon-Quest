@@ -60,7 +60,27 @@ export interface DragonViewDeps {
   visual?: VisualConfig;
 }
 
-type PoseId = 'sleep' | 'flyUp' | 'flyDown';
+type PoseId = 'sleep' | 'flyUp' | 'flyMid' | 'flyDown';
+
+/**
+ * Battement d'ailes : poids des images (haut, milieu, bas) selon la phase du cycle (0..1).
+ * Asymétrique : descente rapide et énergique (≈35 % du cycle), remontée plus lente.
+ * Avec seulement deux images (pas de milieu), fondu court entre haut et bas.
+ */
+function flapWeights(phase: number, hasMid: boolean): [number, number, number] {
+  const p = phase - Math.floor(phase);
+  // positions clés : 0 haut · 0,175 milieu (descente) · 0,35 bas · 0,65 milieu (remontée) · 1 haut
+  const keys: Array<[number, number]> = [[0, 0], [0.175, 1], [0.35, 2], [0.65, 1], [1, 0]];
+  let pos = 0;
+  for (let i = 1; i < keys.length; i++) {
+    if (p <= keys[i][0]) { const [t0, v0] = keys[i - 1], [t1, v1] = keys[i]; const u = (p - t0) / (t1 - t0); pos = v0 + (v1 - v0) * u; break; }
+  }
+  // pos 0..2 → poids avec fondu court (les images restent nettes la plupart du temps)
+  const sharp = (x: number) => Math.min(1, Math.max(0, (x - 0.3) / 0.4));
+  if (!hasMid) { const k = sharp(pos / 2); return [1 - k, 0, k]; }
+  if (pos <= 1) { const k = sharp(pos); return [1 - k, k, 0]; }
+  const k = sharp(pos - 1); return [0, 1 - k, k];
+}
 
 /** Lissage exponentiel indépendant de la cadence : même résultat à 30, 60, 90 ou 120 images/s. */
 const damp = (a: number, b: number, rate: number, dt: number) => b + (a - b) * Math.exp(-rate * dt);
@@ -153,6 +173,9 @@ export class DragonView {
   /** Vol mis en scène : trajectoire dans la scène. */
   private flight: { t: number; dur: number; baseMirror: boolean } | null = null;
   private lift = 0;
+  /** Battement d'ailes : phase et durée d'un cycle (s). */
+  private flapPhase = 0;
+  flapPeriod = 0.6;
   /** Appelé à chaque animation lancée (sons). */
   onClip: ((clip: string) => void) | null = null;
   /** Appelé quand un clip demande le changement de stade (animation EVOLUTION). */
@@ -551,10 +574,13 @@ export class DragonView {
     if (this.poseW.sleep > 0.01 && pv.sleep) pv.sleep.renderPose(ctx, this, W, H, this.poseW.sleep);
     if (this.poseW.fly > 0.01 && pv.flyUp && pv.flyDown) {
       // battements : ailes hautes / ailes basses, presque nets avec un court fondu
-      let ph = Math.min(1, Math.max(0, (Math.sin(this.time * Math.PI * 4) + 1) / 2 * 5 - 2));
-      if (dp === 'flyUp') ph = 0; else if (dp === 'flyDown') ph = 1;
-      if (1 - ph > 0.01) pv.flyUp.renderPose(ctx, this, W, H, this.poseW.fly * (1 - ph));
-      if (ph > 0.01) pv.flyDown.renderPose(ctx, this, W, H, this.poseW.fly * ph);
+      this.flapPhase += dt / this.flapPeriod;
+      let w3 = flapWeights(this.flapPhase, !!pv.flyMid);
+      if (dp === 'flyUp') w3 = [1, 0, 0]; else if (dp === 'flyMid' && pv.flyMid) w3 = [0, 1, 0]; else if (dp === 'flyDown') w3 = [0, 0, 1];
+      const frames: Array<DragonView | undefined> = [pv.flyUp, pv.flyMid, pv.flyDown];
+      // dessin du plus faible au plus fort : l'image dominante reste nette par-dessus
+      const order = [0, 1, 2].sort((a, b) => w3[a] - w3[b]);
+      for (const i of order) if (w3[i] > 0.01 && frames[i]) frames[i]!.renderPose(ctx, this, W, H, this.poseW.fly * (i === order[2] ? 1 : w3[i]));
     }
     ctx.globalAlpha = 1;
 

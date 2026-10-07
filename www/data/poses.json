@@ -15,6 +15,7 @@
    "adult": [
     "sleep",
     "flyUp",
+    "flyMid",
     "flyDown"
    ],
    "legendary": [
