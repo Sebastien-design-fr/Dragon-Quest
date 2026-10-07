@@ -124,9 +124,7 @@ export class MissionsScreen implements Screen {
     const wpct = total ? Math.round((done + waiting) / total * 100) : 0;
     const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
     const streak = book.streak();
-    const shields = book.data.shields;
-    const cost = book.pendingCost();
-    const loss = [cost.xp ? `−${cost.xp} XP` : '', cost.gold ? `−${cost.gold} or` : ''].filter(Boolean).join(', ');
+    const count = book.pendingCount();
 
     return h('section', { class: `q-today${total && done === total ? ' q-perfect' : ''}` },
       total
@@ -137,12 +135,10 @@ export class MissionsScreen implements Screen {
         h('span', { class: 'q-date' }, date),
         h('h2', null, 'Aujourd’hui'),
         h('div', { class: `q-streak${streak ? '' : ' off'}` }, icon(ICONS.flame, 18),
-          h('span', null, streak ? `Série : ${streak} jour${streak > 1 ? 's' : ''}` : 'Lance ta série !'),
-          shields ? h('span', { class: 'q-shield', title: `${shields} bouclier${shields > 1 ? 's' : ''} de série` }, icon(ICONS.shield, 14), `${shields}`) : null),
-        !shields && streak ? h('span', { class: 'q-hint' }, 'Un bouclier tous les 7 jours') : null,
+          h('span', null, streak ? `Série : ${streak} jour${streak > 1 ? 's' : ''}` : 'Lance ta série !')),
         waiting ? h('span', { class: 'q-hint amber' }, `${waiting} en attente des parents`) : null),
-      cost.count ? h('div', { class: 'q-cost' }, icon(ICONS.moon, 14),
-        h('span', null, `Si ${cost.count > 1 ? `ces ${cost.count} quêtes sont oubliées` : 'la dernière quête est oubliée'} ce soir : ${loss || 'ton dragon perd des forces'}`)) : null);
+      count ? h('div', { class: 'q-cost' }, icon(ICONS.star, 14),
+        h('span', null, `${count} quête${count > 1 ? 's' : ''} encore à faire : chaque réussite fait progresser ton dragon.`)) : null);
   }
 
   private card(t: Entry, x2: boolean, bonus = false): HTMLElement {

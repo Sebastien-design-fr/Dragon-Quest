@@ -1,50 +1,57 @@
 {
- "note": "Poses peintes disponibles (variante -> stade -> poses). Généré par scripts/build-pose-rigs.py",
- "poses": {
-  "dragon": {
-   "baby": [
-    "sleep",
-    "flyUp",
-    "flyDown"
-   ],
-   "young": [
-    "sleep",
-    "flyUp",
-    "flyDown"
-   ],
-   "adult": [
-    "sleep",
-    "flyUp",
-    "flyMid",
-    "flyDown"
-   ],
-   "legendary": [
-    "sleep",
-    "flyUp",
-    "flyDown"
-   ]
-  },
-  "dragonne": {
-   "baby": [
-    "sleep",
-    "flyUp",
-    "flyDown"
-   ],
-   "young": [
-    "sleep",
-    "flyUp",
-    "flyDown"
-   ],
-   "adult": [
-    "sleep",
-    "flyUp",
-    "flyDown"
-   ],
-   "legendary": [
-    "sleep",
-    "flyUp",
-    "flyDown"
-   ]
+  "note": "Poses peintes attendues par le moteur (variante -> stade -> poses). La 0.18 utilise systématiquement flyUp/flyMid/flyDown afin d'obtenir un battement d'ailes fluide ; l'asset manquant peut temporairement retomber sur l'interpolation moteur.",
+  "poses": {
+    "dragon": {
+      "baby": [
+        "sleep",
+        "flyUp",
+        "flyMid",
+        "flyDown"
+      ],
+      "young": [
+        "sleep",
+        "flyUp",
+        "flyMid",
+        "flyDown"
+      ],
+      "adult": [
+        "sleep",
+        "flyUp",
+        "flyMid",
+        "flyDown"
+      ],
+      "legendary": [
+        "sleep",
+        "flyUp",
+        "flyMid",
+        "flyDown"
+      ]
+    },
+    "dragonne": {
+      "baby": [
+        "sleep",
+        "flyUp",
+        "flyMid",
+        "flyDown"
+      ],
+      "young": [
+        "sleep",
+        "flyUp",
+        "flyMid",
+        "flyDown"
+      ],
+      "adult": [
+        "sleep",
+        "flyUp",
+        "flyMid",
+        "flyDown"
+      ],
+      "legendary": [
+        "sleep",
+        "flyUp",
+        "flyMid",
+        "flyDown"
+      ]
+    }
   }
- }
 }

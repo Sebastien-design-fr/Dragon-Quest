@@ -15,11 +15,12 @@ Ce dépôt contient **le socle technique** : moteur d'animation à squelette, co
 
 ## Obtenir l'APK
 
-1. Pousser sur `main` (ou lancer le workflow à la main dans l'onglet **Actions**).
+1. Pousser sur `main` pour la version familiale, ou sur `v1-polish` pour générer l'APK de prévalidation 0.18.
 2. Ouvrir l'exécution terminée, section **Artifacts**, télécharger `quete-du-dragon-apk`.
 3. Sur le téléphone : autoriser l'installation depuis cette source, puis ouvrir l'APK.
 
-**Lien direct, toujours vers la dernière version :** https://github.com/Sebastien-design-fr/Dragon-Quest/releases/latest/download/quete-du-dragon.apk
+**Version familiale stable :** `releases/latest/download/quete-du-dragon.apk`  
+**Prévalidation 0.18 (`v1-polish`) :** la pré-release `v1-polish-test` contient également `quete-du-dragon.apk` sans remplacer la version familiale stable.
 
 ## Développer en local
 

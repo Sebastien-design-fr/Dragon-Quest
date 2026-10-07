@@ -1,125 +1,594 @@
 {
-  "note": "Catalogue. Ajouter un équipement = déposer ses fichiers dans assets/equipment/<categorie>/ (eq_<cat>_<rarete>_<nn>_<stade>.webp, ou une seule image sans suffixe de stade) puis ajouter une entrée ici. L'interface le détecte automatiquement.",
+  "note": "Catalogue. Ajouter un équipement = déposer ses fichiers dans assets/equipment/<categorie>/ (eq_<cat>_<rarete>_<nn>_<stade>.webp, ou une seule image sans suffixe de stade) puis ajouter une entrée ici. L'interface le détecte automatiquement. Prix v0.18 harmonisés pour que la boutique reste accessible sans rendre les objets épiques/légendaires immédiats.",
   "items": [
-    { "id": "head_light_helmet", "name": "Casque léger", "category": "head", "rarity": "common", "price": 150,
+    {
+      "id": "head_light_helmet",
+      "name": "Casque léger",
+      "category": "head",
+      "rarity": "common",
+      "price": 120,
       "description": "Une calotte de fer martelé. Simple, solide, sans prétention.",
-      "asset": "eq_head_common_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "helmet", "tint": "#55535b" } },
-    { "id": "head_ornate_helmet", "name": "Casque orné", "category": "head", "rarity": "rare", "price": 400,
+      "asset": "eq_head_common_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "helmet",
+        "tint": "#55535b"
+      }
+    },
+    {
+      "id": "head_ornate_helmet",
+      "name": "Casque orné",
+      "category": "head",
+      "rarity": "rare",
+      "price": 320,
       "description": "Acier poli et gravures d'argent. Un casque digne d'un dragon de rang.",
-      "asset": "eq_head_rare_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "helmet", "tint": "#8a919c" } },
-    { "id": "head_royal_helmet", "name": "Casque royal", "category": "head", "rarity": "epic", "price": 900,
+      "asset": "eq_head_rare_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "helmet",
+        "tint": "#8a919c"
+      }
+    },
+    {
+      "id": "head_royal_helmet",
+      "name": "Casque royal",
+      "category": "head",
+      "rarity": "epic",
+      "price": 720,
       "description": "Forgé dans le métal rouge des volcans anciens, serti de rubis.",
-      "asset": "eq_head_epic_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "helmet", "tint": "#5a1f26" } },
-    { "id": "head_draconic_crown", "name": "Couronne draconique", "category": "head", "rarity": "legendary", "price": 2000,
+      "asset": "eq_head_epic_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "helmet",
+        "tint": "#5a1f26"
+      }
+    },
+    {
+      "id": "head_draconic_crown",
+      "name": "Couronne draconique",
+      "category": "head",
+      "rarity": "legendary",
+      "price": 1500,
       "description": "Portée par les premiers seigneurs-dragons. Trop lourde pour les plus jeunes.",
-      "asset": "eq_head_legendary_01", "compatibleDragonStages": ["adult", "legendary"], "animationProfile": "pulse", "stats": null,
-      "placeholder": { "shape": "crown" } },
-
-    { "id": "neck_simple_collar", "name": "Collier simple", "category": "neck", "rarity": "common", "price": 150,
+      "asset": "eq_head_legendary_01",
+      "compatibleDragonStages": [
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "pulse",
+      "stats": null,
+      "placeholder": {
+        "shape": "crown"
+      }
+    },
+    {
+      "id": "neck_simple_collar",
+      "name": "Collier simple",
+      "category": "neck",
+      "rarity": "common",
+      "price": 120,
       "description": "Un anneau de cuir et de bronze.",
-      "asset": "eq_neck_common_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "sway", "stats": null,
-      "placeholder": { "shape": "necklace", "tint": "#6b5434" } },
-    { "id": "neck_ornate_collar", "name": "Collier orné", "category": "neck", "rarity": "rare", "price": 400,
+      "asset": "eq_neck_common_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "sway",
+      "stats": null,
+      "placeholder": {
+        "shape": "necklace",
+        "tint": "#6b5434"
+      }
+    },
+    {
+      "id": "neck_ornate_collar",
+      "name": "Collier orné",
+      "category": "neck",
+      "rarity": "rare",
+      "price": 320,
       "description": "Mailles d'argent et saphir taillé.",
-      "asset": "eq_neck_rare_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "sway", "stats": null,
-      "placeholder": { "shape": "necklace", "tint": "#8a919c" } },
-    { "id": "neck_gem_collar", "name": "Collier gemme", "category": "neck", "rarity": "epic", "price": 900,
+      "asset": "eq_neck_rare_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "sway",
+      "stats": null,
+      "placeholder": {
+        "shape": "necklace",
+        "tint": "#8a919c"
+      }
+    },
+    {
+      "id": "neck_gem_collar",
+      "name": "Collier gemme",
+      "category": "neck",
+      "rarity": "epic",
+      "price": 720,
       "description": "Une gemme écarlate qui palpite comme un cœur.",
-      "asset": "eq_neck_epic_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "sway", "stats": null,
-      "placeholder": { "shape": "necklace", "tint": "#3a2a30" } },
-    { "id": "neck_ancestral_collar", "name": "Collier ancestral", "category": "neck", "rarity": "legendary", "price": 2000,
+      "asset": "eq_neck_epic_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "sway",
+      "stats": null,
+      "placeholder": {
+        "shape": "necklace",
+        "tint": "#3a2a30"
+      }
+    },
+    {
+      "id": "neck_ancestral_collar",
+      "name": "Collier ancestral",
+      "category": "neck",
+      "rarity": "legendary",
+      "price": 1500,
       "description": "Transmis de dragon en dragon depuis l'aube des âges.",
-      "asset": "eq_neck_legendary_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "sway", "stats": null,
-      "placeholder": { "shape": "necklace", "tint": "#3a2f1a" } },
-
-    { "id": "body_light_plate", "name": "Plastron léger", "category": "body", "rarity": "common", "price": 150,
+      "asset": "eq_neck_legendary_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "sway",
+      "stats": null,
+      "placeholder": {
+        "shape": "necklace",
+        "tint": "#3a2f1a"
+      }
+    },
+    {
+      "id": "body_light_plate",
+      "name": "Plastron léger",
+      "category": "body",
+      "rarity": "common",
+      "price": 120,
       "description": "Plaques de fer rivetées sur cuir épais.",
-      "asset": "eq_body_common_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "plate", "tint": "#55535b" } },
-    { "id": "body_reinforced_plate", "name": "Plastron renforcé", "category": "body", "rarity": "rare", "price": 400,
+      "asset": "eq_body_common_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "plate",
+        "tint": "#55535b"
+      }
+    },
+    {
+      "id": "body_reinforced_plate",
+      "name": "Plastron renforcé",
+      "category": "body",
+      "rarity": "rare",
+      "price": 320,
       "description": "Double épaisseur d'acier, bordures d'argent.",
-      "asset": "eq_body_rare_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "plate", "tint": "#8a919c" } },
-    { "id": "body_royal_armor", "name": "Armure royale", "category": "body", "rarity": "epic", "price": 900,
+      "asset": "eq_body_rare_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "plate",
+        "tint": "#8a919c"
+      }
+    },
+    {
+      "id": "body_royal_armor",
+      "name": "Armure royale",
+      "category": "body",
+      "rarity": "epic",
+      "price": 720,
       "description": "Armure d'apparat rouge et or des gardes du roi.",
-      "asset": "eq_body_epic_01", "compatibleDragonStages": ["young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "plate", "tint": "#5a1f26" } },
-    { "id": "body_draconic_armor", "name": "Armure draconique", "category": "body", "rarity": "legendary", "price": 2000,
+      "asset": "eq_body_epic_01",
+      "compatibleDragonStages": [
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "plate",
+        "tint": "#5a1f26"
+      }
+    },
+    {
+      "id": "body_draconic_armor",
+      "name": "Armure draconique",
+      "category": "body",
+      "rarity": "legendary",
+      "price": 1500,
       "description": "Faite des écailles d'or d'un ancêtre légendaire.",
-      "asset": "eq_body_legendary_01", "compatibleDragonStages": ["young", "adult", "legendary"], "animationProfile": "pulse", "stats": null,
-      "placeholder": { "shape": "plate", "tint": "#3a2f1a" } },
-
-    { "id": "legs_simple_guards", "name": "Protection simple", "category": "legs", "rarity": "common", "price": 150,
+      "asset": "eq_body_legendary_01",
+      "compatibleDragonStages": [
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "pulse",
+      "stats": null,
+      "placeholder": {
+        "shape": "plate",
+        "tint": "#3a2f1a"
+      }
+    },
+    {
+      "id": "legs_simple_guards",
+      "name": "Protection simple",
+      "category": "legs",
+      "rarity": "common",
+      "price": 120,
       "description": "Jambières de fer pour les quatre pattes.",
-      "asset": "eq_legs_common_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "bracer", "tint": "#55535b" } },
-    { "id": "legs_metal_claws", "name": "Griffes métal", "category": "legs", "rarity": "rare", "price": 400,
+      "asset": "eq_legs_common_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "bracer",
+        "tint": "#55535b"
+      }
+    },
+    {
+      "id": "legs_metal_claws",
+      "name": "Griffes métal",
+      "category": "legs",
+      "rarity": "rare",
+      "price": 320,
       "description": "Griffes d'acier ajustées sur chaque patte.",
-      "asset": "eq_legs_rare_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "bracer", "tint": "#8a919c" } },
-    { "id": "legs_runic_claws", "name": "Griffes runiques", "category": "legs", "rarity": "epic", "price": 900,
+      "asset": "eq_legs_rare_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "bracer",
+        "tint": "#8a919c"
+      }
+    },
+    {
+      "id": "legs_runic_claws",
+      "name": "Griffes runiques",
+      "category": "legs",
+      "rarity": "epic",
+      "price": 720,
       "description": "Gravées de runes qui luisent dans l'obscurité.",
-      "asset": "eq_legs_epic_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "pulse", "stats": null,
-      "placeholder": { "shape": "bracer", "tint": "#3a2a40" } },
-    { "id": "legs_golden_claws", "name": "Griffes dorées", "category": "legs", "rarity": "legendary", "price": 2000,
+      "asset": "eq_legs_epic_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "pulse",
+      "stats": null,
+      "placeholder": {
+        "shape": "bracer",
+        "tint": "#3a2a40"
+      }
+    },
+    {
+      "id": "legs_golden_claws",
+      "name": "Griffes dorées",
+      "category": "legs",
+      "rarity": "legendary",
+      "price": 1500,
       "description": "Or pur forgé dans le souffle d'un dragon.",
-      "asset": "eq_legs_legendary_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "pulse", "stats": null,
-      "placeholder": { "shape": "bracer", "tint": "#3a2f1a" } },
-
-    { "id": "wings_guards", "name": "Protège-ailes", "category": "wings", "rarity": "common", "price": 150,
+      "asset": "eq_legs_legendary_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "pulse",
+      "stats": null,
+      "placeholder": {
+        "shape": "bracer",
+        "tint": "#3a2f1a"
+      }
+    },
+    {
+      "id": "wings_guards",
+      "name": "Protège-ailes",
+      "category": "wings",
+      "rarity": "common",
+      "price": 120,
       "description": "Plaques de cuir clouté sur le bord des ailes.",
-      "asset": "eq_wings_common_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "wingplate", "tint": "#4a3b2c" } },
-    { "id": "wings_ornate", "name": "Ailes ornées", "category": "wings", "rarity": "rare", "price": 400,
+      "asset": "eq_wings_common_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "wingplate",
+        "tint": "#4a3b2c"
+      }
+    },
+    {
+      "id": "wings_ornate",
+      "name": "Ailes ornées",
+      "category": "wings",
+      "rarity": "rare",
+      "price": 320,
       "description": "Filigranes d'argent le long des os des ailes.",
-      "asset": "eq_wings_rare_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "wingplate", "tint": "#8a919c" } },
-    { "id": "wings_armor", "name": "Éléments d'armure", "category": "wings", "rarity": "epic", "price": 900,
+      "asset": "eq_wings_rare_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "wingplate",
+        "tint": "#8a919c"
+      }
+    },
+    {
+      "id": "wings_armor",
+      "name": "Éléments d'armure",
+      "category": "wings",
+      "rarity": "epic",
+      "price": 720,
       "description": "Lames rouges qui tranchent l'air à chaque battement.",
-      "asset": "eq_wings_epic_01", "compatibleDragonStages": ["young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "wingplate", "tint": "#5a1f26" } },
-    { "id": "wings_divine", "name": "Ornements légendaires", "category": "wings", "rarity": "legendary", "price": 2000,
+      "asset": "eq_wings_epic_01",
+      "compatibleDragonStages": [
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "wingplate",
+        "tint": "#5a1f26"
+      }
+    },
+    {
+      "id": "wings_divine",
+      "name": "Ornements légendaires",
+      "category": "wings",
+      "rarity": "legendary",
+      "price": 1500,
       "description": "Des ailes divines bordées d'or vivant.",
-      "asset": "eq_wings_legendary_01", "compatibleDragonStages": ["young", "adult", "legendary"], "animationProfile": "pulse", "stats": null,
-      "placeholder": { "shape": "wingplate", "tint": "#3a2f1a" } },
-
-    { "id": "tail_rings", "name": "Anneaux de queue", "category": "tail", "rarity": "common", "price": 150,
+      "asset": "eq_wings_legendary_01",
+      "compatibleDragonStages": [
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "pulse",
+      "stats": null,
+      "placeholder": {
+        "shape": "wingplate",
+        "tint": "#3a2f1a"
+      }
+    },
+    {
+      "id": "tail_rings",
+      "name": "Anneaux de queue",
+      "category": "tail",
+      "rarity": "common",
+      "price": 120,
       "description": "Deux anneaux de bronze.",
-      "asset": "eq_tail_common_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "tailring", "tint": "#6b5434" } },
-    { "id": "tail_guards", "name": "Protections de queue", "category": "tail", "rarity": "rare", "price": 400,
+      "asset": "eq_tail_common_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "tailring",
+        "tint": "#6b5434"
+      }
+    },
+    {
+      "id": "tail_guards",
+      "name": "Protections de queue",
+      "category": "tail",
+      "rarity": "rare",
+      "price": 320,
       "description": "Gaines d'acier articulées.",
-      "asset": "eq_tail_rare_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "tailring", "tint": "#8a919c" } },
-    { "id": "tail_spikes", "name": "Pointes renforcées", "category": "tail", "rarity": "epic", "price": 900,
+      "asset": "eq_tail_rare_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "tailring",
+        "tint": "#8a919c"
+      }
+    },
+    {
+      "id": "tail_spikes",
+      "name": "Pointes renforcées",
+      "category": "tail",
+      "rarity": "epic",
+      "price": 720,
       "description": "Pointes d'acier rouge fixées sur la queue.",
-      "asset": "eq_tail_epic_01", "compatibleDragonStages": ["young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
-      "placeholder": { "shape": "tailspikes", "tint": "#5a1f26" } },
-    { "id": "tail_blade", "name": "Gaine draconique", "category": "tail", "rarity": "legendary", "price": 2000,
+      "asset": "eq_tail_epic_01",
+      "compatibleDragonStages": [
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
+      "placeholder": {
+        "shape": "tailspikes",
+        "tint": "#5a1f26"
+      }
+    },
+    {
+      "id": "tail_blade",
+      "name": "Gaine draconique",
+      "category": "tail",
+      "rarity": "legendary",
+      "price": 1500,
       "description": "Une gaine d'or ardent qui couvre la queue jusqu'à sa pointe.",
-      "asset": "eq_tail_legendary_01", "compatibleDragonStages": ["young", "adult", "legendary"], "animationProfile": "pulse", "stats": null,
-      "placeholder": { "shape": "blade", "tint": "#3a2f1a" } },
-
-    { "id": "fx_dark_smoke", "name": "Fumée sombre", "category": "effects", "rarity": "common", "price": 150,
+      "asset": "eq_tail_legendary_01",
+      "compatibleDragonStages": [
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "pulse",
+      "stats": null,
+      "placeholder": {
+        "shape": "blade",
+        "tint": "#3a2f1a"
+      }
+    },
+    {
+      "id": "fx_dark_smoke",
+      "name": "Fumée sombre",
+      "category": "effects",
+      "rarity": "common",
+      "price": 120,
       "description": "Une brume noire s'échappe de ses écailles.",
-      "asset": "eq_effects_common_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "effect": "darkSmoke", "stats": null },
-    { "id": "fx_blue_aura", "name": "Aura bleutée", "category": "effects", "rarity": "rare", "price": 400,
+      "asset": "eq_effects_common_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "effect": "darkSmoke",
+      "stats": null
+    },
+    {
+      "id": "fx_blue_aura",
+      "name": "Aura bleutée",
+      "category": "effects",
+      "rarity": "rare",
+      "price": 320,
       "description": "Un halo de lumière froide l'entoure.",
-      "asset": "eq_effects_rare_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "effect": "blueAura", "stats": null },
-    { "id": "fx_violet_flames", "name": "Flammes violettes", "category": "effects", "rarity": "epic", "price": 900,
+      "asset": "eq_effects_rare_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "effect": "blueAura",
+      "stats": null
+    },
+    {
+      "id": "fx_violet_flames",
+      "name": "Flammes violettes",
+      "category": "effects",
+      "rarity": "epic",
+      "price": 720,
       "description": "Des flammes arcaniques dansent autour de lui.",
-      "asset": "eq_effects_epic_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "effect": "violetFlames", "stats": null },
-    { "id": "fx_gold_aura", "name": "Aura dorée", "category": "effects", "rarity": "legendary", "price": 2000,
+      "asset": "eq_effects_epic_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "effect": "violetFlames",
+      "stats": null
+    },
+    {
+      "id": "fx_gold_aura",
+      "name": "Aura dorée",
+      "category": "effects",
+      "rarity": "legendary",
+      "price": 1500,
       "description": "La lumière des légendes émane de lui.",
-      "asset": "eq_effects_legendary_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "effect": "goldAura", "stats": null },
-
-    { "id": "head_harvest_mask", "name": "Masque de la Lune rousse", "category": "head", "rarity": "epic", "price": 1100,
+      "asset": "eq_effects_legendary_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "effect": "goldAura",
+      "stats": null
+    },
+    {
+      "id": "head_harvest_mask",
+      "name": "Masque de la Lune rousse",
+      "category": "head",
+      "rarity": "epic",
+      "price": 1100,
       "description": "Collection Halloween. Un masque d'os sculpté, aux yeux d'ambre.",
-      "asset": "eq_head_epic_halloween_01", "compatibleDragonStages": ["baby", "young", "adult", "legendary"], "animationProfile": "rigid", "stats": null,
+      "asset": "eq_head_epic_halloween_01",
+      "compatibleDragonStages": [
+        "baby",
+        "young",
+        "adult",
+        "legendary"
+      ],
+      "animationProfile": "rigid",
+      "stats": null,
       "collection": "halloween",
-      "placeholder": { "shape": "helmet", "tint": "#e07a22" } }
+      "placeholder": {
+        "shape": "helmet",
+        "tint": "#e07a22"
+      }
+    }
   ]
 }

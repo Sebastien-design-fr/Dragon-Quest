@@ -4,13 +4,19 @@
 export type SoundId = 'purr' | 'chirp' | 'baby' | 'roar_young' | 'roar_adult' | 'roar_legendary' | 'grumble' | 'fire' | 'eat'
   | 'attack' | 'wings' | 'coins' | 'gem' | 'chest' | 'levelup' | 'evolution';
 
-const GAIN: Partial<Record<SoundId, number>> = { coins: 1.6, gem: 1.6, chest: 1.4, purr: 0.9, roar_legendary: 0.9, evolution: 0.9 };
+// Mixage volontairement contenu : les récompenses restent lisibles sans couvrir la voix du dragon.
+const GAIN: Partial<Record<SoundId, number>> = {
+  coins: 1.05, gem: 1.1, chest: 1.0, levelup: 0.95, evolution: 0.9,
+  wings: 0.72, fire: 0.82, attack: 0.85, eat: 0.8, purr: 0.72,
+  baby: 0.82, chirp: 0.78, roar_young: 0.82, roar_adult: 0.86, roar_legendary: 0.88,
+  grumble: 0.68
+};
 
 class SoundManager {
   private ctx: AudioContext | null = null;
   private buffers = new Map<SoundId, Promise<AudioBuffer | null>>();
   private playing = new Map<SoundId, AudioBufferSourceNode>();
-  volume = 0.7;
+  volume = 0.65;
   muted = false;
 
   private audio(): AudioContext | null {
@@ -80,7 +86,7 @@ class SoundManager {
       level_up: () => void this.play('levelup', { user: true }),
       evolution: () => void this.play('evolution', { user: true }),
       wake: () => void this.play('grumble', { user: true, rate: pitch }),
-      hover: () => void this.play('wings', { user: true }),
+      hover: () => void this.play('wings', { once: true, user: true, gain: 0.85 }),
       dance: () => void this.play('wings', { user: true, gain: 0.6 }),
       shake: () => void this.play('wings', { user: true, gain: 0.5, rate: 1.3 }),
       giggle: () => { void this.play(voice, { user: true, rate: pitch * 1.25 }); setTimeout(() => void this.play(voice, { user: true, rate: pitch * 1.35, gain: 0.7 }), 380); },

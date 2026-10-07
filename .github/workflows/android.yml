@@ -7,7 +7,7 @@ name: Android APK
 
 on:
   push:
-    branches: [main, dev, visual-engine-upgrade]
+    branches: [main, dev, visual-engine-upgrade, v1-polish]
     tags: ['v*']
   workflow_dispatch:
 
@@ -93,6 +93,17 @@ jobs:
         with:
           tag_name: visual-test
           name: Test moteur graphique (build ${{ github.run_number }})
+          prerelease: true
+          make_latest: false
+          files: quete-du-dragon.apk
+
+      # Branche de préparation 0.18 : APK installable sans remplacer la version familiale "latest".
+      - name: APK de test (v1-polish)
+        if: github.ref == 'refs/heads/v1-polish'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1-polish-test
+          name: Quête du Dragon 0.18 — test (build ${{ github.run_number }})
           prerelease: true
           make_latest: false
           files: quete-du-dragon.apk

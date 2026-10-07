@@ -171,6 +171,8 @@ export class DragonView {
   /** Dragon tourné vers la gauche (invité face à l'hôte). */
   mirrored = false;
   placeTarget = { x: 0, scale: 1 };
+  /** Croissance propre au stade, indépendante du cadrage des illustrations source. */
+  private stageDisplayScale = 1;
   /** Dessiner le décor (faux pour un dragon invité superposé). */
   showBackdrop = true;
   /** Regard : direction visée par la tête (-1..1), suivie en douceur. */
@@ -247,6 +249,7 @@ export class DragonView {
     const rig = rigPath ? await loadJSON<RigDef>(rigPath)
       : (own && own !== stage.rig ? await loadJSON<RigDef>(own).catch(() => null) : null) ?? await loadJSON<RigDef>(stage.rig);
     this.stage = stage;
+    this.stageDisplayScale = stage.displayScale ?? 1;
     this.rig = rig;
     this.skeleton = new Skeleton(rig);
     // Libère les assets du stade précédent, charge uniquement ceux du nouveau.
@@ -780,7 +783,7 @@ export class DragonView {
       else zoom = 1 + this.camFx.amp * (u < 0.25 ? Math.sin((u / 0.25) * Math.PI / 2) : 0.5 + 0.5 * Math.cos(((u - 0.25) / 0.75) * Math.PI));
     }
     if (this.evo) zoom *= 1 + this.evo.c.zoom * this.evo.f.zoom;
-    const s = s0 * this.placement.scale * zoom;
+    const s = s0 * this.placement.scale * this.stageDisplayScale * zoom;
     // demi-tour en vol : le dragon pivote (largeur qui passe par zéro) au lieu de se retourner d'un coup
     const want = this.mirrored ? -1 : 1;
     this.facing = this.flight ? damp(this.facing, want, 9, dt) : want;

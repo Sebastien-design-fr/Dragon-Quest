@@ -185,11 +185,9 @@ export class ChestScreen implements Screen {
     for (const def of owned) {
       const equipped = s.isEquipped(def.id);
       const compatible = s.isCompatible(def);
-      const locked = s.locked.has(def.id);
       const cat = app.catalog.categories.get(def.category);
       let action: HTMLElement;
       if (equipped) action = h('button', { class: 'btn cp-act', onclick: () => s.unequip(def.category) }, 'Retirer');
-      else if (locked) action = h('button', { class: 'btn cp-act', disabled: true }, 'Confisqué');
       else if (!compatible) action = h('button', { class: 'btn cp-act', disabled: true, title: `Compatible : ${stageNames(app, def)}` }, 'Trop petit');
       else action = h('button', { class: 'btn primary cp-act', onclick: () => {
         const r = s.equip(def.id);

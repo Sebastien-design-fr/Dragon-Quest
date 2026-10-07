@@ -7,7 +7,7 @@ type Draft = Mission;
 type View = 'list' | 'week';
 
 const blank = (once = false): Draft => ({
-  id: newId('m_'), title: '', xp: 15, gold: 8, validation: 'parent', days: once ? [] : [1, 2, 3, 4, 5], time: once ? null : '18:00', once
+  id: newId('m_'), title: '', xp: 12, gold: 6, validation: 'parent', days: once ? [] : [1, 2, 3, 4, 5], time: once ? null : '18:00', once
 });
 
 /** Ordre d'affichage des jours : du lundi au dimanche (0 = dimanche dans le modèle). */
@@ -89,8 +89,8 @@ export class ParentMissionsScreen implements Screen {
     el.append(
       h('div', { class: 'row pm-add' },
         h('button', { class: 'btn primary', onclick: () => this.open(blank()) }, icon(ICONS.plus, 16), ' Mission'),
-        h('button', { class: 'btn', onclick: () => this.open({ ...blank(true), xp: 40, gold: 25 }) }, icon(ICONS.spark, 16), ' Quête spéciale'),
-        h('button', { class: 'btn', onclick: () => this.open({ ...blank(), xp: 30, gold: 15, time: null, days: [...ALL], optional: true }) }, icon(ICONS.star, 16), ' Quête bonus')),
+        h('button', { class: 'btn', onclick: () => this.open({ ...blank(true), xp: 35, gold: 18 }) }, icon(ICONS.spark, 16), ' Quête spéciale'),
+        h('button', { class: 'btn', onclick: () => this.open({ ...blank(), xp: 24, gold: 12, time: null, days: [...ALL], optional: true }) }, icon(ICONS.star, 16), ' Quête bonus')),
       this.templates(snap.missions));
 
     el.append(h('div', { class: 'segmented two', role: 'tablist' },
@@ -103,7 +103,7 @@ export class ParentMissionsScreen implements Screen {
     else el.append(this.view === 'list' ? this.list(id!, snap) : this.calendar(snap));
 
     el.append(
-      h('p', { class: 'small muted' }, 'Les quêtes bonus sont facultatives : elles rapportent plus (et 2 gemmes) et ne sont jamais sanctionnées.'),
+      h('p', { class: 'small muted' }, 'Les quêtes bonus sont facultatives : elles rapportent davantage et 2 gemmes. Les missions oubliées ne retirent jamais de progression.'),
       h('p', { class: 'small muted' }, 'Les modifications partent vers le téléphone de l’enfant par le Wi-Fi de la maison (ou dès son retour).'));
     el.append(this.rewardsCard(id!, snap.rewards ?? []));
   }

@@ -117,9 +117,6 @@ export class GameState {
     return lost;
   }
 
-  /** Objets confisqués (sanction) : impossibles à équiper tant qu'ils ne sont pas rendus. */
-  locked = new Set<string>();
-
   addGold(n: number): void { this.data.gold = Math.max(0, this.data.gold + n); this.commit(); }
 
   // ---------- Boutique & inventaire ----------
@@ -148,7 +145,6 @@ export class GameState {
   equip(id: string): ActionResult {
     const def = this.catalog.item(id);
     if (!def || !this.owns(id)) return { ok: false, reason: 'Objet non possédé.' };
-    if (this.locked.has(id)) return { ok: false, reason: 'Objet confisqué : fais toutes tes missions d’une journée pour le récupérer.' };
     const was = this.data.equipped[def.category];
     this.data.equipped[def.category] = id; // un objet par catégorie : remplace l'éventuel précédent
     this.commit();

@@ -1,10 +1,8 @@
-import { energyLabel } from '../../family/badges.js';
 import type { Companion } from '../../family/Companion.js';
 import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon, put } from '../dom.js';
 import { openSheet } from './common.js';
 import { Sound } from '../../engine/Sound.js';
-import { todayKey } from '../../family/model.js';
 import { fill, journeyFor, landmarks } from '../../family/Expedition.js';
 import { openLair } from '../Lair.js';
 import { shareCard } from '../ShareCard.js';
@@ -75,27 +73,17 @@ export class DragonScreen implements Screen {
       } }, 'Valider')));
   }
 
-  /** Une seule alerte à la fois, la plus importante. */
+  /** Une seule alerte à la fois : un rappel utile et positif. */
   private alertCard(comp: Companion): HTMLElement | null {
     const { app } = this;
     const book = app.family.book;
     if (!book) return null;
-    const lp = book.data.lastPenalty;
-    const rule = book.severityRule();
-    const energy = book.data.energy ?? 100;
-    let title = '', text = '', tone = 'warn';
-    if (lp && lp.date === todayKey()) { title = 'Quêtes oubliées hier'; text = `${lp.missed.join(', ')}. Perdu : ${lp.xp} XP et ${lp.gold} or. Règle fixée par tes parents : ${rule.label}.`; tone = 'bad'; }
-    else if (comp.data.sick) { title = `${comp.name} est malade`; text = 'Pas de tours ni de jeux, pas de bonus d’XP. Une journée où toutes les quêtes sont faites le guérira.'; tone = 'bad'; }
-    else if (book.data.confiscated) { const def = app.catalog.item(book.data.confiscated.id); title = 'Objet confisqué'; text = `${def?.name ?? 'Un équipement'} : rendu après une journée parfaite.`; }
-    else if (energy < 25) { const en = energyLabel(energy); title = `Énergie : ${en.label}`; text = `${en.detail}. Fais tes quêtes pour lui redonner des forces !`; }
-    else {
-      const cost = book.pendingCost();
-      if (cost.count && new Date().getHours() >= 17) { title = 'Ce soir'; text = `Encore ${cost.count} quête${cost.count > 1 ? 's' : ''}. Oubliées, elles coûteront ${cost.xp} XP et ${cost.gold} or demain matin.`; }
-    }
-    if (!title) return null;
-    return h('button', { class: `ds-alert ${tone}`, onclick: () => app.show('missions') },
-      icon(tone === 'bad' ? ICONS.shield : ICONS.clock, 20),
-      h('span', { class: 'grow' }, h('strong', null, title), h('span', { class: 'small' }, text)),
+    const count = book.pendingCount();
+    if (!count || new Date().getHours() < 17) return null;
+    const text = `Encore ${count} quête${count > 1 ? 's' : ''} aujourd’hui. Termine-les pour gagner tes récompenses et faire progresser ${comp.name} !`;
+    return h('button', { class: 'ds-alert warn', onclick: () => app.show('missions') },
+      icon(ICONS.clock, 20),
+      h('span', { class: 'grow' }, h('strong', null, 'Ce soir'), h('span', { class: 'small' }, text)),
       h('span', { class: 'chev' }, '›'));
   }
 
