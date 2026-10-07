@@ -397,3 +397,72 @@ body {
   background: rgba(12,19,31,.95);
   box-shadow: 0 10px 28px rgba(0,0,0,.28);
 }
+
+
+/* Dragon Mission 0.19 — onboarding + grotte */
+.setup-card {
+  overflow: hidden;
+  border-color: rgba(226,184,90,.28);
+  background:
+    radial-gradient(120% 70% at 0% 0%, rgba(56,92,151,.22), transparent 55%),
+    linear-gradient(180deg, rgba(27,38,60,.97), rgba(14,22,37,.98));
+}
+.setup-brand { display:flex; align-items:center; gap:14px; padding-bottom:12px; border-bottom:1px solid rgba(226,184,90,.16); }
+.setup-brand img { width:78px; height:78px; border-radius:20px; object-fit:cover; box-shadow:0 10px 30px rgba(0,0,0,.38), 0 0 0 1px rgba(255,228,160,.24); }
+.setup-brand h2 { font-size:26px; }
+.setup-brand p { margin-top:4px; }
+.role-btn {
+  min-height:150px;
+  justify-content:center;
+  border-color:rgba(226,184,90,.2);
+  background:linear-gradient(160deg, rgba(38,52,79,.96), rgba(20,29,47,.98));
+  box-shadow:0 12px 28px rgba(0,0,0,.2);
+}
+.role-btn:hover, .role-btn:focus-visible { border-color:var(--gold); }
+.role-btn svg { color:var(--gold-soft); filter:drop-shadow(0 0 10px rgba(226,184,90,.2)); }
+
+.lair {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(39,63,103,.24), transparent 45%),
+    #060b13;
+}
+.lair-top {
+  z-index:3; padding:8px 10px; border-radius:16px;
+  background:rgba(8,14,24,.72); border:1px solid rgba(226,184,90,.22);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  box-shadow:0 8px 28px rgba(0,0,0,.3);
+}
+.lair-title { display:flex; flex-direction:column; line-height:1.1; }
+.lair-title small { font:700 9px/1 var(--body); letter-spacing:.22em; color:var(--gold); margin-bottom:4px; }
+.lair-title strong { font-size:17px; }
+.lair-info {
+  top:calc(74px + env(safe-area-inset-top)); z-index:3; padding:8px 12px; border-radius:999px;
+  width:max-content; max-width:calc(100% - 28px); right:auto;
+  background:rgba(8,14,24,.68); border:1px solid rgba(255,255,255,.1);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+}
+.lair-panel {
+  max-height:34dvh; padding-top:12px;
+  background:linear-gradient(180deg, rgba(14,22,37,.92), rgba(8,14,24,.98));
+  border-top-color:rgba(226,184,90,.35);
+  box-shadow:0 -16px 38px rgba(0,0,0,.36);
+}
+.lair-wallet { display:flex; align-items:center; justify-content:space-between; padding:4px 2px 8px; color:var(--gold-soft); }
+.lair-wallet span { padding:5px 10px; border-radius:999px; background:rgba(226,184,90,.1); border:1px solid rgba(226,184,90,.25); }
+.decor-list { gap:8px; }
+.decor {
+  min-height:66px; border-radius:14px; border-color:rgba(226,184,90,.14);
+  background:linear-gradient(180deg, rgba(35,47,71,.96), rgba(22,31,49,.96));
+}
+.decor:not(.owned):active { transform:scale(.98); }
+.decor.owned { border-color:rgba(93,191,138,.45); opacity:.84; }
+.decor-img { width:48px; height:48px; filter:drop-shadow(0 4px 7px rgba(0,0,0,.35)); }
+
+.visit-panel {
+  border-radius:18px; padding:9px 10px;
+  background:linear-gradient(180deg, rgba(20,30,49,.9), rgba(9,15,26,.94));
+  border-color:rgba(226,184,90,.45);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  box-shadow:0 10px 30px rgba(0,0,0,.32);
+}
+.visit-title { font-size:14px; }
