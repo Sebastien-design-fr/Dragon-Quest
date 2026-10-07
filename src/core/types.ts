@@ -65,6 +65,10 @@ export interface StageDef {
   label: string;
   tagline: string;
   minLevel: number;
+  /** Taille visuelle relative du dragon dans une même scène (bébé = 1). */
+  displayScale?: number;
+  /** Taille indicative affichable dans l'UI, en mètres. */
+  sizeMeters?: number;
   rig: string;               // chemin du rig (data/rigs/<id>.json)
   permanentEffects: string[];// presets de particules toujours actifs (ex. légendaire)
 }
