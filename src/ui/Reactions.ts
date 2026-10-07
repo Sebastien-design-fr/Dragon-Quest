@@ -62,9 +62,22 @@ export function missionReaction(app: App, xp: number, gold: number): void {
     if (app.sleeping) { if (xp) floatLabel(app, `+${xp} XP`, 'xp', 0); if (gold) floatLabel(app, `+${gold}`, 'gold', 150); return 1400; }
     void app.view.play('cheer');
     app.view.emit('sparkle', 'head_anchor');
+    const host = stage(app);
+    if (host) {
+      const banner = h('div', { class: 'rx-mission' },
+        h('span', { class: 'rx-mission-k' }, 'MISSION ACCOMPLIE'),
+        h('strong', null, 'Bravo !'));
+      host.append(banner);
+      banner.animate([
+        { transform: 'translate(-50%,-8px) scale(.7)', opacity: 0 },
+        { transform: 'translate(-50%,0) scale(1.06)', opacity: 1, offset: .2 },
+        { transform: 'translate(-50%,0) scale(1)', opacity: 1, offset: .72 },
+        { transform: 'translate(-50%,-14px) scale(.96)', opacity: 0 }
+      ], { duration: 1500, easing: 'ease-out', fill: 'forwards' }).onfinish = () => banner.remove();
+    }
     if (xp) floatLabel(app, `+${xp} XP`, 'xp', 420);
     if (gold) floatLabel(app, `+${gold}`, 'gold', 560);
-    return 1600;
+    return 1700;
   });
 }
 
