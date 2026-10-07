@@ -45,7 +45,7 @@ export function openLair(app: App): void {
   const panel = h('div', { class: 'lair-panel' });
   const close = () => { cancelAnimationFrame(raf); root.remove(); app.refresh(); };
   const root = h('div', { class: 'lair' }, canvas,
-    h('div', { class: 'lair-top' }, h('strong', null, `La grotte de ${comp.name}`), h('button', { class: 'btn small-btn', onclick: close }, 'Fermer')),
+    h('div', { class: 'lair-top' }, h('div', { class: 'lair-title' }, h('small', null, 'REPAIRE'), h('strong', null, `La grotte de ${comp.name}`)), h('button', { class: 'btn small-btn', onclick: close }, 'Fermer')),
     info, panel);
   document.body.append(root);
 
@@ -102,9 +102,9 @@ export function openLair(app: App): void {
 
   const renderInfo = () => {
     const l = comp.lair();
-    info.textContent = l.debris ? `${l.debris} débris à ramasser : touche-les pour ranger la grotte.` : 'Grotte rangée. Décore-la avec l’or de tes missions !';
+    info.textContent = l.debris ? `🧹 ${l.debris} débris à ramasser · touche-les pour rendre la grotte impeccable.` : '✨ Grotte impeccable · utilise ton or pour améliorer le repaire !';
     panel.replaceChildren(
-      h('div', { class: 'small muted' }, `Or : ${app.state.data.gold}`),
+      h('div', { class: 'lair-wallet' }, h('strong', null, 'Décorations'), h('span', null, `🪙 ${app.state.data.gold} or`)),
       h('div', { class: 'decor-list' }, ...DECOR.map(d => {
         const owned = l.owned.includes(d.id);
         return h('button', { class: `decor${owned ? ' owned' : ''}`, onclick: () => {
