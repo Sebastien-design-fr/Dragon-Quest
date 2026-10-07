@@ -253,3 +253,47 @@
   .q-card, .q-card.q-stamped, .q-stamp span, .q-sparks i, .q-chip.x2, .q-perfect .q-ring, .q-banner.amber svg, .q-card.q-stamped .q-ill { animation: none !important; transition: none !important; }
   .q-sparks { display: none; }
 }
+
+
+/* Dragon Mission 0.19 — quêtes plus ludiques */
+.q-today {
+  border-color:rgba(226,184,90,.22);
+  background:
+    radial-gradient(130% 120% at 0% 0%, rgba(55,82,129,.24), transparent 56%),
+    linear-gradient(180deg, rgba(27,38,60,.97), rgba(15,23,39,.98));
+  box-shadow:0 14px 34px rgba(0,0,0,.2);
+}
+.q-card {
+  border-radius:20px;
+  border-color:rgba(226,184,90,.14);
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(65,84,119,.14), transparent 55%),
+    linear-gradient(180deg, rgba(31,42,64,.98), rgba(17,25,41,.98));
+  box-shadow:0 12px 30px rgba(0,0,0,.18);
+}
+.q-card::before { width:4px; }
+.q-title { font-size:17px; color:#fff3dc; }
+.q-chip {
+  border:1px solid rgba(255,255,255,.09);
+  background:rgba(8,14,24,.5);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.q-go {
+  min-height:48px; font-size:15px;
+  box-shadow:0 8px 18px rgba(217,168,74,.18);
+}
+.q-photo { min-height:48px; }
+.q-alldone {
+  border:1px solid rgba(103,211,153,.35); border-radius:18px; padding:14px;
+  background:linear-gradient(135deg, rgba(45,112,79,.16), rgba(18,26,42,.9));
+  color:#9be2b8;
+}
+.q-bonus {
+  border-color:rgba(226,184,90,.42);
+  background:
+    repeating-linear-gradient(135deg, rgba(226,184,90,.025) 0 12px, transparent 12px 24px),
+    linear-gradient(180deg, rgba(29,38,58,.96), rgba(16,23,38,.98));
+}
+.q-stamp span {
+  box-shadow:0 0 28px rgba(255,218,111,.28), 0 8px 24px rgba(0,0,0,.28);
+}
