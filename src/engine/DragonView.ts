@@ -171,6 +171,8 @@ export class DragonView {
   /** Dragon tourné vers la gauche (invité face à l'hôte). */
   mirrored = false;
   placeTarget = { x: 0, scale: 1 };
+  /** Croissance propre au stade, indépendante du cadrage des illustrations source. */
+  private stageDisplayScale = 1;
   /** Dessiner le décor (faux pour un dragon invité superposé). */
   showBackdrop = true;
   /** Regard : direction visée par la tête (-1..1), suivie en douceur. */
@@ -247,6 +249,7 @@ export class DragonView {
     const rig = rigPath ? await loadJSON<RigDef>(rigPath)
       : (own && own !== stage.rig ? await loadJSON<RigDef>(own).catch(() => null) : null) ?? await loadJSON<RigDef>(stage.rig);
     this.stage = stage;
+    this.stageDisplayScale = stage.displayScale ?? 1;
     this.rig = rig;
     this.skeleton = new Skeleton(rig);
     // Libère les assets du stade précédent, charge uniquement ceux du nouveau.
@@ -1176,7 +1179,7 @@ export class DragonView {
       this.lift = 0.14 * up;
       const cruise = u < 0.2 ? 0 : u > 0.82 ? 1 : (u - 0.2) / 0.62;
       this.placement.x = this.placeTarget.x + 0.1 * Math.sin(cruise * Math.PI * 2);
-      this.placement.scale = this.placeTarget.scale * (1 - 0.2 * up);
+      this.placement.scale = this.placeTarget.scale * this.stageDisplayScale * (1 - 0.2 * up);
       this.mirrored = u > 0.2 && u < 0.82 && Math.cos(cruise * Math.PI * 2) < 0 ? !f.baseMirror : f.baseMirror;
       this.airborne = up > 0.3;
       if (u >= 1) { this.flight = null; this.mirrored = f.baseMirror; }
@@ -1195,7 +1198,7 @@ export class DragonView {
     // trajectoire horizontale : aller, demi-tour, retour (pendant la phase de vol uniquement)
     const x = c.travel * Math.sin(P.cruise * Math.PI * 2);
     this.placement.x = this.placeTarget.x + x;
-    this.placement.scale = this.placeTarget.scale * (1 - c.recede * P.height);
+    this.placement.scale = this.placeTarget.scale * this.stageDisplayScale * (1 - c.recede * P.height);
     const goingLeft = P.cruise > 0 && P.cruise < 1 && Math.cos(P.cruise * Math.PI * 2) < 0;
     this.mirrored = goingLeft ? !f.baseMirror : f.baseMirror;
     // inclinaison : nez vers le haut en montée, vers le bas en descente, petite houle en vol
