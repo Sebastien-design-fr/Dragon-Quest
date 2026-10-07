@@ -1,3 +1,4 @@
+import { toggleDevPanel } from '../DevPanel.js';
 import type { QualityLevel } from '../../core/types.js';
 import { Assets } from '../../engine/AssetManager.js';
 import { LAYERS } from '../../engine/DragonView.js';
@@ -61,6 +62,7 @@ export function devToolsCard(app: App): HTMLElement {
   const stats = Assets.stats();
   return h('section', { class: 'card dev' },
     h('h3', null, 'Outils de test'),
+    h('button', { class: 'btn primary', onclick: () => toggleDevPanel(app) }, 'Panneau graphique (variantes, stades, poses)'),
     app.isParent ? null : h('div', { class: 'row' },
       h('button', { class: 'btn ghost', onclick: () => app.state.addXp(50) }, '+50 XP'),
       h('button', { class: 'btn ghost', onclick: () => app.state.addXp(app.state.xpToNext() - app.state.data.xp) }, 'Niveau suivant'),

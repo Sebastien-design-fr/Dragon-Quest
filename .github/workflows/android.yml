@@ -7,7 +7,7 @@ name: Android APK
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, dev, visual-engine-upgrade]
     tags: ['v*']
   workflow_dispatch:
 
@@ -85,6 +85,17 @@ jobs:
         with:
           name: quete-du-dragon-apk
           path: quete-du-dragon.apk
+
+      # Branche de test du moteur graphique : pré-release à part, qui ne remplace PAS le lien « latest » de la famille.
+      - name: APK de test (visual-engine-upgrade)
+        if: github.ref == 'refs/heads/visual-engine-upgrade'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: visual-test
+          name: Test moteur graphique (build ${{ github.run_number }})
+          prerelease: true
+          make_latest: false
+          files: quete-du-dragon.apk
 
       - name: Release (branche main et tags uniquement)
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')

@@ -143,6 +143,9 @@ export class SpriteSkin {
   }
 }
 
+const isPow2 = (n: number) => (n & (n - 1)) === 0;
+const nextPow2 = (n: number) => 2 ** Math.ceil(Math.log2(n));
+
 function segDist(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
   const dx = bx - ax, dy = by - ay;
   const l2 = dx * dx + dy * dy;
@@ -181,8 +184,17 @@ function opaqueCells(img: CanvasImageSource, cols: number, rows: number): Uint8A
 
 /** Rendu WebGL du maillage dans un canvas hors écran, recopié ensuite dans le canvas 2D. */
 export class MeshRenderer {
+  /** Mipmaps (réduction propre de l'illustration, sans scintillement). Désactivables pour comparer. */
+  static mipmaps = true;
+  /** Nombre de contextes WebGL ouverts (panneau développeur). */
+  static contexts = 0;
   readonly canvas = document.createElement('canvas');
   private gl: WebGLRenderingContext;
+  /** WebGL 2 : mipmaps sur des images de toutes tailles. */
+  readonly webgl2: boolean;
+  private texMip: boolean | null = null;
+  /** Taille de la texture envoyée (après éventuelle mise en puissance de 2). */
+  texInfo = '';
   private prog: WebGLProgram;
   private posBuf: WebGLBuffer;
   private uvBuf: WebGLBuffer;
@@ -197,13 +209,19 @@ export class MeshRenderer {
   }
 
   private constructor() {
-    const gl = this.canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: true, preserveDrawingBuffer: false });
+    const opts = { premultipliedAlpha: true, alpha: true, antialias: true, preserveDrawingBuffer: false };
+    const gl2 = this.canvas.getContext('webgl2', opts) as unknown as WebGLRenderingContext | null;
+    const gl = gl2 ?? (this.canvas.getContext('webgl', opts) as WebGLRenderingContext | null);
     if (!gl) throw new Error('WebGL indisponible');
     this.gl = gl;
+    this.webgl2 = !!gl2;
+    MeshRenderer.contexts++;
+    this.canvas.addEventListener('webglcontextlost', () => { MeshRenderer.contexts--; this.released = true; });
     const vs = `attribute vec2 p; attribute vec2 uv; uniform mat3 m; varying vec2 vUv;
       void main(){ vec3 q = m * vec3(p, 1.0); gl_Position = vec4(q.xy, 0.0, 1.0); vUv = uv; }`;
+    // léger biais de niveau de détail : un peu plus net sans réintroduire de scintillement
     const fs = `precision mediump float; uniform sampler2D t; varying vec2 vUv;
-      void main(){ gl_FragColor = texture2D(t, vUv); }`;
+      void main(){ gl_FragColor = texture2D(t, vUv, -0.25); }`;
     const sh = (type: number, src: string) => {
       const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s);
       if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? 'shader');
@@ -231,17 +249,51 @@ export class MeshRenderer {
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.posBuf);
     gl.bufferData(gl.ARRAY_BUFFER, mesh.positions.byteLength, gl.DYNAMIC_DRAW);
-    if (this.texImg !== img) {
+    if (this.texImg !== img || this.texMip !== MeshRenderer.mipmaps) {
       this.texImg = img;
-      gl.bindTexture(gl.TEXTURE_2D, this.tex);
-      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      this.texMip = MeshRenderer.mipmaps;
+      this.upload(img as TexImageSource & { width: number; height: number });
     }
   }
+
+  /** Envoi de l'illustration au GPU, avec mipmaps (WebGL 2 : directement ; WebGL 1 : image redimensionnée en puissance de 2). */
+  private upload(img: TexImageSource & { width: number; height: number }): void {
+    const gl = this.gl;
+    const mip = MeshRenderer.mipmaps;
+    gl.bindTexture(gl.TEXTURE_2D, this.tex);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    let src: TexImageSource = img;
+    let w = img.width, h = img.height;
+    if (mip && !this.webgl2 && (!isPow2(w) || !isPow2(h))) {
+      // WebGL 1 : pas de mipmaps sans puissance de 2 → image agrandie au format puissance de 2 (les UV restent 0..1)
+      const c = document.createElement('canvas');
+      c.width = Math.min(4096, nextPow2(w)); c.height = Math.min(4096, nextPow2(h));
+      const g = c.getContext('2d')!;
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+      g.drawImage(img as CanvasImageSource, 0, 0, c.width, c.height);
+      src = c; w = c.width; h = c.height;
+    }
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+    if (mip) {
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      const aniso = gl.getExtension('EXT_texture_filter_anisotropic');
+      if (aniso) gl.texParameterf(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT, 4);
+    } else gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    this.texInfo = `${w}×${h}${mip ? ' + mipmaps' : ''}${this.webgl2 ? ' (WebGL 2)' : ' (WebGL 1)'}`;
+  }
+
+  /** Libère le contexte WebGL (vue supprimée, changement de stade) : évite d'en accumuler. */
+  release(): void {
+    if (this.released) return;
+    this.released = true;
+    this.gl.getExtension('WEBGL_lose_context')?.loseContext();
+    this.canvas.width = this.canvas.height = 1;
+  }
+  private released = false;
 
   get ready(): boolean { return !!this.mesh && !this.gl.isContextLost(); }
 

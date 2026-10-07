@@ -1,6 +1,8 @@
 // Décor derrière le dragon (un par stade) : image peinte si elle existe (assets/backgrounds/bg_<stade>),
 // sinon un décor de grotte dessiné. Par-dessus : lueurs qui vacillent et particules d'ambiance.
 // Le décor bouge à peine avec la caméra (parallaxe) pour donner de la profondeur.
+// RÈGLE : l'image du décor est affichée telle quelle (ni flou, ni assombrissement, ni zoom animé).
+// Les ambiances (lueurs, poussières, teinte de nuit) sont des couches séparées, désactivables.
 import type { Mat2D } from '../core/math.js';
 
 export interface BackdropDef {
@@ -17,22 +19,28 @@ export class Backdrop {
   private def: BackdropDef | null = null;
   private img: HTMLImageElement | HTMLCanvasElement | null = null;
   private painted: HTMLCanvasElement | null = null;
+  /** Décor mis une fois à la taille de l'écran (rééchantillonnage de qualité), puis recopié pixel pour pixel. */
+  private scaled: HTMLCanvasElement | null = null;
+  private scaledKey = '';
   private paintedKey = '';
   private motes: Mote[] = [];
   private stageId = '';
-  /** Nuit : décor assombri et bleuté. */
+  /** Nuit : voile bleuté posé par-dessus le décor (couche séparée). */
   night = 0;
+  /** Couches d'ambiance indépendantes du décor, désactivables une par une. */
+  readonly layers = { lights: true, motes: true, tint: true };
 
   setStage(stageId: string, def: BackdropDef | null, imagePath: string | null): void {
     this.stageId = stageId;
     this.def = def;
     this.img = null;
     this.painted = null;
+    this.scaled = null; this.scaledKey = '';
     this.motes = [];
     if (imagePath) {
       const im = new Image();
       im.decoding = 'async';
-      im.onload = () => { if (this.stageId === stageId) this.img = soften(im); };
+      im.onload = () => { if (this.stageId === stageId) this.img = im; };
       im.src = imagePath;
     }
   }
@@ -43,20 +51,19 @@ export class Backdrop {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (!def) return;
     const iw = this.img?.width || 1536, ih = this.img?.height || 1024;
-    // « cover » un peu agrandi (marge pour la parallaxe et la respiration lente)
-    const zoom = 1.06 + Math.sin(time * 0.05) * 0.01;
-    const s = Math.max(W / iw, H / ih) * zoom;
+    // « cover » exact : la scène est remplie sans bandes (recadrage minimal nécessaire), image non modifiée
+    const s = Math.max(W / iw, H / ih);
     const dw = iw * s, dh = ih * s;
     let top = feetY - def.floor * dh;
     top = Math.min(0, Math.max(H - dh, top));
-    const left = (W - dw) / 2 - shiftX * 0.15;
-    if (this.img) ctx.drawImage(this.img, left, top, dw, dh);
+    const left = Math.min(0, Math.max(W - dw, (W - dw) / 2 - shiftX * 0.15));
+    if (this.img) ctx.drawImage(this.fit(this.img, dw, dh), Math.round(left), Math.round(top));
     else ctx.drawImage(this.paint(def, Math.round(W), Math.round(H), feetY), 0, 0);
 
     if (!effects) { this.nightTint(ctx, W, H); return; }
     // Lueurs (torches, braseros, lave…)
     ctx.globalCompositeOperation = 'lighter';
-    for (const [i, l] of def.lights.entries()) {
+    if (this.layers.lights) for (const [i, l] of def.lights.entries()) {
       const f = 1 - l.flicker * 0.5 + l.flicker * 0.5 * (Math.sin(time * 9 + i * 2) * 0.5 + Math.sin(time * 13.7 + i) * 0.3 + 0.2);
       const x = left + l.x * dw, y = top + l.y * dh, r = l.r * Math.max(dw, dh) * 0.5;
       const g = ctx.createRadialGradient(x, y, 0, x, y, r);
@@ -66,12 +73,28 @@ export class Backdrop {
       ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
     ctx.globalCompositeOperation = 'source-over';
-    this.ambient(ctx, W, H, dt, def.ambient);
+    if (this.layers.motes) this.ambient(ctx, W, H, dt, def.ambient);
     this.nightTint(ctx, W, H);
   }
 
+  /** Copie du décor à la taille d'affichage, faite une seule fois par taille (pas de rééchantillonnage à chaque image). */
+  private fit(img: HTMLImageElement | HTMLCanvasElement, dw: number, dh: number): HTMLCanvasElement | HTMLImageElement {
+    const w = Math.round(dw), h = Math.round(dh);
+    const key = `${w}x${h}`;
+    if (this.scaled && this.scaledKey === key) return this.scaled;
+    try {
+      const c = this.scaled ?? document.createElement('canvas');
+      c.width = w; c.height = h;
+      const g = c.getContext('2d')!;
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+      g.drawImage(img, 0, 0, w, h);
+      this.scaled = c; this.scaledKey = key;
+      return c;
+    } catch { return img; }
+  }
+
   private nightTint(ctx: CanvasRenderingContext2D, W: number, H: number): void {
-    if (this.night <= 0) return;
+    if (this.night <= 0 || !this.layers.tint) return;
     ctx.fillStyle = `rgba(8,10,28,${0.45 * this.night})`;
     ctx.fillRect(0, 0, W, H);
   }
@@ -159,18 +182,6 @@ export class Backdrop {
     this.painted = c; this.paintedKey = key;
     return c;
   }
-}
-
-/** Profondeur de champ : décor légèrement flou et assombri pour que le dragon ressorte. */
-function soften(im: HTMLImageElement): HTMLCanvasElement | HTMLImageElement {
-  try {
-    const c = document.createElement('canvas');
-    c.width = im.naturalWidth; c.height = im.naturalHeight;
-    const g = c.getContext('2d')!;
-    g.filter = 'blur(2px) brightness(0.8) saturate(0.95)';
-    g.drawImage(im, 0, 0);
-    return c;
-  } catch { return im; }
 }
 
 function mixHex(a: string, b: string, t: number): string {

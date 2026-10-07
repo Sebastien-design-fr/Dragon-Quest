@@ -8,7 +8,7 @@
 // Chaque couche s'active / se désactive / se remplace indépendamment. Les équipements ne sont
 // JAMAIS positionnés en coordonnées écran : ils sont accrochés à un ancrage, lui-même porté
 // par un os animé. Quand la tête bouge, le casque suit ; quand l'aile bat, sa protection suit.
-import { Mat2D, lerp } from '../core/math.js';
+import { Mat2D } from '../core/math.js';
 import { loadJSON } from '../core/data.js';
 import type {
   AnimEvent, CategoryDef, EquipFit, EquipmentDef, FitTable, ParticlePreset, PartDef, QualityPreset, RarityDef, Rect, RigDef, StageDef
@@ -59,6 +59,12 @@ export interface DragonViewDeps {
 
 type PoseId = 'sleep' | 'flyUp' | 'flyDown';
 
+/** Lissage exponentiel indépendant de la cadence : même résultat à 30, 60, 90 ou 120 images/s. */
+const damp = (a: number, b: number, rate: number, dt: number) => b + (a - b) * Math.exp(-rate * dt);
+
+/** Mesures pour le panneau développeur. */
+export interface ViewStats { fps: number; frameMs: number; renderDpr: number; canvas: string; refreshHz: number; divisor: number }
+
 export class DragonView {
   readonly canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -92,6 +98,17 @@ export class DragonView {
   private raf = 0;
   private last = 0;
   private dpr = 1;
+  /** Cadence : durée moyenne entre deux rafraîchissements de l'écran, nombre de rafraîchissements par image. */
+  private vsync = 1000 / 60;
+  private vsyncLast = 0;
+  private skipped = 0;
+  private divisor = 1;
+  /** Vitesse de lecture (panneau développeur : 0,25× à 2×). */
+  timeScale = 1;
+  /** Panneau développeur : pose peinte forcée, comparaisons avant / après. */
+  debugPose: PoseId | null = null;
+  debug = { capDpr2: false, noMipmaps: false };
+  readonly stats: ViewStats = { fps: 0, frameMs: 0, renderDpr: 1, canvas: '', refreshHz: 60, divisor: 1 };
   private tmp = new Mat2D();
   private tmp2 = new Mat2D();
   private camM = new Mat2D();
@@ -201,7 +218,15 @@ export class DragonView {
     if (loop && this.clipFor(loop) !== loop) void this.animator.play(this.clipFor(loop));
   }
 
-  private dispose(): void { this.stageAssets.dispose(); this.equipAssets.dispose(); }
+  /** Vue définitivement retirée (dragon invité) : arrête la boucle, libère images et contextes WebGL. */
+  destroy(): void {
+    this.stop();
+    for (const v of Object.values(this.poseViews)) v?.dispose();
+    this.poseViews = {};
+    this.dispose();
+  }
+
+  private dispose(): void { this.stageAssets.dispose(); this.equipAssets.dispose(); this.mesh?.release(); this.mesh = undefined; this.skin = null; }
 
   // ---------------- Équipements ----------------
   /** Remplace l'ensemble des équipements portés (prévisualisation boutique comprise). */
@@ -383,11 +408,25 @@ export class DragonView {
   start(): void {
     const tick = (now: number) => {
       this.raf = requestAnimationFrame(tick);
-      const minDt = 1000 / this.quality.fpsCap - 1;
-      if (this.last && now - this.last < minDt) return;
-      const dt = this.last ? Math.min(0.05, (now - this.last) / 1000) : 0.016;
+      // Fréquence réelle de l'écran (60, 90, 120 Hz…), mesurée en continu.
+      if (this.vsyncLast) {
+        const d = now - this.vsyncLast;
+        if (d > 4 && d < 40) this.vsync += (d - this.vsync) * 0.05;
+      }
+      this.vsyncLast = now;
+      // Une image tous les N rafraîchissements, N entier : cadence régulière (90 Hz plafonné à 60 → 90, 120 Hz → 60).
+      const hz = 1000 / this.vsync;
+      this.divisor = Math.max(1, Math.floor(hz / this.quality.fpsCap + 0.05));
+      if (++this.skipped < this.divisor) return;
+      this.skipped = 0;
+      const dt = this.last ? Math.min(0.05, (now - this.last) / 1000) : 1 / 60;
+      if (this.last && now > this.last) this.stats.fps += (1000 / (now - this.last) - this.stats.fps) * 0.1;
       this.last = now;
-      this.frame(dt);
+      const t0 = performance.now();
+      this.frame(dt * this.timeScale);
+      this.stats.frameMs += (performance.now() - t0 - this.stats.frameMs) * 0.1;
+      this.stats.refreshHz = Math.round(hz);
+      this.stats.divisor = this.divisor;
     };
     this.raf = requestAnimationFrame(tick);
   }
@@ -395,9 +434,39 @@ export class DragonView {
 
   private resize(): void {
     const r = this.canvas.getBoundingClientRect();
-    this.dpr = Math.min(window.devicePixelRatio || 1, this.quality.maxResolution);
+    // Densité réelle de l'écran (plafonnée par la qualité) : pas d'agrandissement flou par le navigateur.
+    this.dpr = Math.min(window.devicePixelRatio || 1, this.debug.capDpr2 ? 2 : this.quality.maxResolution);
     this.canvas.width = Math.max(1, Math.round(r.width * this.dpr));
     this.canvas.height = Math.max(1, Math.round(r.height * this.dpr));
+    this.smoothing(this.ctx);
+    this.stats.renderDpr = Math.round(this.dpr * 100) / 100;
+    this.stats.canvas = `${this.canvas.width}×${this.canvas.height}`;
+  }
+
+  /** Lissage de qualité pour les images réduites (décor, équipements) : à réappliquer après chaque redimensionnement. */
+  private smoothing(ctx: CanvasRenderingContext2D): void {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+  }
+
+  /** État courant pour le panneau développeur. */
+  debugInfo(): { state: string; pose: string; particles: number; tex: string; contexts: number; poses: string[] } {
+    const pv = this.poseViews;
+    const pose = this.debugPose ?? (this.poseW.sleep > 0.5 ? 'sleep' : this.poseW.fly > 0.5 ? 'fly (up/down)' : 'normal');
+    let particles = this.particles.count();
+    for (const v of Object.values(pv)) if (v) particles += v.particles.count();
+    return {
+      state: [this.animator.baseId, this.animator.actionId].filter(Boolean).join(' + ') + (this.flight ? ' · vol' : ''),
+      pose, particles, tex: this.mesh?.texInfo ?? '—', contexts: MeshRenderer.contexts,
+      poses: Object.keys(pv)
+    };
+  }
+
+  /** Réglages de comparaison (panneau développeur) : appliqués immédiatement. */
+  setDebug(d: Partial<{ capDpr2: boolean; noMipmaps: boolean }>): void {
+    Object.assign(this.debug, d);
+    this.resize();
+    if (d.noMipmaps !== undefined) { MeshRenderer.mipmaps = !d.noMipmaps; this.skin = null; for (const v of Object.values(this.poseViews)) if (v) v.skin = null; }
   }
 
   private frame(dt: number): void {
@@ -422,15 +491,13 @@ export class DragonView {
     this.particles.update(dt);
 
     // Caméra : cadre du stade, interpolé pendant une évolution.
-    const k = Math.min(1, dt * 3);
-    for (const key of ['x', 'y', 'w', 'h'] as const) this.cam[key] = lerp(this.cam[key], this.camTarget[key], k);
+    for (const key of ['x', 'y', 'w', 'h'] as const) this.cam[key] = damp(this.cam[key], this.camTarget[key], 3, dt);
     const s0 = Math.min(W / this.cam.w, H / this.cam.h) * 0.94;
     const shakeX = this.shake > 0 ? (Math.random() - 0.5) * this.shake * this.dpr : 0;
     const shakeY = this.shake > 0 ? (Math.random() - 0.5) * this.shake * this.dpr : 0;
     this.shake = Math.max(0, this.shake - dt * 30);
-    const kp = Math.min(1, dt * 2.2);
-    this.placement.x = lerp(this.placement.x, this.placeTarget.x, kp);
-    this.placement.scale = lerp(this.placement.scale, this.placeTarget.scale, kp);
+    this.placement.x = damp(this.placement.x, this.placeTarget.x, 2.2, dt);
+    this.placement.scale = damp(this.placement.scale, this.placeTarget.scale, 2.2, dt);
     const s = s0 * this.placement.scale;
     const sx = this.mirrored ? -s : s;
     this.camM.a = sx; this.camM.b = 0; this.camM.c = 0; this.camM.d = s;
@@ -460,17 +527,19 @@ export class DragonView {
     // Poses peintes : fondu entre l'image debout et l'image couchée / en vol.
     const pv = this.poseViews;
     const base = this.animator.baseId ?? '', act = this.animator.actionId ?? '';
-    const wantSleep = pv.sleep && base.startsWith('sleep') && !act ? 1 : 0;
-    const wantFly = !wantSleep && pv.flyUp && pv.flyDown && (act.startsWith('fly_pose') || !!this.flight) ? 1 : 0;
-    const kw = Math.min(1, dt * 4);
-    this.poseW.sleep = lerp(this.poseW.sleep, wantSleep, kw);
-    this.poseW.fly = lerp(this.poseW.fly, wantFly, kw * 1.5);
+    let wantSleep = pv.sleep && base.startsWith('sleep') && !act ? 1 : 0;
+    let wantFly = !wantSleep && pv.flyUp && pv.flyDown && (act.startsWith('fly_pose') || !!this.flight) ? 1 : 0;
+    const dp = this.debugPose;
+    if (dp) { wantSleep = dp === 'sleep' && pv.sleep ? 1 : 0; wantFly = dp !== 'sleep' && pv[dp] ? 1 : 0; }
+    this.poseW.sleep = damp(this.poseW.sleep, wantSleep, 4, dt);
+    this.poseW.fly = damp(this.poseW.fly, wantFly, 6, dt);
     const wBase = Math.max(0, 1 - this.poseW.sleep - this.poseW.fly);
     if (wBase > 0.01) this.drawDragon(ctx, W, H, wBase);
     if (this.poseW.sleep > 0.01 && pv.sleep) pv.sleep.renderPose(ctx, this, W, H, this.poseW.sleep);
     if (this.poseW.fly > 0.01 && pv.flyUp && pv.flyDown) {
       // battements : ailes hautes / ailes basses, presque nets avec un court fondu
-      const ph = Math.min(1, Math.max(0, (Math.sin(this.time * Math.PI * 4) + 1) / 2 * 5 - 2));
+      let ph = Math.min(1, Math.max(0, (Math.sin(this.time * Math.PI * 4) + 1) / 2 * 5 - 2));
+      if (dp === 'flyUp') ph = 0; else if (dp === 'flyDown') ph = 1;
       if (1 - ph > 0.01) pv.flyUp.renderPose(ctx, this, W, H, this.poseW.fly * (1 - ph));
       if (ph > 0.01) pv.flyDown.renderPose(ctx, this, W, H, this.poseW.fly * ph);
     }
@@ -581,7 +650,10 @@ export class DragonView {
       if (d === this.skinPart && this.mesh?.ready) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         const gl = this.mesh.render(this.camM, W, H);
+        // copie pixel pour pixel : aucun filtrage nécessaire (le lissage « high » coûterait cher pour rien)
+        ctx.imageSmoothingQuality = 'low';
         ctx.drawImage(this.dirt > 0.04 ? this.withDirt(gl, W, H) : gl, 0, 0);
+        ctx.imageSmoothingQuality = 'high';
       } else if (d.part) {
         this.camM.multiply(bone.world, this.tmp).apply(ctx);
         const img = d.partPath ? Assets.peek(d.partPath) : null;
@@ -664,9 +736,13 @@ export class DragonView {
       const target = b.offset.rot + Math.max(-14, Math.min(14, vy * gy + vx * gx));
       let st = this.springs.get(name);
       if (!st) { st = { v: target, vel: 0 }; this.springs.set(name, st); }
-      const k = 140, c = 15;
-      st.vel += (k * (target - st.v) - c * st.vel) * dt;
-      st.v += st.vel * dt;
+      // intégration à pas fixe (1/240 s) : même comportement quelle que soit la cadence
+      const k = 140, c = 15, h = 1 / 240;
+      for (let left = dt; left > 1e-6; left -= h) {
+        const step = Math.min(h, left);
+        st.vel += (k * (target - st.v) - c * st.vel) * step;
+        st.v += st.vel * step;
+      }
       b.offset.rot = st.v;
     }
   }
@@ -674,7 +750,7 @@ export class DragonView {
   /** Trajectoire du vol : il monte, file d'un côté, se retourne, revient et se pose. */
   private flightTick(dt: number): void {
     const f = this.flight;
-    if (!f) { this.lift = lerp(this.lift, 0, Math.min(1, dt * 4)); return; }
+    if (!f) { this.lift = damp(this.lift, 0, 4, dt); return; }
     f.t += dt;
     const u = Math.min(1, f.t / f.dur);
     const ease = (x: number) => x * x * (3 - 2 * x);
@@ -695,8 +771,7 @@ export class DragonView {
     if (!this.skin) return;
     const L = this.look;
     if (this.time > L.until) { L.tx = 0; L.ty = 0; }
-    const k = Math.min(1, dt * 4);
-    L.x += (L.tx - L.x) * k; L.y += (L.ty - L.y) * k;
+    L.x = damp(L.x, L.tx, 4, dt); L.y = damp(L.y, L.ty, 4, dt);
     if (Math.abs(L.x) + Math.abs(L.y) < 1e-3) return;
     // vers le haut / le bas : la tête pivote ; vers l'avant / l'arrière : le cou se tend ou se recule.
     const head = sk.bone('head'), n2 = sk.bone('neck2'), n1 = sk.bone('neck1');

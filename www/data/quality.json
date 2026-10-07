@@ -1,5 +1,5 @@
 {
-  "LOW":    { "particleMultiplier": 0,   "permanentEffects": false, "fpsCap": 30, "maxResolution": 1,   "secondaryMotion": false },
-  "MEDIUM": { "particleMultiplier": 0.5, "permanentEffects": true,  "fpsCap": 60, "maxResolution": 1.5, "secondaryMotion": true },
-  "HIGH":   { "particleMultiplier": 1,   "permanentEffects": true,  "fpsCap": 60, "maxResolution": 2,   "secondaryMotion": true }
+  "LOW": {"particleMultiplier": 0, "permanentEffects": false, "fpsCap": 30, "maxResolution": 1.5, "secondaryMotion": false},
+  "MEDIUM": {"particleMultiplier": 0.5, "permanentEffects": true, "fpsCap": 60, "maxResolution": 2, "secondaryMotion": true},
+  "HIGH": {"particleMultiplier": 1, "permanentEffects": true, "fpsCap": 120, "maxResolution": 3, "secondaryMotion": true}
 }

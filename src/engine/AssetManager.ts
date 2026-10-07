@@ -73,6 +73,16 @@ class AssetManagerImpl {
     }
   }
 
+  /** Variantes de dragons présentes dans les assets (dossier contenant <variante>_<stade>_full.*). */
+  variants(): string[] {
+    const out = new Set<string>();
+    for (const f of this.available) {
+      const m = /^assets\/([^/]+)\/[^/]+\/\1_[^_/]+_full\./.exec(f);
+      if (m) out.add(m[1]);
+    }
+    return [...out].sort();
+  }
+
   stats(): { loaded: number; available: number } {
     return { loaded: this.entries.size, available: this.available.size };
   }

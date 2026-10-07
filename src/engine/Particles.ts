@@ -27,6 +27,9 @@ export class ParticleSystem {
 
   preset(id: string): ParticlePreset | undefined { return this.presets.get(id); }
 
+  /** Particules vivantes (panneau développeur). */
+  count(): number { let n = 0; for (const p of this.pool) if (p.alive) n++; return n; }
+
   /** Émetteur continu (effet équipé, aura permanente…). */
   setEmitter(id: string, presetId: string, source: EmitterSource): void {
     const preset = this.presets.get(presetId);

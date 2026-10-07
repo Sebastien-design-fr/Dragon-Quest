@@ -93,7 +93,7 @@ export class VisitScene {
     if (g) { g.placeTarget = { x: 1.3, scale: 0.72 }; void g.play('hover'); Sound.play('wings', { user: true }); }
     this.panel?.remove(); this.panel = null;
     this.app.view.placeTarget = { x: 0, scale: 1 };
-    setTimeout(() => { g?.stop(); c?.remove(); }, 2200);
+    setTimeout(() => { g?.destroy(); c?.remove(); }, 2200);
     this.guest = null; this.canvas = null; this.active = null;
     setTimeout(() => this.app.playPendingVisit(), 3000);
   }

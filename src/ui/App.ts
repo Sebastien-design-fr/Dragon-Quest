@@ -8,6 +8,7 @@ import type { Duo } from '../family/Duo.js';
 import type { Training } from '../family/Training.js';
 import { VisitScene } from './VisitScene.js';
 import { StageHud } from './StageHud.js';
+import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
 import { installShake } from './Sensors.js';
 import { hideDrape, morningCurtain, nightKey, openBlanket } from './Rituals.js';
@@ -203,6 +204,8 @@ export class App {
 
     this.renderHud();
     this.show(this.screens[0].id);
+    // ?dev=1 : panneau graphique ouvert d'office (tests)
+    if (new URLSearchParams(location.search).get('dev') === '1') { this.devMode = true; setTimeout(() => toggleDevPanel(this), 800); }
   }
 
   /** Joue la prochaine visite en attente, si notre dragon est affiché et éveillé. */
@@ -215,8 +218,19 @@ export class App {
   get isParent(): boolean { return this.family.linkState.role === 'parent'; }
   /** Le dragon affiché est-il celui de l'utilisateur de ce téléphone ? (parent : seulement sur ses écrans à lui). */
   get showingOwn(): boolean { return !this.isParent || (!!this.current && OWN_SCREENS.has(this.current.id)); }
+  /** Panneau développeur : variante affichée à la place de celle du téléphone. */
+  devVariant: string | null = null;
   /** Variante d'illustration du dragon de ce téléphone. */
-  get ownVariant(): string { return this.isParent ? 'dragonne' : 'dragon'; }
+  get ownVariant(): string { return this.devVariant ?? (this.isParent ? 'dragonne' : 'dragon'); }
+
+  /** Panneau développeur : affiche n'importe quelle variante à n'importe quel stade, sans toucher à la sauvegarde. */
+  async devShow(variant: string, stage: StageDef): Promise<void> {
+    this.devVariant = variant;
+    this.stageOverride = stage;
+    await this.view.setStage(stage, true, variant);
+    this.syncEquipment();
+    this.renderHud();
+  }
   /** Nom du stade adapté (« Dragonne adulte »…). */
   stageLabel(label: string): string {
     if (this.ownVariant !== 'dragonne') return label;
