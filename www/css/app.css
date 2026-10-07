@@ -311,7 +311,7 @@ details p { margin-top: 6px; line-height: 1.45; }
 .lair-info { position: absolute; left: 14px; right: 14px; top: calc(52px + env(safe-area-inset-top)); color: var(--text); font-size: 13px; text-shadow: 0 1px 3px #000; pointer-events: none; }
 .lair-panel { position: absolute; left: 0; right: 0; bottom: 0; max-height: 30dvh; overflow: auto; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); background: rgba(21,19,26,.94); border-top: 1px solid var(--gold); display: flex; flex-direction: column; gap: 6px; }
 .decor-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.decor { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
+.decor { display: flex; flex-direction: row; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
 .decor.owned { border-color: #4f6b3a; opacity: .75; }
 .exp-map { width: 100%; height: auto; aspect-ratio: 320 / 190; flex-shrink: 0; }
 /* Visite d'un autre dragon */
@@ -326,3 +326,6 @@ details p { margin-top: 6px; line-height: 1.45; }
 .gift-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; max-height: 34dvh; overflow: auto; }
 .gift { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
 .gift.on { border-color: var(--gold); background: #231d17; }
+
+.decor-img { width: 42px; height: 42px; object-fit: contain; flex-shrink: 0; }
+.decor-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }

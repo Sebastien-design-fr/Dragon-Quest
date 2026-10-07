@@ -37,7 +37,7 @@ export interface FamilyContext {
   duo: Duo | null;
 }
 
-export const APP_VERSION = '0.8.0';
+export const APP_VERSION = '0.9.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
