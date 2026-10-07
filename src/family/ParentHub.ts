@@ -72,8 +72,9 @@ export class ParentHub {
       }
       case 'penalty': {
         if (msg.outgoing) return false;
-        this.log(`${msg.fromName} a oublié : ${(p.missed ?? []).join(', ')} — −${p.xp} XP, −${p.gold} or${p.sick ? ' (dragon malade)' : ''}`);
-        this.events.emit('toast', `${msg.fromName} a oublié des missions`);
+        // Compatibilité avec les anciens téléphones : le message « penalty » est désormais un simple bilan, sans sanction.
+        this.log(`${msg.fromName} : missions non terminées — ${(p.missed ?? []).join(', ')}`);
+        this.events.emit('toast', `${msg.fromName} a des missions non terminées`);
         return true;
       }
       case 'badge': {
