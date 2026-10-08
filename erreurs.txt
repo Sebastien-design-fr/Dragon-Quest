@@ -1,0 +1,14 @@
+43:FAILURE: Build failed with an exception.
+44-
+45-* Where:
+46:Settings file '/home/runner/work/Dragon-Quest/Dragon-Quest/android/settings.gradle' line: 5
+47-
+48:* What went wrong:
+49-A problem occurred evaluating settings 'android'.
+50-> Cannot invoke method include() on null object
+51-
+52-* Try:
+53-> Run with --stacktrace option to get the stack trace.
+54-> Run with --info or --debug option to get more log output.
+55-> Run with --scan to get full insights.
+56-> Get more help at https://help.gradle.org.

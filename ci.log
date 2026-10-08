@@ -1,0 +1,58 @@
+✔ Adding native android project in android in 27.03ms
+✔ add in 27.32ms
+✔ Copying web assets from www to android/app/src/main/assets/public in 87.12ms
+✔ Creating capacitor.config.json in android/app/src/main/assets in 371.51μs
+✔ copy android in 93.24ms
+✔ Updating Android plugins in 637.85μs
+[info] Found 4 Capacitor plugins for android:
+       @capacitor/filesystem@7.1.9
+       @capacitor/local-notifications@7.0.7
+       @capacitor/share@7.0.4
+       capacitor-home-link@0.1.0
+✔ update android in 16.23ms
+✔ Syncing Gradle in 117.81μs
+[success] android platform added!
+Follow the Developer Workflow guide to get building:
+https://capacitorjs.com/docs/basics/workflow
+✔ Copying web assets from www to android/app/src/main/assets/public in 73.64ms
+✔ Creating capacitor.config.json in android/app/src/main/assets in 487.38μs
+✔ copy android in 83.40ms
+✔ Updating Android plugins in 751.16μs
+[info] Found 4 Capacitor plugins for android:
+       @capacitor/filesystem@7.1.9
+       @capacitor/local-notifications@7.0.7
+       @capacitor/share@7.0.4
+       capacitor-home-link@0.1.0
+✔ update android in 46.15ms
+[info] Sync finished in 0.141s
+Downloading https://services.gradle.org/distributions/gradle-8.11.1-all.zip
+.....................10%......................20%......................30%......................40%......................50%......................60%......................70%......................80%......................90%......................100%
+
+Welcome to Gradle 8.11.1!
+
+Here are the highlights of this release:
+ - Parallel load and store for Configuration Cache
+ - Java compilation errors at the end of the build output
+ - Consolidated report for warnings and deprecations
+
+For more details see https://docs.gradle.org/8.11.1/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.11.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Settings file '/home/runner/work/Dragon-Quest/Dragon-Quest/android/settings.gradle' line: 5
+
+* What went wrong:
+A problem occurred evaluating settings 'android'.
+> Cannot invoke method include() on null object
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 9s
