@@ -3,7 +3,7 @@
 
 // Voix (octobre 2026) : chuff (salut amical par le nez), snort (ébrouement), rumble (grondement de contentement),
 // yawn (bâillement), baby (petit grognement rauque) — fabriquées par art/sounds/creature.py.
-export type SoundId = 'chuff' | 'snort' | 'rumble' | 'yawn' | 'baby' | 'roar_young' | 'roar_adult' | 'roar_legendary' | 'fire' | 'eat'
+export type SoundId = 'chuff' | 'snort' | 'rumble' | 'yawn' | 'baby' | 'sleep' | 'roar_young' | 'roar_adult' | 'roar_legendary' | 'fire' | 'eat'
   | 'attack' | 'wings' | 'coins' | 'gem' | 'chest' | 'levelup' | 'evolution';
 
 const GAIN: Partial<Record<SoundId, number>> = { coins: 1.6, gem: 1.6, chest: 1.4, rumble: 1.1, chuff: 0.9, roar_legendary: 0.9, evolution: 0.9 };
@@ -59,6 +59,32 @@ class SoundManager {
     this.playing.set(id, src);
     src.onended = () => { if (this.playing.get(id) === src) this.playing.delete(id); };
     src.start();
+  }
+
+  // ---------- Ronflement doux pendant le sommeil (boucle) ----------
+  private sleepSrc: { src: AudioBufferSourceNode; g: GainNode } | null = null;
+  private sleepWant = false;
+  /** Le dragon dort : ronflement très doux en boucle (jamais la nuit, 22 h – 7 h). */
+  async sleepLoop(on: boolean): Promise<void> {
+    const h = new Date().getHours();
+    on = on && !this.muted && this.volume > 0 && !(h >= 22 || h < 7);
+    this.sleepWant = on;
+    const ctx = this.ctx;
+    if (!on) {
+      const s = this.sleepSrc; this.sleepSrc = null;
+      if (s && ctx) { const t = ctx.currentTime; s.g.gain.cancelScheduledValues(t); s.g.gain.setValueAtTime(s.g.gain.value, t); s.g.gain.linearRampToValueAtTime(0, t + 0.8); setTimeout(() => { try { s.src.stop(); } catch { /* */ } }, 900); }
+      return;
+    }
+    if (this.sleepSrc) return;
+    const ac = this.audio();
+    if (!ac || ac.state !== 'running') return;
+    const buf = await this.load('sleep');
+    if (!buf || !this.sleepWant || this.sleepSrc) return;
+    const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+    const g = ac.createGain(); g.gain.value = 0;
+    g.gain.linearRampToValueAtTime(this.volume * 0.55, ac.currentTime + 2);
+    src.connect(g).connect(ac.destination); src.start();
+    this.sleepSrc = { src, g };
   }
 
   // ---------- Sons d'interface (refonte UX, point 3) : synthétisés, aucun fichier ----------

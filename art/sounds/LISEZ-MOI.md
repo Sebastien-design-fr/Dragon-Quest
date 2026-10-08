@@ -12,3 +12,9 @@ pulsations graves). Remplacés par des voix synthétisées sur le modèle des gr
 `chuff` (salut amical par le nez), `snort` (ébrouement), `rumble` (grondement de contentement), `yawn` (bâillement),
 `baby` (petit grognement rauque), `eat` (croquant + grondement). Prochaine étape conseillée : de vrais enregistrements
 (ex. « Compendium of Dragons SFX », Atelier Magicae, usage commercial autorisé, sans redistribution des fichiers bruts).
+
+## Octobre 2026 — vrais enregistrements (Mixkit)
+`mixkit_design.py` retravaille 9 enregistrements Mixkit (licence Mixkit : usage commercial autorisé, sans attribution,
+pas de redistribution des fichiers bruts — ils restent dans `art/sounds/mixkit/`, exclu du dépôt) :
+rugissements (bébé, jeune, adulte, légendaire), contentement, ébrouement, bâillement, repas, ronflement pendant
+le sommeil, inspiration avant le feu, montée d'énergie de l'évolution. Seul le « salut » (chuff) reste synthétisé.

@@ -4,3 +4,8 @@ www/assets/manifest.json
 /android/
 *.apk
 .DS_Store
+
+# sons sources Mixkit : licence sans redistribution des fichiers bruts (seuls les sons retravaillés sont publiés)
+art/sounds/mixkit/
+art/sounds/out3/
+art/sounds/out2/

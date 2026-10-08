@@ -52,7 +52,7 @@ export interface FamilyContext {
   training: Training | null;
 }
 
-export const APP_VERSION = '0.20.0';
+export const APP_VERSION = '0.20.1';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -113,7 +113,10 @@ export class App {
   }
 
   /** Ambiance sonore du décor affiché (dragon de ce téléphone uniquement). */
-  syncAmbience(): void { Sound.ambience(this.showingOwn && !document.hidden ? this.view.stage?.id ?? null : null); }
+  syncAmbience(): void {
+    Sound.ambience(this.showingOwn && !document.hidden ? this.view.stage?.id ?? null : null);
+    void Sound.sleepLoop(this.showingOwn && this.sleeping && !document.hidden);
+  }
   /** Geste sur le dragon : caresser (par défaut) ou laver. */
   careMode: 'pet' | 'wash' = 'pet';
   private bubble: HTMLElement;
@@ -468,6 +471,7 @@ export class App {
     if (!this.sleeping) { hideDrape(); this.view.backdrop.night = isNight() ? 1 : 0; this.careMode = 'pet'; }
     this.stageHud?.render();
     this.current?.refresh?.();
+    this.syncAmbience();
   }
 
   /** Couché tout seul vers 21 h 30 (bâillement puis dodo), réveillé le matin. */
