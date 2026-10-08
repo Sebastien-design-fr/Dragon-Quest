@@ -46,7 +46,7 @@ jobs:
           cp -r resources/android/res/. android/app/src/main/res/
           # Appli de montre (tuile Galaxy Watch) : module « wear » ajouté au projet Android
           rm -rf android/wear && cp -r wear android/wear
-          grep -q "':wear'" android/settings.gradle || echo "include ':wear'" >> android/settings.gradle
+          grep -q "':wear'" android/settings.gradle || printf "\ninclude ':wear'\n" >> android/settings.gradle
 
       - name: Compilation de l'APK
         working-directory: android
