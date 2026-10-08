@@ -1,5 +1,6 @@
 import { BabyMotion } from './baby-motion.js';
 import { DepthStage } from './depth-stage.js';
+import { CharacterPoseCache } from './pose-cache.js';
 // Prototype isolé, aucun import de la logique du jeu ou changement d'APK.
 const { Application, Assets, Sprite, Container, Graphics } = window.PIXI ?? {};
 const viewport = document.getElementById('viewport');
@@ -11,6 +12,7 @@ if (!Application) {
   throw new Error('PIXI non disponible');
 }
 const babyMotion = new BabyMotion();
+const poseCache = new CharacterPoseCache(Assets);
 const app = new Application();
 await app.init({
   resizeTo: viewport, background: '#162740', preference: 'webgl',
@@ -41,13 +43,14 @@ async function selectTexture(){
   const next = pathFor(variant,stage,controls.pose.value);
   busy = true;status.textContent = 'Chargement : '+next;
   try {
-    const texture = await Assets.load(next);
+    const texture = await poseCache.load(variant,stage,controls.pose.value);
     if (id !== sequence) return;
     sprite.texture = texture;
     activePath = next;
     failures = 0;
     status.textContent = 'Texture chargée : '+texture.width+' × '+texture.height+' px — '+next;
     layout();
+    if (stage === 'baby' && pose === 'full') void poseCache.preload(variant,stage,['sleep','flyUp','flyDown']);
   } catch (err) {
     if (id !== sequence) return;
     failures++;
