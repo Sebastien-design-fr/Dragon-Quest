@@ -483,5 +483,98 @@
         "evoGlow"
       ]
     }
+  },
+  "tints": {
+    "note": "Refonte UX (point 6) — reflets d'écailles, débloqués par niveau. color : RVB 0..255 ; amount : force du reflet (0..1).",
+    "list": [
+      {
+        "id": "natural",
+        "label": "Naturel",
+        "color": [
+          0,
+          0,
+          0
+        ],
+        "amount": 0,
+        "level": 1
+      },
+      {
+        "id": "night",
+        "label": "Bleu nuit",
+        "color": [
+          70,
+          110,
+          220
+        ],
+        "amount": 0.42,
+        "level": 3
+      },
+      {
+        "id": "emerald",
+        "label": "Émeraude",
+        "color": [
+          40,
+          170,
+          110
+        ],
+        "amount": 0.4,
+        "level": 5
+      },
+      {
+        "id": "ruby",
+        "label": "Rubis",
+        "color": [
+          200,
+          50,
+          60
+        ],
+        "amount": 0.4,
+        "level": 8
+      },
+      {
+        "id": "amethyst",
+        "label": "Améthyste",
+        "color": [
+          150,
+          80,
+          210
+        ],
+        "amount": 0.42,
+        "level": 12
+      },
+      {
+        "id": "frost",
+        "label": "Givre",
+        "color": [
+          170,
+          210,
+          240
+        ],
+        "amount": 0.38,
+        "level": 16
+      },
+      {
+        "id": "ember",
+        "label": "Braise",
+        "color": [
+          235,
+          120,
+          40
+        ],
+        "amount": 0.4,
+        "level": 20
+      },
+      {
+        "id": "gold",
+        "label": "Or ancien",
+        "color": [
+          220,
+          175,
+          70
+        ],
+        "amount": 0.45,
+        "level": 30
+      }
+    ]
   }
 }

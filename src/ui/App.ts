@@ -9,6 +9,7 @@ import type { Training } from '../family/Training.js';
 import { VisitScene } from './VisitScene.js';
 import { StageHud } from './StageHud.js';
 import { UI, installTouchFeedback } from './Motion.js';
+import { applyTint } from './Appearance.js';
 import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
@@ -344,6 +345,7 @@ export class App {
 
   refresh(): void {
     this.syncWidget();
+    if (this.showingOwn) applyTint(this); else this.view.tint = null;
     this.renderHud();
     this.stageHud?.render();
     this.current?.refresh?.();
@@ -744,6 +746,7 @@ export class App {
       h('div', { class: 'gold' }, icon(ICONS.coin, 18), h('span', null, d.gold.toLocaleString('fr-FR')))
     );
     this.root.dataset.stage = stage.id;
+    document.documentElement.dataset.stage = stage.id; // couleurs du stade aussi dans les panneaux
     // l'or défile jusqu'à sa nouvelle valeur, la barre d'XP glisse au lieu de sauter
     const goldEl = this.hud.querySelector<HTMLElement>('.gold span');
     if (goldEl && this.shownGold !== null && this.shownGold !== d.gold) { UI.countUp(goldEl, this.shownGold, d.gold); UI.bump(goldEl.parentElement!); }

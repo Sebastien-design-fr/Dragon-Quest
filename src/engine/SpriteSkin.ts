@@ -235,11 +235,19 @@ class SharedGL {
       uniform float uRim; uniform float uRimW; uniform vec3 uRimC;
       uniform float uTop; uniform float uBottom; uniform float uExposure;
       uniform float uGlow; uniform vec3 uGlowC; uniform float uLit;
+      uniform vec3 uTint; uniform float uTintAmt;
       float A(vec2 o, float b){ return texture2D(t, vUv + o, b).a; }
       void main(){
         vec4 c = texture2D(t, vUv, -0.25);
-        if (uLit < 0.5 || c.a < 0.004) { gl_FragColor = c; return; }
+        if (c.a < 0.004) { gl_FragColor = c; return; }
         vec3 col = c.rgb / c.a;
+        // reflets d'écailles choisis (personnalisation) : surtout sur les tons sombres et moyens, les reflets dorés restent
+        if (uTintAmt > 0.001) {
+          float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+          float m = uTintAmt * (1.0 - smoothstep(0.35, 0.8, lum));
+          col = mix(col, uTint * (0.35 + lum * 1.6), m);
+        }
+        if (uLit < 0.5) { gl_FragColor = vec4(col * c.a, c.a); return; }
         float l = dot(uAmbient, vec3(0.2126, 0.7152, 0.0722));
         vec3 tint = min(uAmbient / max(l, 0.05), vec3(1.6)) * 0.92;
         col *= mix(vec3(1.0), tint, uAmbientMix);
@@ -277,7 +285,7 @@ class SharedGL {
     this.prog = prog;
     this.uMat = gl.getUniformLocation(prog, 'm')!;
     this.u = {};
-    for (const n of ['uTexel', 'uAmbient', 'uAmbientMix', 'uDir', 'uLight', 'uLightStr', 'uRim', 'uRimW', 'uRimC', 'uTop', 'uBottom', 'uExposure', 'uGlow', 'uGlowC', 'uLit']) this.u[n] = gl.getUniformLocation(prog, n);
+    for (const n of ['uTexel', 'uAmbient', 'uAmbientMix', 'uDir', 'uLight', 'uLightStr', 'uRim', 'uRimW', 'uRimC', 'uTop', 'uBottom', 'uExposure', 'uGlow', 'uGlowC', 'uLit', 'uTint', 'uTintAmt']) this.u[n] = gl.getUniformLocation(prog, n);
     this.aniso = gl.getExtension('EXT_texture_filter_anisotropic');
     gl.useProgram(prog);
     gl.enable(gl.BLEND);
@@ -397,8 +405,14 @@ export class MeshRenderer {
     this.texInfo = `${w}×${h}${mip ? ' + mipmaps' : ''}${this.webgl2 ? ' (WebGL 2)' : ' (WebGL 1)'} · contexte partagé`;
   }
 
+  /** Reflets d'écailles (couleur 0..1, intensité 0..1), null = couleurs d'origine. */
+  tint: { color: [number, number, number]; amount: number } | null = null;
+
   private applyLighting(): void {
     const gl = this.s.gl, U = this.s.u, L = this.lighting;
+    const T = this.tint;
+    gl.uniform3f(U.uTint, T?.color[0] ?? 0, T?.color[1] ?? 0, T?.color[2] ?? 0);
+    gl.uniform1f(U.uTintAmt, T?.amount ?? 0);
     if (!L || !L.u.enabled) { gl.uniform1f(U.uLit, 0); return; }
     const u = L.u;
     gl.uniform1f(U.uLit, 1);

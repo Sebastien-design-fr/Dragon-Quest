@@ -14,6 +14,7 @@ import { dailyChestCard, nextStageCard } from '../SurprisesUI.js';
 import { familyQuestCard } from '../FamilyQuestCard.js';
 import { openPhotoMode } from '../PhotoMode.js';
 import { questDeck, questDeckBusy } from '../QuestDeck.js';
+import { appearanceSheet, collectionCard } from '../Appearance.js';
 
 export class DragonScreen implements Screen {
   id = 'dragon'; label = 'Dragon'; icon = ICONS.dragon;
@@ -33,7 +34,7 @@ export class DragonScreen implements Screen {
     if (!comp) return;
     // Refonte UX : la prochaine quête d'abord (un seul geste), puis « À découvrir » en carrousel horizontal.
     const discover = [
-      dailyChestCard(app), nextStageCard(app),
+      dailyChestCard(app), nextStageCard(app), collectionCard(app),
       book ? this.expeditionCard(comp) : null,
       app.family.duo ? familyQuestCard(app) : null,
       app.family.duo ? this.friendCard(comp) : null
@@ -46,9 +47,10 @@ export class DragonScreen implements Screen {
       h('div', { class: 'disc' }, ...discover.map(c => h('div', { class: 'disc-item' }, c))),
       h('div', { class: 'ds-tools' },
         h('button', { class: 'ds-tool', onclick: () => openLair(app) }, icon(ICONS.dragon, 22), h('span', null, 'Sa grotte')),
+        h('button', { class: 'ds-tool', onclick: () => appearanceSheet(app) }, icon(ICONS.drop, 22), h('span', null, 'Reflets')),
         h('button', { class: 'ds-tool', onclick: () => openPhotoMode(app) }, icon(ICONS.star, 22), h('span', null, 'Photo')),
         h('button', { class: 'ds-tool', onclick: () => void shareCard(app) }, icon(ICONS.gift, 22), h('span', null, 'Partager')),
-        app.isParent ? h('button', { class: 'ds-tool', onclick: () => this.albumSheet(comp) }, icon(ICONS.album, 22), h('span', null, 'Album')) : null,
+        h('button', { class: 'ds-tool', onclick: () => this.albumSheet(comp) }, icon(ICONS.album, 22), h('span', null, 'Album')),
         app.isParent ? h('button', { class: 'ds-tool', onclick: () => app.openChest('owned') }, icon(ICONS.inventory, 22), h('span', null, 'Équipements')) : null),
       h('p', { class: 'small muted ds-hint' }, app.careMode === 'wash'
         ? 'Mode lavage : frotte ses écailles avec ton doigt jusqu’à ce qu’il brille.'

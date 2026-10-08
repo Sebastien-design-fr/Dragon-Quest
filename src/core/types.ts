@@ -210,4 +210,6 @@ export interface SaveData {
   owned: string[];
   equipped: Record<CategoryId, string>;
   settings: { quality: QualityLevel; effects: boolean; sound?: boolean; volume?: number; ambience?: boolean; uiSounds?: boolean };
+  /** Reflets d'écailles choisis (refonte UX, point 6). */
+  tint?: string;
 }

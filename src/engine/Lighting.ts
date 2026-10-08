@@ -30,7 +30,10 @@ export interface VisualConfig {
   scenes: Record<string, Partial<SceneLight>>;
   dragons: Record<string, { shadow?: Partial<ShadowConfig>; lighting?: Partial<DragonLightConfig> }>;
   states: Record<string, StateModifier>;
+  /** Reflets d'écailles (personnalisation). */
+  tints?: { list: TintDef[] };
 }
+export interface TintDef { id: string; label: string; color: RGB; amount: number; level: number }
 
 /** Paramètres envoyés au shader du dragon pour une image. */
 export interface LightUniforms {

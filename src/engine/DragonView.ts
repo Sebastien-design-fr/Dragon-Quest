@@ -140,6 +140,8 @@ export class DragonView {
   private divisor = 1;
   /** Vitesse de lecture (panneau développeur : 0,25× à 2×). */
   timeScale = 1;
+  /** Reflets d'écailles choisis (personnalisation, refonte UX point 6). */
+  tint: { color: [number, number, number]; amount: number } | null = null;
   /** LOT 7 : résolution adaptative (baisse la densité de rendu si l'appareil ne tient pas la cadence). */
   adaptive = true;
   private adapt = { scale: 1, slow: 0, fast: 0, ups: 0 };
@@ -958,6 +960,7 @@ export class DragonView {
       if (d === this.skinPart && this.mesh?.ready) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         this.mesh.lighting = this.lightU ? { u: this.lightU, mirrored: this.camM.a < 0 } : null;
+        this.mesh.tint = this.tint;
         const gl = this.mesh.render(this.camM, W, H);
         // copie pixel pour pixel : aucun filtrage nécessaire (le lissage « high » coûterait cher pour rien)
         ctx.imageSmoothingQuality = 'low';
@@ -1016,6 +1019,7 @@ export class DragonView {
     this.camM.copy(main.camM);
     this.lightU = main.lightU;
     this.fx = main.fx;
+    this.tint = main.tint;
     this.drawDragon(ctx, W, H, alpha);
   }
 
