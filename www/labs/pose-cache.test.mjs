@@ -1,0 +1,11 @@
+import { CharacterPoseCache } from './pose-cache.js';
+import assert from 'node:assert/strict';
+let count=0;const assets={load:async p=>{count++;return {id:p};}};
+const c=new CharacterPoseCache(assets,{baseUrl:'assets',maxEntries:2});
+assert.equal((await c.load('dragon','baby','full')).id,'assets/dragon/baby/dragon_baby_full.webp');
+await c.load('dragon','baby','full');assert.equal(count,1);
+await c.preload('dragonne','baby',['flyUp','flyDown']);assert.equal(count,3);
+assert.equal(c.cache.size,2);
+assert.throws(()=>c.path('../','baby','full'));
+c.dispose();assert.equal(c.cache.size,0);
+console.log('CharacterPoseCache tests passed');
