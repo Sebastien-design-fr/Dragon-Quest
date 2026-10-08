@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 1,
+  "variant": "dragon",
+  "stage": "baby",
+  "status": "PROVISIONAL_DO_NOT_PUBLISH",
+  "source": "2026-10-08 approved concept sheet, not extracted artwork",
+  "palette": "Bleu et or",
+  "units": "design pixels at nominal scale; coordinates require calibration against final transparent parts",
+  "parts": [
+    {
+      "name": "body",
+      "parent": null,
+      "texture": "body.webp",
+      "position": [
+        0,
+        0
+      ],
+      "z": 0,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "tail",
+      "parent": "body",
+      "texture": "tail.webp",
+      "position": [
+        -102,
+        32
+      ],
+      "z": -30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "wingFar",
+      "parent": "body",
+      "texture": "wingFar.webp",
+      "position": [
+        -28,
+        -75
+      ],
+      "z": -20,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "legRearFar",
+      "parent": "body",
+      "texture": "legRearFar.webp",
+      "position": [
+        -62,
+        83
+      ],
+      "z": -15,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "legFrontFar",
+      "parent": "body",
+      "texture": "legFrontFar.webp",
+      "position": [
+        39,
+        88
+      ],
+      "z": -10,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "neck",
+      "parent": "body",
+      "texture": "neck.webp",
+      "position": [
+        30,
+        -62
+      ],
+      "z": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "head",
+      "parent": "neck",
+      "texture": "head.webp",
+      "position": [
+        20,
+        -52
+      ],
+      "z": 10,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "eye",
+      "parent": "head",
+      "texture": "eye.webp",
+      "position": [
+        21,
+        -10
+      ],
+      "z": 12,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "eyelid",
+      "parent": "head",
+      "texture": "eyelid.webp",
+      "position": [
+        21,
+        -10
+      ],
+      "z": 13,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "jaw",
+      "parent": "head",
+      "texture": "jaw.webp",
+      "position": [
+        18,
+        24
+      ],
+      "z": 14,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "wingNear",
+      "parent": "body",
+      "texture": "wingNear.webp",
+      "position": [
+        -44,
+        -71
+      ],
+      "z": 20,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "legRearNear",
+      "parent": "body",
+      "texture": "legRearNear.webp",
+      "position": [
+        -74,
+        84
+      ],
+      "z": 25,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "name": "legFrontNear",
+      "parent": "body",
+      "texture": "legFrontNear.webp",
+      "position": [
+        50,
+        93
+      ],
+      "z": 30,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "offset": [
+        0,
+        0
+      ]
+    }
+  ]
+}
