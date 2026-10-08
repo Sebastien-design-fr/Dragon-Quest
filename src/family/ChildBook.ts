@@ -699,14 +699,13 @@ export class ChildBook {
       c ? { name: c.name, line: (m, kind) => missionLine(m, kind) } : undefined, [...(c?.careNotifs() ?? []), ...this.eveningWarning(), ...this.weeklyRecap()]);
   }
 
-  /** À 20 h 30, s'il reste des missions : le dragon prévient de ce qu'elles coûteront si elles sont oubliées. */
+  /** À 20 h 30, s'il reste des missions : le dragon les rappelle gentiment (refonte UX : pas de menace). */
   private eveningWarning(): Array<{ key: string; at: Date; body: string }> {
     const cost = this.pendingCost();
     if (!cost.count) return [];
     const at = new Date(); at.setHours(20, 30, 0, 0);
-    const loss = [cost.xp ? `−${cost.xp} XP` : '', cost.gold ? `−${cost.gold} or` : ''].filter(Boolean).join(' et ');
     return [{ key: 'evening-' + todayKey(), at,
-      body: `Il te reste ${cost.count} mission${cost.count > 1 ? 's' : ''} aujourd’hui. Sinon demain : ${loss || 'je perds des forces'}… et je serai tout triste.` }];
+      body: `Il te reste ${cost.count} quête${cost.count > 1 ? 's' : ''} ce soir. On les termine ensemble ? Je t’attends !` }];
   }
 }
 

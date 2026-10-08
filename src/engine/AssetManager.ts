@@ -40,6 +40,8 @@ class AssetManagerImpl {
   background(stage: StageId): string | null {
     return this.firstAvailable(`assets/backgrounds/bg_${stage}`);
   }
+  /** Image peinte facultative (icône de quête, œuf…) : null si elle n'a pas encore été fournie. */
+  art(name: string): string | null { return this.firstAvailable(`assets/${name}`); }
   equipmentIcon(def: EquipmentDef): string | null {
     return this.firstAvailable(`assets/equipment/${def.category}/${def.asset}_icon`) ?? this.equipment(def, 'adult');
   }

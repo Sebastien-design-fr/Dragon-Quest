@@ -14,13 +14,14 @@ import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
 import { installShake } from './Sensors.js';
 import { hideDrape, morningCurtain, nightKey, openBlanket } from './Rituals.js';
-import { todayKey } from '../family/model.js';
+import { appliesOn, todayKey } from '../family/model.js';
 import { sayFor, thoughts, type Thought, type ThoughtAction } from '../family/Thoughts.js';
 import type { ParentHub } from '../family/ParentHub.js';
 import type { Reminders } from '../family/Reminders.js';
 import type { Catalog } from '../game/Catalog.js';
 import type { GameState } from '../game/GameState.js';
-import { SimTransport, type LinkState, type Transport } from '../link/Transport.js';
+import { SimTransport, type LinkState, type Transport, type WidgetData } from '../link/Transport.js';
+import { Assets } from '../engine/AssetManager.js';
 import { ICONS, clear, h, icon, put } from './dom.js';
 import { DragonScreen } from './screens/DragonScreen.js';
 import { FamilyScreen } from './screens/FamilyScreen.js';
@@ -75,6 +76,36 @@ export class App {
   private shownGold: number | null = null;
   private shownXp: number | null = null;
 
+  /** Widget d'écran d'accueil : résumé envoyé au natif (regroupé, au plus une fois toutes les 2 s). */
+  private widgetTimer = 0;
+  syncWidget(): void {
+    clearTimeout(this.widgetTimer);
+    this.widgetTimer = window.setTimeout(() => {
+      const comp = this.family.companion, book = this.family.book, hub = this.family.hub;
+      const stage = this.state.stage, name = comp?.name || (this.isParent ? 'Ta dragonne' : 'Ton dragon');
+      const days: WidgetData['days'] = [];
+      if (book) for (let i = 0; i < 7; i++) {
+        const d = new Date(); d.setDate(d.getDate() + i);
+        const key = todayKey(d);
+        const list = book.data.missions.filter(m => !m.optional && appliesOn(m, d) && !(m.once && i > 0))
+          .sort((a, b) => (a.time ?? '99').localeCompare(b.time ?? '99'));
+        const st = (id: string) => (i === 0 ? book.status(id, key) : 'todo');
+        const next = list.find(m => st(m.id) === 'todo' || st(m.id) === 'refused');
+        days.push({ date: key, total: list.length, done: list.filter(m => st(m.id) === 'done').length,
+          next: next ? `${next.title}${next.time ? ' · ' + next.time.replace(':', ' h ') : ''}` : '' });
+      }
+      const c = comp?.data;
+      const status = !c ? '' : c.sick ? `${name} est malade` : c.hunger < 30 ? `${name} a faim` : c.clean < 25 ? `${name} est tout sale` : '';
+      const pending = hub ? hub.pendingList().length : 0;
+      void this.family.link.updateWidget({
+        name, sub: `${this.stageLabel(stage.label)} · niveau ${this.state.data.level}`,
+        image: Assets.dragonPart(stage.id, 'full', this.ownVariant) ?? '', streak: book?.streak() ?? 0,
+        status, statusDate: todayKey(), days,
+        line: this.isParent ? (pending ? `${pending} demande${pending > 1 ? 's' : ''} à valider` : 'Tout est à jour') : undefined
+      });
+    }, 2000);
+  }
+
   /** Ambiance sonore du décor affiché (dragon de ce téléphone uniquement). */
   syncAmbience(): void { Sound.ambience(this.showingOwn && !document.hidden ? this.view.stage?.id ?? null : null); }
   /** Geste sur le dragon : caresser (par défaut) ou laver. */
@@ -94,6 +125,17 @@ export class App {
   constructor(readonly root: HTMLElement, readonly catalog: Catalog, readonly state: GameState, readonly view: DragonView, readonly family: FamilyContext) {
     this.hud = root.querySelector('#hud')!;
     installTouchFeedback(root);
+    // rappel touché depuis la notification ou la montre : « C'est fait ! » valide la quête
+    family.reminders.onAction((missionId, action) => {
+      const book = family.book;
+      if (!book || action !== 'done') { if (book) setTimeout(() => this.show('dragon'), 300); return; }
+      const st = book.status(missionId);
+      if (st === 'done' || st === 'pending') return;
+      setTimeout(() => {
+        this.show('dragon');
+        void book.complete(missionId).then(() => this.say('C’est noté ! Merci, tu assures.', null, 4000));
+      }, 600);
+    });
     document.addEventListener('visibilitychange', () => { if (document.hidden) Sound.stopAmbience(); else this.syncAmbience(); });
     // le contexte audio ne démarre qu'après un premier geste : l'ambiance commence à ce moment-là
     root.addEventListener('pointerdown', () => this.syncAmbience(), { once: true, capture: true });
@@ -301,6 +343,7 @@ export class App {
   openChest(seg: ChestSegment): void { this.chest.openSegment(seg); this.show('shop'); }
 
   refresh(): void {
+    this.syncWidget();
     this.renderHud();
     this.stageHud?.render();
     this.current?.refresh?.();

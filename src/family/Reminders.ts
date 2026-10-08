@@ -11,7 +11,12 @@ interface LocalNotificationsPlugin {
   schedule(o: { notifications: Array<Record<string, unknown>> }): Promise<unknown>;
   getPending(): Promise<{ notifications: Array<{ id: number }> }>;
   cancel(o: { notifications: Array<{ id: number }> }): Promise<void>;
+  registerActionTypes(o: { types: Array<{ id: string; actions: Array<{ id: string; title: string }> }> }): Promise<void>;
+  addListener(event: 'localNotificationActionPerformed', cb: (e: { actionId: string; notification: { extra?: Record<string, unknown> } }) => void): Promise<unknown>;
 }
+
+/** Boutons des rappels de quête : visibles aussi sur une montre connectée (Galaxy Watch…). */
+const QUEST_ACTIONS = 'QD_QUEST';
 
 const CHANNEL = 'qd_reminders';
 
@@ -50,6 +55,9 @@ export class Reminders {
     try {
       await this.ln.createChannel({ id: CHANNEL, name: 'Rappels de missions', description: 'Rappels à l’heure des missions', importance: 4, vibration: true });
     } catch { /* déjà créé */ }
+    try {
+      await this.ln.registerActionTypes({ types: [{ id: QUEST_ACTIONS, actions: [{ id: 'done', title: 'C’est fait !' }, { id: 'later', title: 'Plus tard' }] }] });
+    } catch { /* boutons indisponibles : la notification reste simple */ }
     this.ready = true;
   }
 
@@ -98,8 +106,21 @@ export class Reminders {
       title, body,
       channelId: CHANNEL,
       schedule: { at, allowWhileIdle: true },
-      extra: { missionId: m.id }
+      extra: { missionId: m.id },
+      actionTypeId: QUEST_ACTIONS
     };
+  }
+
+  /**
+   * Bouton d'un rappel touché (sur le téléphone ou la montre) : « done » valide la quête, « later » la laisse.
+   * Le téléphone ouvre l'appli pour enregistrer la quête (et prévenir les parents si besoin).
+   */
+  onAction(cb: (missionId: string, actionId: string) => void): void {
+    if (!this.ln) return;
+    void this.ln.addListener('localNotificationActionPerformed', e => {
+      const id = e.notification?.extra?.missionId;
+      if (typeof id === 'string') cb(id, e.actionId);
+    }).catch(() => undefined);
   }
 }
 

@@ -49,6 +49,15 @@ export interface Transport {
   requestBatteryExemption(): Promise<void>;
   leaveFamily(): Promise<void>;
   onInbox(cb: () => void): void;
+  /** Widget d'écran d'accueil (refonte UX) : résumé du dragon et des quêtes. */
+  updateWidget(data: WidgetData): Promise<void>;
+}
+
+export interface WidgetData {
+  name: string; sub: string; image: string; streak: number; status: string; statusDate: string;
+  /** Téléphone d'un parent : ligne affichée à la place des quêtes. */
+  line?: string;
+  days: Array<{ date: string; total: number; done: number; next: string }>;
 }
 
 // =====================================================================
@@ -67,6 +76,7 @@ interface HomeLinkPlugin {
   requestBatteryExemption(): Promise<void>;
   leaveFamily(): Promise<void>;
   addListener(event: 'inbox', cb: () => void): Promise<unknown>;
+  updateWidget(o: { data: WidgetData }): Promise<void>;
 }
 
 export class NativeTransport implements Transport {
@@ -94,6 +104,7 @@ export class NativeTransport implements Transport {
   requestBatteryExemption() { return this.p.requestBatteryExemption(); }
   leaveFamily() { return this.p.leaveFamily(); }
   onInbox(cb: () => void) { void this.p.addListener('inbox', cb); }
+  async updateWidget(data: WidgetData) { try { await this.p.updateWidget({ data }); } catch { /* ancienne version native */ } }
 }
 
 function parse(v: unknown): any {
@@ -217,6 +228,8 @@ export class SimTransport implements Transport {
   }
 
   async requestBatteryExemption() { /* sans objet dans le navigateur */ }
+  /** Navigateur : le résumé du widget est gardé pour les tests. */
+  async updateWidget(data: WidgetData) { localStorage.setItem(`sim:${this.device}:widget`, JSON.stringify(data)); }
 
   async leaveFamily() {
     localStorage.removeItem(this.key('cfg'));

@@ -30,6 +30,19 @@
             android:name="fr.questedudragon.homelink.ActionReceiver"
             android:exported="false" />
 
+        <!-- Widget d'écran d'accueil : le dragon et les quêtes du jour -->
+        <receiver
+            android:name="fr.questedudragon.homelink.DragonWidget"
+            android:label="Quête du Dragon"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/qd_widget_info" />
+        </receiver>
+
         <receiver
             android:name="fr.questedudragon.homelink.BootReceiver"
             android:exported="true">

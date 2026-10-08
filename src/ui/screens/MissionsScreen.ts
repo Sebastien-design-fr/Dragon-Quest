@@ -4,6 +4,7 @@ import { DAY_LABELS, type Mission, type MissionStatus } from '../../family/model
 import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon } from '../dom.js';
 import { openSheet } from './common.js';
+import { Assets } from '../../engine/AssetManager.js';
 
 type Entry = { mission: Mission; status: MissionStatus };
 
@@ -328,6 +329,9 @@ export function illustration(title: string): string {
     : /plante|arros|jardin|fleur/.test(t) ? 'plant'
     : /chambre|ranger|rangement|salon|aspirateur|m[ée]nage/.test(t) ? 'room'
     : 'star';
+  // icône peinte (même style que les dragons) si elle a été fournie : assets/icons/quests/<clé>.webp
+  const painted = Assets.art(`icons/quests/${k}`);
+  if (painted) return `<img src="${painted}" alt="" draggable="false" class="ill-painted">`;
   return `${SVG_OPEN}${ILL[k]}</svg>`;
 }
 

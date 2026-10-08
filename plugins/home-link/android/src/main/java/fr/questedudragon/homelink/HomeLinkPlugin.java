@@ -157,6 +157,14 @@ public class HomeLinkPlugin extends Plugin {
         call.resolve();
     }
 
+    /** Widget d'écran d'accueil : résumé envoyé par l'appli (JSON), affiché même appli fermée. */
+    @PluginMethod
+    public void updateWidget(PluginCall call) {
+        JSObject data = call.getObject("data", new JSObject());
+        DragonWidget.save(ctx(), data.toString());
+        call.resolve();
+    }
+
     @PluginMethod
     public void startService(PluginCall call) {
         HomeLinkService.start(ctx());

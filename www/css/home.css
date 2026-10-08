@@ -131,3 +131,6 @@
 /* l'écran principal montre la quête sans défiler : scène un peu moins haute, carte plus compacte */
 #app.stage-tall { grid-template-rows: auto minmax(300px, 50dvh) 1fr auto; }
 @media (max-height: 760px) { #app.stage-tall { grid-template-rows: auto minmax(270px, 46dvh) 1fr auto; } .qd-card { gap: 10px; padding: 12px 14px; } .qd-ill { width: 52px; height: 52px; } .qd-title { font-size: 19px; } .qd-slide { height: 52px; } .qd-knob { width: 44px; height: 44px; } }
+/* icônes de quêtes peintes (quand elles sont fournies) */
+.ill-painted { width: 100%; height: 100%; object-fit: contain; display: block; border-radius: 12px; }
+.qd-ill:has(.ill-painted), .q-ill:has(.ill-painted) { padding: 2px; }
