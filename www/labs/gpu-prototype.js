@@ -1,3 +1,4 @@
+import { BabyMotion } from './baby-motion.js';
 // Prototype isolé, aucun import de la logique du jeu ou changement d'APK.
 const { Application, Assets, Sprite, Container, Graphics } = window.PIXI ?? {};
 const viewport = document.getElementById('viewport');
@@ -8,6 +9,7 @@ if (!Application) {
   status.textContent = 'PixiJS indisponible : vérifier la connexion CDN.';
   throw new Error('PIXI non disponible');
 }
+const babyMotion = new BabyMotion();
 const app = new Application();
 await app.init({
   resizeTo: viewport, background: '#162740', preference: 'webgl',
@@ -26,6 +28,7 @@ dragonLayer.addChild(sprite);
 let sequence = 0, activePath = '', busy = false;
 let failures = 0, frames = 0, totalFrame = 0, lastMeasurement = performance.now();
 let nextFlap = 0, flapDown = false;
+let babyPose = null;
 controls.autoflap.addEventListener('change', () => {if (controls.autoflap.checked) {controls.pose.value='flyUp'; void selectTexture();} else {controls.pose.value='full'; void selectTexture();}});
 function pathFor(v,s,p){ return '../assets/'+v+'/'+s+'/'+v+'_'+s+'_'+p+'.webp'; }
 async function selectTexture(){
@@ -76,8 +79,17 @@ app.ticker.add((ticker)=>{
     void selectTexture();
   }
   // Subtle movement only: do not claim this is articulated animation.
-  dragonLayer.y=app.screen.height*.54+(controls.animate.checked?Math.sin(elapsed*1.8)*4:0);
-  dragonLayer.rotation=controls.animate.checked?Math.sin(elapsed*.7)*.004:0;
+  if(controls.stage.value==='baby' && controls.animate.checked){
+    babyMotion.setMode(controls.autoflap.checked?'fly':controls.pose.value==='sleep'?'sleep':'idle');
+    babyPose=babyMotion.update(dt/1000);
+    dragonLayer.position.set(app.screen.width*.5+babyPose.x,app.screen.height*.54+babyPose.y);
+    dragonLayer.rotation=babyPose.rotation;
+    // Sprite scale is established by layout. Only apply minimal breathing to the container.
+    dragonLayer.scale.set(babyPose.scaleX,babyPose.scaleY);
+  }else{
+    dragonLayer.position.set(app.screen.width*.5,app.screen.height*.54);
+    dragonLayer.rotation=0;dragonLayer.scale.set(1);
+  }
   frames++;totalFrame+=dt;
   const now=performance.now();
   if(now-lastMeasurement>1000){
@@ -88,3 +100,12 @@ app.ticker.add((ticker)=>{
 });
 layout();
 await selectTexture();
+
+// Screen-space tap interaction in the isolated prototype.
+app.canvas.addEventListener('pointerdown',event=>{
+  if(controls.stage.value!=='baby')return;
+  const rect=app.canvas.getBoundingClientRect();
+  const x=((event.clientX-rect.left)/rect.width-.5)*2;
+  const y=((event.clientY-rect.top)/rect.height-.5)*2;
+  babyMotion.touch(x,y);
+});
