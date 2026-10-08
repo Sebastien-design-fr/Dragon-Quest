@@ -1,6 +1,6 @@
 // Copie le runtime JavaScript de Capacitor dans www/js/vendor/ (l'appli n'utilise pas de bundler).
 // Sans node_modules (développement dans un simple navigateur), l'appli bascule sur le lien simulé.
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
 
 const src = new URL('../node_modules/@capacitor/core/dist/index.js', import.meta.url).pathname;
 const dir = new URL('../www/js/vendor/', import.meta.url).pathname;
@@ -17,6 +17,7 @@ const pixiSource = new URL('../node_modules/pixi.js/dist/pixi.min.js', import.me
 const pixiTarget = new URL('../www/labs/vendor/', import.meta.url).pathname;
 mkdirSync(pixiTarget, { recursive: true });
 if (existsSync(pixiSource)) {
+  if (statSync(pixiSource).size < 100_000) throw new Error('PixiJS build is unexpectedly small');
   copyFileSync(pixiSource, pixiTarget + 'pixi.min.js');
   console.log('vendor: PixiJS copied for offline Lumia V2');
 } else {
