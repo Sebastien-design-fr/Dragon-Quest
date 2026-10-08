@@ -8,10 +8,11 @@
     "manifest": "node scripts/gen-manifest.mjs",
     "vendor": "node scripts/vendor.mjs",
     "rigs": "node scripts/build-rigs.mjs",
-    "build": "node scripts/install-approved-dragons.mjs && node scripts/gen-manifest.mjs && node scripts/verify-dragon-mission.mjs && node scripts/vendor.mjs && tsc -p tsconfig.json",
+    "build": "node scripts/install-approved-dragons.mjs && node scripts/verify-approved-webp.mjs && node scripts/gen-manifest.mjs && node scripts/verify-dragon-mission.mjs && node scripts/vendor.mjs && tsc -p tsconfig.json",
     "watch": "tsc -p tsconfig.json --watch",
     "serve": "node scripts/serve.mjs",
-    "android:sync": "npm run build && npx cap sync android"
+    "android:sync": "npm run build && npx cap sync android",
+    "build:hd": "DRAGON_HD_REQUIRED=1 npm run build"
   },
   "dependencies": {
     "@capacitor/android": "^7.0.0",
