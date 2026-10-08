@@ -1,5 +1,6 @@
 import { BabyMotion } from './baby-motion.js';
 import { FrameDiagnostics } from './frame-diagnostics.js';
+import { auditBabyAssets } from './baby-assets-audit.js';
 import { DepthStage } from './depth-stage.js';
 import { CharacterPoseCache } from './pose-cache.js';
 import { ClipPlayer } from './clip-player.js';
@@ -11,7 +12,7 @@ const { Application, Assets, Sprite, Container, Graphics } = window.PIXI ?? {};
 const viewport = document.getElementById('viewport');
 const stats = document.getElementById('stats');
 const status = document.getElementById('status');
-const controls = Object.fromEntries(['variant','stage','pose','animate','retina','autoflap','depth','rig','speed','light','compare','capture'].map(k=>[k,document.getElementById(k)]));
+const controls = Object.fromEntries(['variant','stage','pose','animate','retina','autoflap','depth','rig','speed','light','compare','capture','audit'].map(k=>[k,document.getElementById(k)]));
 if (!Application) {
   status.textContent = 'PixiJS indisponible : vérifier la connexion CDN.';
   throw new Error('PIXI non disponible');
@@ -79,7 +80,15 @@ let nextFlap = 0, flapDown = false;
 let babyPose = null;
 let happyUntil = 0;
 let compareGeneration=0;
-const captureButton=controls.capture;
+controls.audit.addEventListener('click',async()=>{
+  controls.audit.disabled=true;
+  status.textContent='Vérification des illustrations articulées des deux bébés…';
+  try{
+    const result=await auditBabyAssets();
+    status.textContent=result.reports.map(r=>r.variant+': '+(r.ready?'calques prêts':'non prêt — '+r.issue+(r.missing.length?' ('+r.missing.join(', ')+')':''))).join(' | ');
+  }catch(e){status.textContent='Audit impossible : '+e.message;}
+  finally{controls.audit.disabled=false;}
+});
 const recolor=()=>{const value=Number(controls.light.value)/100;dragonLayer.alpha=.55+value*.45;};
 controls.light.addEventListener('input',recolor);recolor();
 async function loadComparison(){
