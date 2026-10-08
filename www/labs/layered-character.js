@@ -12,6 +12,7 @@ export class LayeredCharacter {
     this.definition=null;
     this.generation=0;
   }
+  cancelPending(){this.generation++;}
   async load(definition){
     const generation=++this.generation;
     this.validate(definition);
@@ -28,7 +29,7 @@ export class LayeredCharacter {
       joint.addChild(img);
       staged.push({name:part.name,joint,parent:part.parent??null,z:part.z??0});
     }
-    if(generation!==this.generation)return false;
+    if(generation!==this.generation){for(const p of staged)p.joint.destroy({children:true,texture:false,textureSource:false});return false;}
     const byName=new Map(staged.map(p=>[p.name,p]));
     // Assemble hierarchy before swapping: failure must never erase a working rig.
     const replacement=new this.PIXI.Container();
