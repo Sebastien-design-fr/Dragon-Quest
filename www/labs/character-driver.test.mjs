@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {applyClipToCharacter,loadLayers} from './character-driver.js';
+assert.equal(await loadLayers('dragon','baby',async()=>({status:404,ok:false})),null);
+const rig=await loadLayers('dragonne','baby',async()=>({ok:true,json:async()=>({parts:[{name:'body',texture:'body.webp',position:[0,0]}]})}));
+assert.equal(rig.parts[0].texture,'../assets/layers/dragonne/baby/body.webp');
+const node={rotation:0,position:{set(x,y){this.x=x;this.y=y;}},scale:{set(x,y){this.x=x;this.y=y;}}};
+const character={parts:new Map([['body',node]]),definition:{parts:[{name:'body',position:[12,10]}]}};
+assert.equal(applyClipToCharacter(character,{body:{x:2,y:-1,rot:.2,scaleY:1.1}}),true);
+assert.deepEqual([node.position.x,node.position.y,node.rotation,node.scale.x,node.scale.y],[14,9,.2,1,1.1]);
+console.log('Layer driver tests passed');
