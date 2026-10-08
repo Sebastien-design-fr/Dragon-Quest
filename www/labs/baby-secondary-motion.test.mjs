@@ -8,7 +8,8 @@ for(const mode of ['idle','sleep','fly']){
   }
 }
 const blinkCheck=new BabySecondaryMotion();
-const lidOpen=blinkCheck.update(.2,'idle').eyelid.scaleY;
+blinkCheck.update(.1,'idle');
+const lidOpen=blinkCheck.update(.1,'idle').eyelid.scaleY;
 for(let i=0;i<270;i++)blinkCheck.update(1/60,'idle');
 const lidClosed=blinkCheck.update(.06,'idle').eyelid.scaleY;
 assert.ok(lidOpen < .1);
