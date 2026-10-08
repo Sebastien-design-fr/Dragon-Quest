@@ -37,6 +37,15 @@ jobs:
       - name: Build web (manifeste des assets, runtime Capacitor, TypeScript)
         run: npm run build
 
+      - name: Vérifier le moteur V2 hors ligne
+        if: github.ref_name == 'graphics-engine-v2'
+        run: |
+          test -s www/labs/vendor/pixi.min.js
+          node --check www/labs/gpu-prototype.js
+          node www/labs/character-driver.test.mjs
+          node www/labs/clip-player.test.mjs
+          node www/labs/layered-character.test.mjs
+
       - name: Projet Android (Capacitor)
         run: |
           set -o pipefail
