@@ -25,6 +25,8 @@ jobs:
           node www/labs/pose-cache.test.mjs
           node www/labs/clip-player.test.mjs
           node www/labs/rollout.test.mjs
+          node www/labs/layered-character.test.mjs
+          node www/labs/character-driver.test.mjs
       - name: Check browser-module syntax
         run: |
           for file in www/labs/*.js; do node --check "$file"; done
