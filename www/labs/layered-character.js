@@ -30,13 +30,27 @@ export class LayeredCharacter {
     }
     if(generation!==this.generation)return false;
     const byName=new Map(staged.map(p=>[p.name,p]));
-    this.clear();
-    for(const part of staged.sort((a,b)=>a.z-b.z)){
-      const parent=part.parent?byName.get(part.parent)?.joint:this.root;
+    // Assemble hierarchy before swapping: failure must never erase a working rig.
+    const replacement=new this.PIXI.Container();
+    for(const part of staged){
+      const parent=part.parent?byName.get(part.parent)?.joint:replacement;
       if(!parent)throw Error('Missing parent '+part.parent);
       parent.addChild(part.joint);
-      this.parts.set(part.name,part.joint);
     }
+    // Sorting each parent's own children preserves the hierarchy when bones nest.
+    const groups=new Set([replacement,...staged.map(p=>p.joint)]);
+    for(const group of groups){
+      if(!group.children || group.children.length<2)continue;
+      const rank=new Map(staged.map(p=>[p.joint,p.z]));
+      group.sortChildren?.();
+      for(const child of group.children)child.zIndex=rank.get(child)??0;
+      group.sortableChildren=true;
+    }
+    if(generation!==this.generation){replacement.destroy({children:true,texture:false,textureSource:false});return false;}
+    this.clear();
+    for(const child of replacement.removeChildren())this.root.addChild(child);
+    replacement.destroy();
+    this.parts=new Map(staged.map(p=>[p.name,p.joint]));
     this.definition=definition;
     return true;
   }
@@ -45,7 +59,7 @@ export class LayeredCharacter {
     const names=new Set();
     for(const p of def.parts){
       if(!p.name||names.has(p.name))throw Error('Duplicate or missing part name');
-      if(typeof p.texture!=='string'||!Array.isArray(p.position)||p.position.length!==2)throw Error('Invalid part '+p.name);
+      if(typeof p.texture!=='string'||!p.texture||!Array.isArray(p.position)||p.position.length!==2||!p.position.every(Number.isFinite))throw Error('Invalid part '+p.name);
       names.add(p.name);
     }
     for(const p of def.parts){
