@@ -1,0 +1,21 @@
+name: Vérification future des ressources HD
+on:
+  push:
+    branches: [lumia-test]
+    paths:
+      - 'scripts/import-hd-sprites.py'
+      - 'scripts/verify-approved-webp.mjs'
+      - 'scripts/verify-approved-webp.test.mjs'
+      - '.github/workflows/verify-hd-preflight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/verify-approved-webp.test.mjs
