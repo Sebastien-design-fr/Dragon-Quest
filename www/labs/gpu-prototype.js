@@ -77,6 +77,27 @@ async function refreshLayers(){
 let sequence = 0, activePath = '', busy = false;
 let failures = 0, frames = 0, totalFrame = 0, lastMeasurement = performance.now();
 let nextFlap = 0, flapDown = false;
+let flightTextures=null,flightRequest=0;
+async function prepareFlight(){
+  const ticket=++flightRequest;
+  flightTextures=null;
+  if(!controls.autoflap.checked)return;
+  const {variant,stage}=controls;
+  const selectedVariant=variant.value,selectedStage=stage.value;
+  try{
+    const [up,down]=await Promise.all([
+      poseCache.load(selectedVariant,selectedStage,'flyUp'),
+      poseCache.load(selectedVariant,selectedStage,'flyDown')
+    ]);
+    if(ticket!==flightRequest||!controls.autoflap.checked)return;
+    flightTextures={up,down};
+    sprite.texture=up;
+    flapDown=false;
+    nextFlap=elapsed+.35;
+    layout();
+  }catch(e){if(ticket===flightRequest){controls.autoflap.checked=false;status.textContent='Vol indisponible : poses manquantes';console.warn(e);}}
+}
+
 let babyPose = null;
 let happyUntil = 0;
 let compareGeneration=0;
@@ -113,7 +134,11 @@ controls.capture.addEventListener('click',()=>{
   try{const a=document.createElement('a');a.download='lumia-bebes-v2.png';a.href=app.canvas.toDataURL('image/png');a.click();}
   catch(e){status.textContent='Capture indisponible (WebGL ou droits du navigateur).';console.warn(e);}
 });
-controls.autoflap.addEventListener('change', () => {if (controls.autoflap.checked) {controls.pose.value='flyUp'; void selectTexture();} else {controls.pose.value='full'; void selectTexture();}});
+controls.autoflap.addEventListener('change', () => {
+  controls.pose.value=controls.autoflap.checked?'flyUp':'full';
+  if(controls.autoflap.checked){void prepareFlight();}
+  else{++flightRequest;flightTextures=null;void selectTexture();}
+});
 function pathFor(v,s,p){ return '../assets/'+v+'/'+s+'/'+v+'_'+s+'_'+p+'.webp'; }
 async function selectTexture(){
   const id = ++sequence, {variant,stage,pose} = Object.fromEntries(['variant','stage','pose'].map(k=>[k,controls[k].value]));
@@ -168,7 +193,12 @@ function layout(){
     comparisonSprite.visible=comparisonOn && !!comparisonSprite.texture?.width && comparisonSprite.visible;
   }
 }
-for(const key of ['variant','stage','pose']) controls[key].addEventListener('change',()=>{if(key==='pose')controls.autoflap.checked=false;void selectTexture();});
+for(const key of ['variant','stage','pose']) controls[key].addEventListener('change',()=>{
+  if(key==='pose')controls.autoflap.checked=false;
+  ++flightRequest;flightTextures=null;
+  void selectTexture();
+  if(controls.autoflap.checked)void prepareFlight();
+});
 controls.retina.addEventListener('change',()=>{
   app.renderer.resolution = controls.retina.checked ? Math.min(devicePixelRatio||1,2):1;
   app.renderer.resize(viewport.clientWidth,viewport.clientHeight);
@@ -184,11 +214,12 @@ app.ticker.add((ticker)=>{
   previousFrameTime=frameTime;
   const dt=Math.min(ticker.deltaMS,80)*Number(controls.speed.value);
   elapsed+=dt/1000;
-  if (controls.autoflap.checked && elapsed >= nextFlap && !busy) {
+  if (controls.autoflap.checked && flightTextures && elapsed >= nextFlap) {
     flapDown = !flapDown;
     controls.pose.value = flapDown ? 'flyDown' : 'flyUp';
+    sprite.texture=flapDown ? flightTextures.down : flightTextures.up;
     nextFlap = elapsed + (flapDown ? 0.24 : 0.42);
-    void selectTexture();
+    layout();
   }
   // Subtle movement only: do not claim this is articulated animation.
   if(controls.stage.value==='baby' && controls.animate.checked){
