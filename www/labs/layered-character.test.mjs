@@ -19,5 +19,14 @@ assert.throws(()=>character.validate({parts:[part('body','head'),part('head','bo
 assert.throws(()=>character.validate({parts:[{...part('body'),position:[NaN,0]}]}),/Invalid part/);
 assert.equal(await character.load({parts:[part('body')]}),true);
 assert.equal(character.parts.size,1);
+let release;
+const slow=new LayeredCharacter(engine,async()=>new Promise(resolve=>{release=resolve;}));
+const pending=slow.load({parts:[part('body')]});
+await Promise.resolve();
+slow.cancelPending();
+release({path:'body.webp'});
+assert.equal(await pending,false);
+assert.equal(slow.parts.size,0);
+slow.destroy();
 character.destroy();
 console.log('LayeredCharacter tests passed');
