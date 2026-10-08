@@ -1,10 +1,10 @@
 import { BabyMotion } from './baby-motion.js';
-import { BabySecondaryMotion, combineMotion } from './baby-secondary-motion.js';
+import { BabyAnimationDirector } from './baby-animation-director.js';
 import { FrameDiagnostics } from './frame-diagnostics.js';
 import { auditBabyAssets } from './baby-assets-audit.js';
 import { DepthStage } from './depth-stage.js';
 import { CharacterPoseCache } from './pose-cache.js';
-import { ClipPlayer } from './clip-player.js';
+
 import { RigDebug } from './rig-debug.js';
 import { LayeredCharacter } from './layered-character.js';
 import { applyClipToCharacter, loadLayers } from './character-driver.js';
@@ -19,10 +19,10 @@ if (!Application) {
   throw new Error('PIXI non disponible');
 }
 const babyMotion = new BabyMotion();
-const secondaryMotion=new BabySecondaryMotion();
+const animationDirector=new BabyAnimationDirector();
 const diagnostics = new FrameDiagnostics(600);
 let previousFrameTime = null;
-const clipPlayer = new ClipPlayer();
+
 const poseCache = new CharacterPoseCache(Assets);
 const app = new Application();
 await app.init({
@@ -236,14 +236,12 @@ app.ticker.add((ticker)=>{
     dragonLayer.rotation=0;dragonLayer.scale.set(1);
   }
   const nextClip = elapsed < happyUntil ? 'happy' : controls.autoflap.checked?'fly':controls.pose.value==='sleep'?'sleep':'idle';
-  if(controls.stage.value==='baby')clipPlayer.play(nextClip);
-  const poseState=clipPlayer.update(dt/1000);
+  if(controls.stage.value==='baby')animationDirector.setMode(nextClip);
+  animationDirector.paused=!controls.animate.checked;
+  const poseState=animationDirector.update(dt/1000);
   rigDebug.visible=controls.rig.checked && controls.stage.value==='baby';
   rigDebug.draw(poseState);
-  if(layered.root.visible){
-    const secondary=secondaryMotion.update(dt/1000,nextClip);
-    applyClipToCharacter(layered,combineMotion(poseState,secondary));
-  }
+  if(layered.root.visible)applyClipToCharacter(layered,poseState);
   depthStage.tick(dt/1000,{x:0,y:0,width:app.screen.width,height:app.screen.height,airborne:controls.autoflap.checked});
   frames++;totalFrame+=dt;
   const now=performance.now();
@@ -264,8 +262,8 @@ app.canvas.addEventListener('pointerdown',event=>{
   const x=((event.clientX-rect.left)/rect.width-.5)*2;
   const y=((event.clientY-rect.top)/rect.height-.5)*2;
   babyMotion.touch(x,y);
-  secondaryMotion.touch(x);
+  animationDirector.react(x);
   happyUntil = elapsed + .7;
-  clipPlayer.play('happy',{reset:true});
+
   depthStage.movePointer(x,y);
 });
