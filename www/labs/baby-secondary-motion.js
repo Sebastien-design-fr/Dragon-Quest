@@ -17,7 +17,7 @@ export class BabySecondaryMotion {
       head:{rot:Math.sin(t*1.7)*.013-response*this.touchSide*.095},
       jaw:{rot:response*.09},
       eye:{x:Math.sin(t*.53)*.9,y:Math.sin(t*.41)*.55},
-      eyelid:{scaleY:.02+blink*.98},
+      eyelid:{scaleY:sleeping?1:.02+blink*.98},
       tail:{rot:Math.sin(t*(flying?5.4:1.9))*(sleeping?.02:.075)+response*.11},
       wingNear:{rot:Math.sin(t*1.45)*.012},
       wingFar:{rot:-Math.sin(t*1.45)*.012},
