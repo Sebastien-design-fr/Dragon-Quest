@@ -16,11 +16,42 @@ required.push('brand/dragon-mission-logo.svg');
 const missing = required.filter(p => !manifest.files.includes(p));
 if (missing.length) throw new Error('Assets Dragon Mission absents du manifeste: ' + missing.join(', '));
 
-for (const v of ['dragon','dragonne']) {
-  for (const s of ['baby','young','adult','legendary']) {
-    const list = poses.poses?.[v]?.[s] ?? [];
-    if (list.length) throw new Error(`Anciennes poses encore actives: ${v}/${s}: ${list.join(',')}`);
+const expectedPoses = {
+  dragon: {
+    baby: ['sleep','flyUp','flyDown'],
+    young: ['sleep','flyUp','flyDown'],
+    adult: ['sleep','flyUp','flyMid','flyDown'],
+    legendary: ['sleep','flyUp','flyDown']
+  },
+  dragonne: {
+    baby: ['sleep','flyUp','flyDown'],
+    young: ['sleep','flyUp','flyDown'],
+    adult: ['sleep','flyUp','flyDown'],
+    legendary: ['sleep','flyUp','flyDown']
   }
+};
+for (const [variant, stages] of Object.entries(expectedPoses)) {
+  for (const [stage, wanted] of Object.entries(stages)) {
+    const list = poses.poses?.[variant]?.[stage] ?? [];
+    if (JSON.stringify(list) !== JSON.stringify(wanted)) {
+      throw new Error(`Poses Dragon Mission incorrectes: ${variant}/${stage}: ${list.join(',')}`);
+    }
+    for (const pose of wanted) {
+      const asset = `${variant}/${stage}/${variant}_${stage}_${pose}.webp`;
+      if (!manifest.files.includes(asset)) throw new Error('Sprite peint absent: ' + asset);
+      const rig = `www/data/rigs/${stage}.${variant}.${pose}.json`;
+      if (!existsSync(rig)) throw new Error('Rig de pose absent: ' + rig);
+    }
+  }
+}
+
+for (const sound of ['purr','chirp','baby','roar_young','roar_adult','roar_legendary','grumble','fire','eat','attack','wings','coins','gem','chest','levelup','evolution']) {
+  const path = `www/assets/sounds/${sound}.mp3`;
+  if (!existsSync(path)) throw new Error('Son Dragon Mission absent: ' + path);
+}
+for (const clip of ['idle@sprite','happy@sprite','sleep@sprite','eat@sprite','attack@sprite','fire@sprite','level_up@sprite','evolution@sprite','pet@sprite','sad@sprite','bow@sprite','dance@sprite','ring@sprite','roar@sprite','hover@sprite','wake@sprite','welcome@sprite','shake@sprite','stretch@sprite','yawn@sprite','scratch@sprite','look_around@sprite','sniff@sprite','tail_swish@sprite','sleep_pose@sprite','fly_pose@sprite','catch@sprite','giggle@sprite','tail_chase@sprite','purr@sprite','dizzy@sprite','cheer@sprite']) {
+  const path = `www/data/animations/${clip}.json`;
+  if (!existsSync(path)) throw new Error('Animation Dragon Mission absente: ' + path);
 }
 if (cap.appId !== 'fr.dragonmission.app' || cap.appName !== 'Dragon Mission') {
   throw new Error('Identité Android Dragon Mission incorrecte');
@@ -51,4 +82,4 @@ if (!viewSource.includes('pipeline WebGL')) {
   throw new Error('Correctif anti-sprite-noir Android absent');
 }
 
-console.log('Dragon Mission: assets, identité, thème, défilement et rendu dragon Android validés.');
+console.log('Dragon Mission: assets, sprites, poses, animations, sons et rendu Android validés.');

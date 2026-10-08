@@ -1,17 +1,50 @@
 {
-  "note": "Dragon Mission 0.19.1 : les anciennes poses peintes de Quête du Dragon sont désactivées. Les animations utilisent uniquement les nouveaux dragons Dragon Mission et le rig sprite.",
+  "note": "Dragon Mission 0.19.3 : poses peintes actives pour les nouveaux dragons. Le moteur reste inchangé ; ces poses alimentent le sommeil et le vol.",
   "poses": {
     "dragon": {
-      "baby": [],
-      "young": [],
-      "adult": [],
-      "legendary": []
+      "baby": [
+        "sleep",
+        "flyUp",
+        "flyDown"
+      ],
+      "young": [
+        "sleep",
+        "flyUp",
+        "flyDown"
+      ],
+      "adult": [
+        "sleep",
+        "flyUp",
+        "flyMid",
+        "flyDown"
+      ],
+      "legendary": [
+        "sleep",
+        "flyUp",
+        "flyDown"
+      ]
     },
     "dragonne": {
-      "baby": [],
-      "young": [],
-      "adult": [],
-      "legendary": []
+      "baby": [
+        "sleep",
+        "flyUp",
+        "flyDown"
+      ],
+      "young": [
+        "sleep",
+        "flyUp",
+        "flyDown"
+      ],
+      "adult": [
+        "sleep",
+        "flyUp",
+        "flyDown"
+      ],
+      "legendary": [
+        "sleep",
+        "flyUp",
+        "flyDown"
+      ]
     }
   }
 }
