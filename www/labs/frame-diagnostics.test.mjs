@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {FrameDiagnostics} from './frame-diagnostics.js';
+const d=new FrameDiagnostics(10);
+assert.equal(d.summary().samples,0);
+for(let i=1;i<=12;i++)d.add(i);
+const s=d.summary();
+assert.equal(s.samples,10);
+assert.equal(s.averageMs,7.5);
+assert.equal(s.p95Ms,12);
+d.add(NaN);assert.equal(d.summary().samples,10);
+d.reset();assert.equal(d.summary().samples,0);
+console.log('FrameDiagnostics tests passed');
