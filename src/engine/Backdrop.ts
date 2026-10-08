@@ -29,6 +29,8 @@ export class Backdrop {
   /** Décor précédent, en fondu enchaîné vers le nouveau (changement de stade, évolution). */
   private prev: { img: CanvasImageSource; x: number; y: number; w: number; h: number; a: number } | null = null;
   private lastRect: { x: number; y: number; w: number; h: number } | null = null;
+  /** Hauteur affichée du décor peint (pixels) : unité de placement des objets de la grotte. */
+  get displayHeight(): number | null { return this.lastRect?.h ?? null; }
   /** Durée du fondu entre deux décors (s). */
   fadeTime = 1.2;
   /** Nuit : voile bleuté posé par-dessus le décor (couche séparée). */

@@ -23,6 +23,7 @@ import { OrganicLife, personalityFor } from './Organic.js';
 import { flightConfig, flightPhase, type FlightConfig } from './Flight.js';
 import { MeshRenderer, SpriteSkin } from './SpriteSkin.js';
 import { Backdrop, type BackdropDef } from './Backdrop.js';
+import { DecorLayer } from './DecorLayer.js';
 import { drawEvolutionBackLayers, drawEvolutionRing, evolutionConfig, evolutionFrame, evolutionMarks, rgba, type EvoFrame, type EvolutionConfig, type RGB } from './Evolution.js';
 
 /** Repère identité partagé (racine du squelette) : aucune allocation par image. */
@@ -179,6 +180,8 @@ export class DragonView {
   private look = { x: 0, y: 0, tx: 0, ty: 0, until: 0 };
   /** Décor derrière le dragon. */
   readonly backdrop = new Backdrop();
+  /** Objets de la grotte et débris, posés dans la scène (refonte UX). */
+  readonly decor = new DecorLayer();
   /** Poses peintes (couché, ailes hautes, ailes basses) : vues filles dessinées dans ce canvas. */
   private poseViews: Partial<Record<PoseId, DragonView>> = {};
   private poseW = { sleep: 0, fly: 0 };
@@ -797,6 +800,9 @@ export class DragonView {
     // Décor (sol aligné sous les pattes du dragon)
     const feet = this.camM.point(0, 0);
     if (this.showBackdrop) this.backdrop.draw(ctx, W, H, feet.y, this.camM.e - W / 2, this.time, dt, this.effectsEnabled && this.quality.permanentEffects);
+    // objets de la grotte placés derrière le dragon (tapis, nid, objets muraux, objets du fond)
+    const decorU = this.backdrop.displayHeight ?? H * 1.15;
+    if (this.showBackdrop) this.decor.draw(ctx, 'back', W, feet.y, decorU, this.time, dt, this.dpr);
 
     // Ombres (sous le dragon, au sol) puis éclairage de l'image
     this.updateLighting(dt);
@@ -845,6 +851,8 @@ export class DragonView {
     ctx.globalAlpha = 1;
 
     ctx.filter = 'none';
+    // objets de la grotte posés devant le dragon (premier plan)
+    if (this.showBackdrop) this.decor.draw(ctx, 'front', W, feet.y, decorU, this.time, dt, this.dpr);
     if (this.layers.foregroundEffect) { this.camM.apply(ctx); this.particles.draw(ctx, 'foreground'); }
     if (evo) drawEvolutionRing(ctx, evo.c, evo.f, W, feet.x, feet.y, this.dpr);
 
@@ -911,6 +919,12 @@ export class DragonView {
     if (!(v === this ? this.anchorWorld(anchor, m) : v.skeleton?.anchorWorld(anchor, m))) return null;
     const p = this.camM.point(m.e, m.f);
     return { x: p.x / this.dpr, y: p.y / this.dpr };
+  }
+
+  /** Coordonnées écran → pixels du canvas. */
+  toCanvas(clientX: number, clientY: number): { x: number; y: number } {
+    const r = this.canvas.getBoundingClientRect();
+    return { x: (clientX - r.left) * this.dpr, y: (clientY - r.top) * this.dpr };
   }
 
   /** Le point (coordonnées écran) touche-t-il le dragon ? */

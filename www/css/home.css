@@ -183,3 +183,32 @@
 .hx-tip { position: absolute; bottom: calc(100% + 10px); left: 0; white-space: nowrap; padding: 6px 10px; border-radius: 10px; font-size: 13px; font-weight: 700;
   background: var(--act-1); color: var(--act-ink); pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,.4); }
 .hx-tip::after { content: ''; position: absolute; top: 100%; left: 18px; border: 6px solid transparent; border-top-color: var(--act-1); }
+
+/* ---------- Aménagement de la grotte (sur la scène du dragon) ---------- */
+#app.lair-edit .bubble, #app.lair-edit .sh { opacity: 0; pointer-events: none; }
+#app.lair-edit .stage-view { outline: 2px dashed rgba(255,217,119,.45); outline-offset: -6px; }
+.lx { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; max-width: 720px; margin: 0 auto; max-height: 48dvh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px; padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0; border: 1px solid #3a3022; border-bottom: 0; background: linear-gradient(180deg, #1f1a14, #141118);
+  box-shadow: 0 -10px 30px rgba(0,0,0,.6); transform: translateY(105%); transition: transform .4s cubic-bezier(.3,1.2,.5,1); }
+.lx.open { transform: none; }
+.lx-head { display: flex; align-items: center; gap: 10px; }
+.lx-head h3 { margin: 0; flex: 1; font-family: var(--display); font-size: 19px; color: var(--gold-soft); }
+.lx-gold { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
+.lx-info { margin: 0; font-size: 13px; color: var(--muted); }
+.lx-tools { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 14px; background: rgba(255,217,119,.08); border: 1px solid rgba(255,217,119,.3); }
+.lx-tools[hidden] { display: none; }
+.lx-tools strong { font-size: 14px; }
+.lx-tool { min-width: 42px; height: 40px; border-radius: 12px; border: 1px solid #4a3f2c; background: #221d17; color: var(--text); font-size: 20px; font-weight: 800; cursor: pointer; }
+.lx-tool.wide { font-size: 14px; padding: 0 12px; }
+.lx-list { display: grid; grid-auto-flow: column; grid-auto-columns: 112px; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.lx-list::-webkit-scrollbar { display: none; }
+.lx-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; border-radius: 16px; border: 1px solid var(--line); background: #17141c; color: var(--text); cursor: pointer; text-align: center; }
+.lx-item img { width: 72px; height: 64px; object-fit: contain; }
+.lx-item:not(.owned) img { filter: saturate(.5) brightness(.75); }
+.lx-item.placed { border-color: rgba(127,212,140,.5); }
+.lx-item.owned:not(.placed) { border-style: dashed; }
+.lx-name { font-size: 12px; font-weight: 700; line-height: 1.2; min-height: 29px; }
+.lx-state { font-size: 11px; color: var(--muted); display: inline-flex; align-items: center; gap: 2px; }
+.lx-item.placed .lx-state { color: #8fd8a0; }
+.lx-item:not(.owned) .lx-state { color: var(--gold); font-weight: 700; }

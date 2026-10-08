@@ -11,6 +11,7 @@ import { StageHud } from './StageHud.js';
 import { UI, installTouchFeedback } from './Motion.js';
 import { applyTint } from './Appearance.js';
 import { hatchCeremony, needsHatch } from './Hatch.js';
+import { installLairTaps, syncDecor } from './Lair.js';
 import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
@@ -50,7 +51,7 @@ export interface FamilyContext {
   training: Training | null;
 }
 
-export const APP_VERSION = '0.18.1';
+export const APP_VERSION = '0.19.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -67,6 +68,8 @@ export class App {
   private screens: Screen[];
   private chest: ChestScreen;
   private current: Screen | null = null;
+  /** Onglet affiché. */
+  get currentId(): string | null { return this.current?.id ?? null; }
   private screenEl: HTMLElement;
   private hud: HTMLElement;
   private toastEl: HTMLElement;
@@ -127,6 +130,7 @@ export class App {
   constructor(readonly root: HTMLElement, readonly catalog: Catalog, readonly state: GameState, readonly view: DragonView, readonly family: FamilyContext) {
     this.hud = root.querySelector('#hud')!;
     installTouchFeedback(root);
+    installLairTaps(this);
     // rappel touché depuis la notification ou la montre : « C'est fait ! » valide la quête
     family.reminders.onAction((missionId, action) => {
       const book = family.book;
@@ -353,6 +357,7 @@ export class App {
 
   refresh(): void {
     this.syncWidget();
+    syncDecor(this);
     if (this.showingOwn) applyTint(this); else this.view.tint = null;
     this.renderHud();
     this.stageHud?.render();
