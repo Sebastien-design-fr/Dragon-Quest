@@ -1,10 +1,11 @@
 import { BabyMotion } from './baby-motion.js';
+import { DepthStage } from './depth-stage.js';
 // Prototype isolé, aucun import de la logique du jeu ou changement d'APK.
 const { Application, Assets, Sprite, Container, Graphics } = window.PIXI ?? {};
 const viewport = document.getElementById('viewport');
 const stats = document.getElementById('stats');
 const status = document.getElementById('status');
-const controls = Object.fromEntries(['variant','stage','pose','animate','retina'].map(k=>[k,document.getElementById(k)]));
+const controls = Object.fromEntries(['variant','stage','pose','animate','retina','autoflap','depth'].map(k=>[k,document.getElementById(k)]));
 if (!Application) {
   status.textContent = 'PixiJS indisponible : vérifier la connexion CDN.';
   throw new Error('PIXI non disponible');
@@ -19,7 +20,9 @@ await app.init({
 viewport.appendChild(app.canvas);
 const scenery = new Container();
 const dragonLayer = new Container();
-app.stage.addChild(scenery, dragonLayer);
+app.stage.addChild(scenery);
+const depthStage = new DepthStage(window.PIXI, app.stage);
+app.stage.addChild(dragonLayer); // dragon always renders in front of depth cues
 const mountain = new Graphics().poly([0,0, 120,-80, 230,-20, 350,-130, 550,-20, 750,-95, 1000,0]).fill({color:0x233d58,alpha:0.75});
 scenery.addChild(mountain);
 const sprite = new Sprite();
@@ -56,6 +59,7 @@ function layout(){
   const w = app.screen.width,h=app.screen.height;
   scenery.x=0;scenery.y=h*0.82;scenery.scale.set(w/1000);
   dragonLayer.position.set(w*0.5,h*0.54);
+  depthStage.resize(w,h);
   if(sprite.texture?.width && sprite.texture?.height) {
     const targetW=w*.83,targetH=h*.75;
     sprite.scale.set(Math.min(targetW/sprite.texture.width,targetH/sprite.texture.height,1.25));
@@ -67,6 +71,8 @@ controls.retina.addEventListener('change',()=>{
   app.renderer.resize(viewport.clientWidth,viewport.clientHeight);
   layout();
 });
+controls.depth.addEventListener('change',()=>depthStage.configure({enabled:controls.depth.checked}));
+depthStage.configure({enabled:controls.depth.checked});
 window.addEventListener('resize',layout);
 let elapsed=0;
 app.ticker.add((ticker)=>{
@@ -90,6 +96,7 @@ app.ticker.add((ticker)=>{
     dragonLayer.position.set(app.screen.width*.5,app.screen.height*.54);
     dragonLayer.rotation=0;dragonLayer.scale.set(1);
   }
+  depthStage.tick(dt/1000,{x:0,y:0,width:app.screen.width,height:app.screen.height,airborne:controls.autoflap.checked});
   frames++;totalFrame+=dt;
   const now=performance.now();
   if(now-lastMeasurement>1000){
@@ -108,4 +115,5 @@ app.canvas.addEventListener('pointerdown',event=>{
   const x=((event.clientX-rect.left)/rect.width-.5)*2;
   const y=((event.clientY-rect.top)/rect.height-.5)*2;
   babyMotion.touch(x,y);
+  depthStage.movePointer(x,y);
 });
