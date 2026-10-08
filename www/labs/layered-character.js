@@ -42,9 +42,9 @@ export class LayeredCharacter {
     for(const group of groups){
       if(!group.children || group.children.length<2)continue;
       const rank=new Map(staged.map(p=>[p.joint,p.z]));
-      group.sortChildren?.();
       for(const child of group.children)child.zIndex=rank.get(child)??0;
       group.sortableChildren=true;
+      group.sortChildren?.();
     }
     if(generation!==this.generation){replacement.destroy({children:true,texture:false,textureSource:false});return false;}
     this.clear();
