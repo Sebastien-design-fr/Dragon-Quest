@@ -46,11 +46,19 @@ const rigDebug = new RigDebug(window.PIXI,dragonLayer);
 const layered = new LayeredCharacter(window.PIXI, path => Assets.load(path));
 dragonLayer.addChild(layered.root);
 let layerGeneration=0;
+let activeRigIdentity=null;
+const rigIdentity=()=>controls.variant.value+':'+controls.stage.value;
+const mayDisplayRig=()=>controls.stage.value==='baby' && controls.pose.value==='full' && !controls.compare.checked && activeRigIdentity===rigIdentity();
+function updateRigVisibility(){
+  const useRig=!!layered.definition && mayDisplayRig();
+  layered.root.visible=useRig;
+  sprite.visible=!useRig;
+}
 async function refreshLayers(){
   const request=++layerGeneration;
   layered.cancelPending();
-  layered.root.visible=false;
-  sprite.visible=true;
+  activeRigIdentity=null;
+  updateRigVisibility();
   if(controls.stage.value!=='baby')return;
   try {
     const def=await loadLayers(controls.variant.value,'baby');
@@ -58,11 +66,11 @@ async function refreshLayers(){
     if(!def)return; // flat-sprite fallback until artists approve individual layers
     const ok=await layered.load(def);
     if(request!==layerGeneration||!ok)return;
-    layered.root.visible=!controls.compare.checked;
-    sprite.visible=controls.compare.checked;
+    activeRigIdentity=rigIdentity();
+    updateRigVisibility();
     layout();
     status.textContent='Rig multicouche chargé: '+controls.variant.value+' bébé';
-  }catch(error){if(request===layerGeneration){console.warn('Layers unavailable: flat sprite fallback',error);layered.root.visible=false;sprite.visible=true;}}
+  }catch(error){if(request===layerGeneration){console.warn('Layers unavailable: flat sprite fallback',error);activeRigIdentity=null;updateRigVisibility();}}
 }
 
 let sequence = 0, activePath = '', busy = false;
@@ -87,10 +95,9 @@ async function loadComparison(){
   }catch(e){if(id===compareGeneration){status.textContent='Comparaison indisponible : illustration absente';console.warn(e);}}
 }
 controls.compare.addEventListener('change',()=>{
-  if(controls.compare.checked){layered.cancelPending();++layerGeneration;layered.root.visible=false;sprite.visible=true;}
-  else if(layered.definition && controls.stage.value==='baby' && controls.pose.value==='full'){
-    layered.root.visible=true;sprite.visible=false;
-  }
+  if(controls.compare.checked){layered.cancelPending();++layerGeneration;}
+  updateRigVisibility();
+  if(!controls.compare.checked && controls.pose.value==='full' && controls.stage.value==='baby' && !mayDisplayRig())void refreshLayers();
   void loadComparison();layout();
 });
 controls.capture.addEventListener('click',()=>{
@@ -107,8 +114,8 @@ async function selectTexture(){
   if(pose!=='full' || stage!=='baby'){
     layered.cancelPending();
     ++layerGeneration;
-    layered.root.visible=false;
-    sprite.visible=true;
+    activeRigIdentity=null;
+    updateRigVisibility();
   }
   busy = true;status.textContent = 'Chargement : '+next;
   try {
@@ -142,8 +149,7 @@ function layout(){
     sprite.x=comparisonOn?-w*.22:0;
     layered.root.position.set(sprite.x,0);
     layered.root.scale.set(sprite.scale.x);
-    layered.root.visible=layered.root.visible && !comparisonOn;
-    if(comparisonOn)sprite.visible=true;
+    updateRigVisibility();
     comparisonSprite.x=w*.22;
     comparisonSprite.y=0;
     if(comparisonSprite.texture?.width && comparisonSprite.texture?.height){
