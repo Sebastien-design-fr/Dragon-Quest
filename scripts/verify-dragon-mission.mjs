@@ -2,8 +2,11 @@ import { readFileSync, existsSync } from 'node:fs';
 
 const manifest = JSON.parse(readFileSync('www/assets/manifest.json','utf8'));
 const poses = JSON.parse(readFileSync('www/data/poses.json','utf8'));
-const cap = JSON.parse(readFileSync('capacitor.config.json','utf8'));
+const cap = JSON.parse(readFileSync('capacitor.config.json','utf8'));\nconst approved = JSON.parse(readFileSync('www/assets/approved-dragons.json','utf8'));
 
+if (approved.reference !== 'f4532b70-bfde-4b8e-9bfa-5257a8da20ac' || approved.files?.length !== 40) {
+  throw new Error('Jeu de sprites approuvé absent ou incomplet');
+}
 const required = [];
 for (const v of ['dragon','dragonne']) {
   for (const s of ['baby','young','adult','legendary']) {
@@ -82,4 +85,4 @@ if (!viewSource.includes('pipeline WebGL')) {
   throw new Error('Correctif anti-sprite-noir Android absent');
 }
 
-console.log('Dragon Mission: assets, sprites, poses, animations, sons et rendu Android validés.');
+console.log('Dragon Mission: sprites approuvés, poses, animations, sons et rendu Android validés.');
