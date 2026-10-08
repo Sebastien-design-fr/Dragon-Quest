@@ -136,7 +136,7 @@ controls.capture.addEventListener('click',()=>{
 });
 controls.autoflap.addEventListener('change', () => {
   controls.pose.value=controls.autoflap.checked?'flyUp':'full';
-  if(controls.autoflap.checked){void prepareFlight();}
+  if(controls.autoflap.checked){void selectTexture();void prepareFlight();}
   else{++flightRequest;flightTextures=null;void selectTexture();}
 });
 function pathFor(v,s,p){ return '../assets/'+v+'/'+s+'/'+v+'_'+s+'_'+p+'.webp'; }
