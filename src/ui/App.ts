@@ -10,6 +10,7 @@ import { VisitScene } from './VisitScene.js';
 import { StageHud } from './StageHud.js';
 import { UI, installTouchFeedback } from './Motion.js';
 import { applyTint } from './Appearance.js';
+import { hatchCeremony, needsHatch } from './Hatch.js';
 import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
@@ -49,7 +50,7 @@ export interface FamilyContext {
   training: Training | null;
 }
 
-export const APP_VERSION = '0.17.1';
+export const APP_VERSION = '0.18.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -258,6 +259,8 @@ export class App {
       });
       // Matin : rideaux tirés ; soir : couverture déjà posée.
       setTimeout(() => this.morningCheck(), 1200);
+      // Premier lancement : éclosion de l'œuf, choix du nom, premier repas (une seule fois)
+      if (needsHatch(this)) setTimeout(() => { this.show(this.isParent ? 'dragon' : this.screens[0].id); hatchCeremony(this); }, 400);
     }
 
     const duo = family.duo;
