@@ -7,11 +7,11 @@
 <div class="controls"><label>Dragon <select id="variant"><option value="dragon">Dragon</option><option value="dragonne">Dragonne</option></select></label>
 <label>Évolution <select id="stage"><option value="baby" selected>Bébé</option><option value="young">Jeune</option><option value="adult">Adulte</option><option value="legendary">Légendaire</option></select></label>
 <label>Pose <select id="pose"><option value="full">Debout</option><option value="sleep">Sommeil</option><option value="flyUp">Vol : ailes hautes</option><option value="flyDown">Vol : ailes basses</option><option value="flyMid">Vol : ailes médianes (adulte mâle)</option></select></label>
-<label><input id="autoflap" type="checkbox"> Vol animé (poses)</label><label><input id="animate" type="checkbox" checked> Mouvement de caméra</label>
-<label><input id="retina" type="checkbox" checked> DPR élevé</label></div>
+<label><input id="autoflap" type="checkbox"> Vol animé (poses)</label><label><input id="animate" type="checkbox" checked> Mouvements du dragon</label>
+<label><input id="depth" type="checkbox" checked> Volume 2,5D</label><label><input id="retina" type="checkbox" checked> DPR élevé</label></div>
 <div id="viewport" class="stage"><div class="info" id="stats">Initialisation…</div></div>
 <p class="notice" id="status">Chargement du rendu expérimental…</p>
-<p><small>Laboratoire visuel seulement : respiration et réaction au toucher déplacent une image complète ; yeux, membres et ailes ne sont pas encore articulés indépendamment. Dépendance PixiJS chargée depuis CDN : connexion requise. Aucune modification de l'APK ni du moteur principal.</small></p></div>
+<p><small>Laboratoire visuel seulement : respiration et réaction au toucher déplacent une image complète ; le volume 2,5D apporte une ombre au sol, un halo et une parallaxe (ce n’est pas une véritable géométrie 3D) ; yeux, membres et ailes ne sont pas encore articulés indépendamment. Dépendance PixiJS chargée depuis CDN : connexion requise. Aucune modification de l'APK ni du moteur principal.</small></p></div>
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.17.1/dist/pixi.min.js"></script>
 <script type="module" src="./gpu-prototype.js"></script>
 </body></html>
