@@ -2,7 +2,8 @@ import { readFileSync, existsSync } from 'node:fs';
 
 const manifest = JSON.parse(readFileSync('www/assets/manifest.json','utf8'));
 const poses = JSON.parse(readFileSync('www/data/poses.json','utf8'));
-const cap = JSON.parse(readFileSync('capacitor.config.json','utf8'));\nconst approved = JSON.parse(readFileSync('www/assets/approved-dragons.json','utf8'));
+const cap = JSON.parse(readFileSync('capacitor.config.json','utf8'));
+const approved = JSON.parse(readFileSync('www/assets/approved-dragons.json','utf8'));
 
 if (approved.reference !== 'f4532b70-bfde-4b8e-9bfa-5257a8da20ac' || approved.files?.length !== 40) {
   throw new Error('Jeu de sprites approuvé absent ou incomplet');
