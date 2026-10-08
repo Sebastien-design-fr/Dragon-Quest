@@ -38,6 +38,7 @@ let sequence = 0, activePath = '', busy = false;
 let failures = 0, frames = 0, totalFrame = 0, lastMeasurement = performance.now();
 let nextFlap = 0, flapDown = false;
 let babyPose = null;
+let happyUntil = 0;
 controls.autoflap.addEventListener('change', () => {if (controls.autoflap.checked) {controls.pose.value='flyUp'; void selectTexture();} else {controls.pose.value='full'; void selectTexture();}});
 function pathFor(v,s,p){ return '../assets/'+v+'/'+s+'/'+v+'_'+s+'_'+p+'.webp'; }
 async function selectTexture(){
@@ -103,7 +104,7 @@ app.ticker.add((ticker)=>{
     dragonLayer.position.set(app.screen.width*.5,app.screen.height*.54);
     dragonLayer.rotation=0;dragonLayer.scale.set(1);
   }
-  const nextClip = controls.autoflap.checked?'fly':controls.pose.value==='sleep'?'sleep':'idle';
+  const nextClip = elapsed < happyUntil ? 'happy' : controls.autoflap.checked?'fly':controls.pose.value==='sleep'?'sleep':'idle';
   if(controls.stage.value==='baby')clipPlayer.play(nextClip);
   const poseState=clipPlayer.update(dt/1000);
   rigDebug.visible=controls.rig.checked && controls.stage.value==='baby';
@@ -127,6 +128,7 @@ app.canvas.addEventListener('pointerdown',event=>{
   const x=((event.clientX-rect.left)/rect.width-.5)*2;
   const y=((event.clientY-rect.top)/rect.height-.5)*2;
   babyMotion.touch(x,y);
+  happyUntil = elapsed + .7;
   clipPlayer.play('happy',{reset:true});
   depthStage.movePointer(x,y);
 });
