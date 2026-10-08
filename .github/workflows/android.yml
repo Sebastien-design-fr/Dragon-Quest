@@ -7,7 +7,7 @@ name: Android APK
 
 on:
   push:
-    branches: [main, dev, visual-engine-upgrade, v1-polish, lumia-test]
+    branches: [main, dev, visual-engine-upgrade, v1-polish, lumia-test, graphics-engine-v2]
     tags: ['v*']
   workflow_dispatch:
 
