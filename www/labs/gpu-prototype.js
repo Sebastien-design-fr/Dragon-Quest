@@ -25,6 +25,8 @@ sprite.anchor.set(0.5);
 dragonLayer.addChild(sprite);
 let sequence = 0, activePath = '', busy = false;
 let failures = 0, frames = 0, totalFrame = 0, lastMeasurement = performance.now();
+let nextFlap = 0, flapDown = false;
+controls.autoflap.addEventListener('change', () => {if (controls.autoflap.checked) {controls.pose.value='flyUp'; void selectTexture();} else {controls.pose.value='full'; void selectTexture();}});
 function pathFor(v,s,p){ return '../assets/'+v+'/'+s+'/'+v+'_'+s+'_'+p+'.webp'; }
 async function selectTexture(){
   const id = ++sequence, {variant,stage,pose} = Object.fromEntries(['variant','stage','pose'].map(k=>[k,controls[k].value]));
@@ -56,7 +58,7 @@ function layout(){
     sprite.scale.set(Math.min(targetW/sprite.texture.width,targetH/sprite.texture.height,1.25));
   }
 }
-for(const key of ['variant','stage','pose']) controls[key].addEventListener('change',selectTexture);
+for(const key of ['variant','stage','pose']) controls[key].addEventListener('change',()=>{if(key==='pose')controls.autoflap.checked=false;void selectTexture();});
 controls.retina.addEventListener('change',()=>{
   app.renderer.resolution = controls.retina.checked ? Math.min(devicePixelRatio||1,2):1;
   app.renderer.resize(viewport.clientWidth,viewport.clientHeight);
@@ -67,6 +69,12 @@ let elapsed=0;
 app.ticker.add((ticker)=>{
   const dt=Math.min(ticker.deltaMS,80);
   elapsed+=dt/1000;
+  if (controls.autoflap.checked && elapsed >= nextFlap && !busy) {
+    flapDown = !flapDown;
+    controls.pose.value = flapDown ? 'flyDown' : 'flyUp';
+    nextFlap = elapsed + (flapDown ? 0.24 : 0.42);
+    void selectTexture();
+  }
   // Subtle movement only: do not claim this is articulated animation.
   dragonLayer.y=app.screen.height*.54+(controls.animate.checked?Math.sin(elapsed*1.8)*4:0);
   dragonLayer.rotation=controls.animate.checked?Math.sin(elapsed*.7)*.004:0;
