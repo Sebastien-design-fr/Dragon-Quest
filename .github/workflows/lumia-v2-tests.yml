@@ -29,6 +29,7 @@ jobs:
           node www/labs/character-driver.test.mjs
           node www/labs/frame-diagnostics.test.mjs
           node www/labs/baby-assets-audit.test.mjs
+          node www/labs/baby-secondary-motion.test.mjs
       - name: Check browser-module syntax
         run: |
           for file in www/labs/*.js; do node --check "$file"; done
