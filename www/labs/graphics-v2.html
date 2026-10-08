@@ -3,7 +3,7 @@
 <title>Lumia | laboratoire GPU V2</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#081221;color:#ecf5ff;font:15px system-ui,sans-serif}.shell{max-width:1100px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;align-items:center}h1{font-size:21px;margin:0}p{opacity:.83}.stage{height:min(68vh,650px);min-height:350px;background:#152446;border:1px solid #48607e;border-radius:20px;overflow:hidden;position:relative}.stage canvas{display:block}.info{position:absolute;top:12px;left:12px;background:#06101cc9;border-radius:9px;padding:9px;z-index:2;font:12px ui-monospace,monospace;pointer-events:none}.controls{display:flex;flex-wrap:wrap;gap:12px;margin:15px 0}label{display:flex;align-items:center;gap:7px}select,button{background:#18314c;color:white;border:1px solid #557495;border-radius:8px;padding:8px}button{cursor:pointer}small{opacity:.65}.notice{font-size:13px;color:#a9c8eb}
-</style></head><body><div class="shell"><div class="top"><div><h1>🐉 Lumia — laboratoire graphique GPU V2</h1><p>Phase prioritaire : bébés dragon et dragonne, rendu PixiJS WebGL direct.</p></div><a style="color:#b9e4ff" href="../index.html">Retour au jeu</a></div>
+</style></head><body><div class="shell"><div class="top"><div><h1>🐉 Lumia — laboratoire graphique GPU V2</h1><p>Phase prioritaire : bébés dragon et dragonne, rendu PixiJS WebGL direct. Touchez le dragon pour tester sa réaction.</p></div><a style="color:#b9e4ff" href="../index.html">Retour au jeu</a></div>
 <div class="controls"><label>Dragon <select id="variant"><option value="dragon">Dragon</option><option value="dragonne">Dragonne</option></select></label>
 <label>Évolution <select id="stage"><option value="baby" selected>Bébé</option><option value="young">Jeune</option><option value="adult">Adulte</option><option value="legendary">Légendaire</option></select></label>
 <label>Pose <select id="pose"><option value="full">Debout</option><option value="sleep">Sommeil</option><option value="flyUp">Vol : ailes hautes</option><option value="flyDown">Vol : ailes basses</option><option value="flyMid">Vol : ailes médianes (adulte mâle)</option></select></label>
@@ -11,7 +11,7 @@
 <label><input id="retina" type="checkbox" checked> DPR élevé</label></div>
 <div id="viewport" class="stage"><div class="info" id="stats">Initialisation…</div></div>
 <p class="notice" id="status">Chargement du rendu expérimental…</p>
-<p><small>Laboratoire visuel seulement : les poses sont des images entières, pas encore un véritable rig anatomique multicouche. Dépendance PixiJS chargée depuis CDN : connexion requise. Aucune modification de l'APK ni du moteur principal.</small></p></div>
+<p><small>Laboratoire visuel seulement : respiration et réaction au toucher déplacent une image complète ; yeux, membres et ailes ne sont pas encore articulés indépendamment. Dépendance PixiJS chargée depuis CDN : connexion requise. Aucune modification de l'APK ni du moteur principal.</small></p></div>
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.17.1/dist/pixi.min.js"></script>
 <script type="module" src="./gpu-prototype.js"></script>
 </body></html>
