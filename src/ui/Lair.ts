@@ -5,6 +5,7 @@ import type { DecorItem } from '../engine/DecorLayer.js';
 import type { App } from './App.js';
 import { ICONS, h, icon } from './dom.js';
 import { UI } from './Motion.js';
+import { eventDecor } from './Seasonal.js';
 
 export interface DecorDef {
   id: string; label: string; price: number; hint: string;
@@ -94,6 +95,7 @@ export function syncDecor(app: App): void {
     }
   }
   for (const s of debrisSlots(app)) items.push(debrisItem(s));
+  items.push(...eventDecor(app));   // décor de saison (Halloween…), non déplaçable
   app.view.decor.set(items);
 }
 
@@ -213,6 +215,7 @@ export function openLair(app: App): void {
     const hit = view.decor.hit(p.x, p.y);
     if (!hit) { select(null); return; }
     if (hit.debris) { tidy(app, hit.key); return; }
+    if (!defOf(hit.key)) { select(null); return; }   // décor de saison : fixe
     const pos = placement(app, hit.key);
     drag = { key: hit.key, x0: p.x, y0: p.y, dx: pos.dx, dy: pos.dy, id: e.pointerId, moved: false };
     dragging = true;

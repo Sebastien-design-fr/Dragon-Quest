@@ -212,3 +212,15 @@
 .lx-state { font-size: 11px; color: var(--muted); display: inline-flex; align-items: center; gap: 2px; }
 .lx-item.placed .lx-state { color: #8fd8a0; }
 .lx-item:not(.owned) .lx-state { color: var(--gold); font-weight: 700; }
+
+/* ---------- Événement : Halloween (semaine du 31 octobre) ---------- */
+:root[data-event="halloween"], :root[data-event="halloween"][data-stage] { --st: #ff8f2e; --st-2: #a066ff; --st-glow: rgba(255,140,40,.4); --st-bg: #1d1020; }
+.ev-card { display: flex; flex-direction: column; gap: 8px; border-color: rgba(255,143,46,.55) !important;
+  background: radial-gradient(120% 120% at 100% 0%, rgba(160,102,255,.25), transparent 55%), radial-gradient(120% 120% at 0% 100%, rgba(255,143,46,.22), transparent 55%), linear-gradient(180deg, #1f1522, #140f17) !important; }
+.ev-head { display: flex; align-items: center; justify-content: space-between; }
+.ev-k { font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #ffb066; }
+.ev-card h3 { margin: 0; font-family: var(--display); color: #ffd6a0; }
+.ev-card p { margin: 0; color: var(--text); opacity: .85; }
+.ev-candies { display: flex; gap: 6px; }
+.ev-candies i { width: 26px; height: 26px; border-radius: 50%; border: 2px dashed rgba(255,176,102,.4); }
+.ev-candies i.on { border: 0; background: radial-gradient(circle at 35% 35%, #ffe0a8, #ff8f2e 55%, #b0420c); box-shadow: 0 0 10px rgba(255,140,40,.6); }

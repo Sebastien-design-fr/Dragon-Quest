@@ -12,6 +12,7 @@ import { UI, installTouchFeedback } from './Motion.js';
 import { applyTint } from './Appearance.js';
 import { hatchCeremony, needsHatch } from './Hatch.js';
 import { installLairTaps, syncDecor } from './Lair.js';
+import { installSeasonal, syncSeasonal } from './Seasonal.js';
 import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
@@ -51,7 +52,7 @@ export interface FamilyContext {
   training: Training | null;
 }
 
-export const APP_VERSION = '0.19.0';
+export const APP_VERSION = '0.20.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -165,7 +166,7 @@ export class App {
     };
     applySound();
     view.onClip = clip => Sound.forClip(clip, view.stage?.id ?? 'adult', view.variant);
-    Sound.warm(['purr', 'chirp', 'coins', 'gem']);
+    Sound.warm(['rumble', 'chuff', 'coins', 'gem']);
     let lastGold = state.data.gold;
     state.events.on('change', d => {
       applySound();
@@ -259,6 +260,7 @@ export class App {
     }
 
     if (comp) {
+      installSeasonal(this);
       this.surprises = installSurprises(this);
       installShake(this);
       family.training?.events.on('levelUp', ({ stat, level, tricks }) => {
@@ -357,6 +359,7 @@ export class App {
 
   refresh(): void {
     this.syncWidget();
+    syncSeasonal();
     syncDecor(this);
     if (this.showingOwn) applyTint(this); else this.view.tint = null;
     this.renderHud();

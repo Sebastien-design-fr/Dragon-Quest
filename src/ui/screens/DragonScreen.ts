@@ -15,6 +15,7 @@ import { familyQuestCard } from '../FamilyQuestCard.js';
 import { openPhotoMode } from '../PhotoMode.js';
 import { questDeck, questDeckBusy } from '../QuestDeck.js';
 import { appearanceSheet, collectionCard } from '../Appearance.js';
+import { eventCard } from '../Seasonal.js';
 
 export class DragonScreen implements Screen {
   id = 'dragon'; label = 'Dragon'; icon = ICONS.dragon;
@@ -34,7 +35,7 @@ export class DragonScreen implements Screen {
     if (!comp) return;
     // Refonte UX : la prochaine quête d'abord (un seul geste), puis « À découvrir » en carrousel horizontal.
     const discover = [
-      dailyChestCard(app), nextStageCard(app), collectionCard(app),
+      eventCard(app), dailyChestCard(app), nextStageCard(app), collectionCard(app),
       book ? this.expeditionCard(comp) : null,
       app.family.duo ? familyQuestCard(app) : null,
       app.family.duo ? this.friendCard(comp) : null

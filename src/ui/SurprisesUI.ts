@@ -262,7 +262,7 @@ export function installSurprises(app: App, debug: SurprisesDebug = {}): { stop()
       applyLoot(app, loot);
       app.view.burstAt(e.clientX, e.clientY, 'shine');
       app.view.burstAt(e.clientX, e.clientY, 'levelUpBurst');
-      void Sound.play('chirp', { user: true });
+      void Sound.play('chuff', { user: true });
       floatLoot(layer, lx, ly - 10, loot, parent);
       const label = VISITORS[kind].label;
       app.toast(loot.memory ? `Nouveau souvenir dans l’album : ${label} !` : `${label[0].toUpperCase()}${label.slice(1)} attrapé${FEMININE[kind] ? 'e' : ''} : ${lootText(loot, parent)}`);

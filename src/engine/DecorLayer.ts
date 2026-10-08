@@ -38,6 +38,10 @@ export class DecorLayer {
   selected: string | null = null;
   /** Zones à l'écran (pixels du canvas) de la dernière image, pour toucher / déplacer. */
   rects: DecorRect[] = [];
+  /** Chauves-souris (événement Halloween) qui traversent le haut de la scène. */
+  bats = false;
+  private batList: Array<{ x: number; y: number; vx: number; ph: number; s: number; bob: number }> = [];
+  private batTimer = 1.5;
   /** Repère de la dernière image : origine (pixels) et unité (pixels par unité de scène). */
   frame = { ox: 0, oy: 0, u: 1 };
 
@@ -84,6 +88,7 @@ export class DecorLayer {
     const list = this.items.filter(it => (which === 'front') === inFront(it))
       .sort((a, b) => (a.anchor === 'ground' ? -1 : 0) - (b.anchor === 'ground' ? -1 : 0) || (a.anchor === 'wall' ? -1 : 0) - (b.anchor === 'wall' ? -1 : 0) || a.dy - b.dy);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (which === 'back') this.drawBats(ctx, W, ground, u, dt);
     for (const it of list) {
       const p = this.place(it);
       if (!p) continue;
@@ -127,5 +132,39 @@ export class DecorLayer {
     }
     ctx.globalAlpha = 1;
     this.items = this.items.filter(i => !(i.debris && i.gone && i.gone >= 1));
+  }
+
+  /** Silhouettes de chauves-souris : vol battu, trajectoire ondulée, une à trois à la fois. */
+  private drawBats(ctx: CanvasRenderingContext2D, W: number, ground: number, u: number, dt: number): void {
+    if (!this.bats) { this.batList = []; return; }
+    this.batTimer -= dt;
+    if (this.batTimer <= 0 && this.batList.length < 3) {
+      const left = Math.random() < 0.5;
+      this.batList.push({ x: left ? -40 : W + 40, y: ground - u * (0.45 + Math.random() * 0.4), vx: (left ? 1 : -1) * u * (0.25 + Math.random() * 0.2),
+        ph: Math.random() * 6, s: u * (0.022 + Math.random() * 0.016), bob: Math.random() * 6 });
+      this.batTimer = 2.5 + Math.random() * 5;
+    }
+    ctx.fillStyle = '#140d18';
+    for (const b of this.batList) {
+      b.x += b.vx * dt; b.ph += dt * 16; b.bob += dt * 2.2;
+      const y = b.y + Math.sin(b.bob) * b.s * 1.5;
+      const f = Math.sin(b.ph), s = b.s;
+      ctx.save(); ctx.translate(b.x, y); ctx.scale(b.vx < 0 ? -1 : 1, 1);
+      ctx.beginPath();
+      // ailes festonnées qui battent
+      for (const side of [-1, 1]) {
+        ctx.moveTo(0, 0);
+        ctx.lineTo(side * s * 0.9, -s * 0.5 * f - s * 0.2);
+        ctx.lineTo(side * s * 1.9, -s * 0.9 * f);
+        ctx.quadraticCurveTo(side * s * 1.5, s * 0.1, side * s * 1.2, s * 0.25 - s * 0.3 * f);
+        ctx.quadraticCurveTo(side * s * 0.8, s * 0.05, side * s * 0.55, s * 0.3 - s * 0.2 * f);
+        ctx.quadraticCurveTo(side * s * 0.3, s * 0.1, 0, s * 0.25);
+      }
+      ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, s * 0.05, s * 0.28, s * 0.38, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-s * 0.2, -s * 0.25); ctx.lineTo(-s * 0.12, -s * 0.5); ctx.lineTo(-s * 0.02, -s * 0.28); ctx.lineTo(s * 0.08, -s * 0.5); ctx.lineTo(s * 0.18, -s * 0.25); ctx.fill();
+      ctx.restore();
+    }
+    this.batList = this.batList.filter(b => b.x > -80 && b.x < W + 80);
   }
 }

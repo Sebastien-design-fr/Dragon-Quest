@@ -37,10 +37,10 @@ export function qualityCard(app: App): HTMLElement {
 export function soundCard(app: App): HTMLElement {
   const s = app.state.data.settings;
   const vol = h('input', { type: 'range', min: '0', max: '100', step: '5', value: String(Math.round((s.volume ?? 0.7) * 100)), 'aria-label': 'Volume',
-    onchange: (e: Event) => { app.state.setSound(true, Number((e.target as HTMLInputElement).value) / 100); void Sound.play('chirp', { user: true }); } });
+    onchange: (e: Event) => { app.state.setSound(true, Number((e.target as HTMLInputElement).value) / 100); void Sound.play('chuff', { user: true }); } });
   return h('section', { class: 'card' },
     h('h3', null, 'Sons'),
-    toggle('Sons du dragon', s.sound !== false, v => { app.state.setSound(v); if (v) void Sound.play('chirp', { user: true }); }),
+    toggle('Sons du dragon', s.sound !== false, v => { app.state.setSound(v); if (v) void Sound.play('chuff', { user: true }); }),
     h('label', { class: 'field-col' }, h('span', { class: 'small' }, 'Volume'), vol),
     toggle('Ambiance sonore du décor', s.ambience !== false, v => app.state.setSoundOptions({ ambience: v })),
     toggle('Sons des boutons', s.uiSounds !== false, v => { app.state.setSoundOptions({ uiSounds: v }); if (v) Sound.ui('tap'); }),

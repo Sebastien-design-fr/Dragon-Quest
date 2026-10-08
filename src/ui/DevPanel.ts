@@ -2,6 +2,7 @@
 // vitesse de lecture, comparaisons avant / après, et mesures (images/s, temps par image, particules…).
 import { Assets } from '../engine/AssetManager.js';
 import { MeshRenderer } from '../engine/SpriteSkin.js';
+import { currentEvent, forceEvent } from './Seasonal.js';
 import type { QualityLevel } from '../core/types.js';
 import type { App } from './App.js';
 import { h } from './dom.js';
@@ -88,6 +89,8 @@ export function toggleDevPanel(app: App): void {
     check('Points d’ancrage', view.showAnchors, v => { view.showAnchors = v; }),
     h('div', { class: 'dv-label' }, 'Performances (LOT 7)'),
     check('Résolution adaptative', view.adaptive, v => { view.adaptive = v; }),
+    h('div', { class: 'dv-label' }, 'Événements'),
+    check('Forcer le mode Halloween', currentEvent() === 'halloween', v => { forceEvent(v ? 'halloween' : null); app.refresh(); }),
     stats);
   document.body.append(panel);
 
