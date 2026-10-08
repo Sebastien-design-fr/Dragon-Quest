@@ -11,3 +11,14 @@ if (existsSync(src)) {
 } else {
   console.log('vendor: @capacitor/core absent (mode navigateur uniquement)');
 }
+
+// PixiJS for the offline Android graphics lab: no CDN or runtime fetch.
+const pixiSource = new URL('../node_modules/pixi.js/dist/pixi.min.js', import.meta.url).pathname;
+const pixiTarget = new URL('../www/labs/vendor/', import.meta.url).pathname;
+mkdirSync(pixiTarget, { recursive: true });
+if (existsSync(pixiSource)) {
+  copyFileSync(pixiSource, pixiTarget + 'pixi.min.js');
+  console.log('vendor: PixiJS copied for offline Lumia V2');
+} else {
+  throw new Error('PixiJS distribution missing: install dependencies before build');
+}
