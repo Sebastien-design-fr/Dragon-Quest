@@ -1,4 +1,5 @@
 import { BabyMotion } from './baby-motion.js';
+import { FrameDiagnostics } from './frame-diagnostics.js';
 import { DepthStage } from './depth-stage.js';
 import { CharacterPoseCache } from './pose-cache.js';
 import { ClipPlayer } from './clip-player.js';
@@ -16,6 +17,8 @@ if (!Application) {
   throw new Error('PIXI non disponible');
 }
 const babyMotion = new BabyMotion();
+const diagnostics = new FrameDiagnostics(600);
+let previousFrameTime = null;
 const clipPlayer = new ClipPlayer();
 const poseCache = new CharacterPoseCache(Assets);
 const app = new Application();
@@ -158,6 +161,9 @@ depthStage.configure({enabled:controls.depth.checked});
 window.addEventListener('resize',layout);
 let elapsed=0;
 app.ticker.add((ticker)=>{
+  const frameTime=performance.now();
+  if(previousFrameTime!==null)diagnostics.add(frameTime-previousFrameTime);
+  previousFrameTime=frameTime;
   const dt=Math.min(ticker.deltaMS,80)*Number(controls.speed.value);
   elapsed+=dt/1000;
   if (controls.autoflap.checked && elapsed >= nextFlap && !busy) {
@@ -189,7 +195,8 @@ app.ticker.add((ticker)=>{
   const now=performance.now();
   if(now-lastMeasurement>1000){
     const fps=Math.round(frames*1000/(now-lastMeasurement));
-    stats.textContent='WebGL GPU direct | '+fps+' FPS | '+(totalFrame/frames).toFixed(1)+' ms/frame RAF | DPR '+app.renderer.resolution+' | '+(sprite.texture?.width||'–')+'×'+(sprite.texture?.height||'–')+' | '+(busy?'chargement':failures?'image absente':'actif');
+    const diag=diagnostics.summary();
+    stats.textContent='WebGL | '+fps+' FPS (1 s) | p95 '+(diag.p95Ms?.toFixed(1)??'–')+' ms | DPR '+app.renderer.resolution+' | '+(sprite.texture?.width||'–')+'×'+(sprite.texture?.height||'–')+' | '+(busy?'chargement':failures?'image absente':'actif');
     frames=0;totalFrame=0;lastMeasurement=now;
   }
 });
