@@ -1,0 +1,30 @@
+name: Lumia V2 - engine regression checks
+on:
+  push:
+    branches: [graphics-engine-v2]
+    paths:
+      - 'www/labs/**'
+      - 'docs/baby-layer-contract.example.json'
+      - '.github/workflows/lumia-v2-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  module-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run reusable engine logic tests
+        run: |
+          node www/labs/baby-motion.test.mjs
+          node www/labs/pose-cache.test.mjs
+          node www/labs/clip-player.test.mjs
+          node www/labs/rollout.test.mjs
+      - name: Check browser-module syntax
+        run: |
+          for file in www/labs/*.js; do node --check "$file"; done
