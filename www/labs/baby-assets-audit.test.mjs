@@ -8,4 +8,8 @@ assert.equal(result.ready,true);
 assert.equal(result.reports.length,2);
 const absent=await auditBabyAssets(async()=>({ok:false,status:404}));
 assert.equal(absent.ready,false);
+assert.equal(auditRig({parts:[{name:'body',texture:'../wrong.webp',position:[0,0]}]}).ready,false);
+const missingTexture=await auditBabyAssets(async(url)=>url.endsWith('tail.webp')?{ok:false,status:404}:{ok:true,json:async()=>({parts})});
+assert.equal(missingTexture.ready,false);
+assert.ok(missingTexture.reports.every(x=>x.missing.includes('tail')));
 console.log('Baby asset audit tests passed');
