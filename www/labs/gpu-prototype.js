@@ -1,4 +1,5 @@
 import { BabyMotion } from './baby-motion.js';
+import { BabySecondaryMotion, combineMotion } from './baby-secondary-motion.js';
 import { FrameDiagnostics } from './frame-diagnostics.js';
 import { auditBabyAssets } from './baby-assets-audit.js';
 import { DepthStage } from './depth-stage.js';
@@ -18,6 +19,7 @@ if (!Application) {
   throw new Error('PIXI non disponible');
 }
 const babyMotion = new BabyMotion();
+const secondaryMotion=new BabySecondaryMotion();
 const diagnostics = new FrameDiagnostics(600);
 let previousFrameTime = null;
 const clipPlayer = new ClipPlayer();
@@ -238,7 +240,10 @@ app.ticker.add((ticker)=>{
   const poseState=clipPlayer.update(dt/1000);
   rigDebug.visible=controls.rig.checked && controls.stage.value==='baby';
   rigDebug.draw(poseState);
-  if(layered.root.visible)applyClipToCharacter(layered,poseState);
+  if(layered.root.visible){
+    const secondary=secondaryMotion.update(dt/1000,nextClip);
+    applyClipToCharacter(layered,combineMotion(poseState,secondary));
+  }
   depthStage.tick(dt/1000,{x:0,y:0,width:app.screen.width,height:app.screen.height,airborne:controls.autoflap.checked});
   frames++;totalFrame+=dt;
   const now=performance.now();
@@ -259,6 +264,7 @@ app.canvas.addEventListener('pointerdown',event=>{
   const x=((event.clientX-rect.left)/rect.width-.5)*2;
   const y=((event.clientY-rect.top)/rect.height-.5)*2;
   babyMotion.touch(x,y);
+  secondaryMotion.touch(x);
   happyUntil = elapsed + .7;
   clipPlayer.play('happy',{reset:true});
   depthStage.movePointer(x,y);
