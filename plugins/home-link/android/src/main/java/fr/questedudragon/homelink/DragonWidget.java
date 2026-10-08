@@ -37,6 +37,17 @@ public class DragonWidget extends AppWidgetProvider {
     static void save(Context c, String json) {
         c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("data", json).apply();
         refresh(c);
+        toWatch(c, json);
+    }
+
+    /** Même résumé envoyé à la montre (tuile Galaxy Watch) ; sans montre ni services Google, rien ne se passe. */
+    private static void toWatch(Context c, String json) {
+        try {
+            com.google.android.gms.wearable.PutDataMapRequest req = com.google.android.gms.wearable.PutDataMapRequest.create("/qd/status");
+            req.getDataMap().putString("json", json);
+            req.getDataMap().putLong("t", System.currentTimeMillis());
+            com.google.android.gms.wearable.Wearable.getDataClient(c.getApplicationContext()).putDataItem(req.asPutDataRequest().setUrgent());
+        } catch (Throwable ignored) { }
     }
 
     static void refresh(Context c) {

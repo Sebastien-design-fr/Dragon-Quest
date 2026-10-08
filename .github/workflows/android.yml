@@ -44,6 +44,9 @@ jobs:
           npx cap sync android 2>&1 | tee -a ci.log
           # Icône du dragon (générée par scripts/make-icon.py)
           cp -r resources/android/res/. android/app/src/main/res/
+          # Appli de montre (tuile Galaxy Watch) : module « wear » ajouté au projet Android
+          rm -rf android/wear && cp -r wear android/wear
+          grep -q "':wear'" android/settings.gradle || echo "include ':wear'" >> android/settings.gradle
 
       - name: Compilation de l'APK
         working-directory: android
@@ -78,13 +81,19 @@ jobs:
             --ks-pass pass:"$SIGNING_PASSWORD" --key-pass pass:"$SIGNING_PASSWORD" \
             --out quete-du-dragon.apk android/app/build/outputs/apk/debug/app-debug.apk
           $BT/apksigner verify --print-certs quete-du-dragon.apk | head -3
+          # même clé pour la montre : indispensable pour que la montre et le téléphone se parlent
+          $BT/apksigner sign --ks signing/quete-du-dragon.keystore --ks-key-alias quete \
+            --ks-pass pass:"$SIGNING_PASSWORD" --key-pass pass:"$SIGNING_PASSWORD" \
+            --out quete-du-dragon-montre.apk android/wear/build/outputs/apk/debug/wear-debug.apk
         env:
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD || 'quetedudragon' }}
 
       - uses: actions/upload-artifact@v4
         with:
           name: quete-du-dragon-apk
-          path: quete-du-dragon.apk
+          path: |
+            quete-du-dragon.apk
+            quete-du-dragon-montre.apk
 
       # Branche de test du moteur graphique : pré-release à part, qui ne remplace PAS le lien « latest » de la famille.
       - name: APK de test (visual-engine-upgrade)
@@ -95,7 +104,9 @@ jobs:
           name: Test moteur graphique (build ${{ github.run_number }})
           prerelease: true
           make_latest: false
-          files: quete-du-dragon.apk
+          files: |
+            quete-du-dragon.apk
+            quete-du-dragon-montre.apk
 
       - name: Release (branche main et tags uniquement)
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
@@ -104,4 +115,6 @@ jobs:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('build-{0}', github.run_number) }}
           name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('Version de test n°{0}', github.run_number) }}
           make_latest: true
-          files: quete-du-dragon.apk
+          files: |
+            quete-du-dragon.apk
+            quete-du-dragon-montre.apk

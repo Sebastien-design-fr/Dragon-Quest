@@ -55,6 +55,8 @@ export interface Transport {
 
 export interface WidgetData {
   name: string; sub: string; image: string; streak: number; status: string; statusDate: string;
+  /** Montre : variante et stade (pour la bonne vignette du dragon). */
+  variant: string; stage: string;
   /** Téléphone d'un parent : ligne affichée à la place des quêtes. */
   line?: string;
   days: Array<{ date: string; total: number; done: number; next: string }>;

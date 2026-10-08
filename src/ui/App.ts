@@ -106,6 +106,7 @@ export class App {
       void this.family.link.updateWidget({
         name, sub: `${this.stageLabel(stage.label)} · niveau ${this.state.data.level}`,
         image: Assets.dragonPart(stage.id, 'full', this.ownVariant) ?? '', streak: book?.streak() ?? 0,
+        variant: this.ownVariant, stage: stage.id,
         status, statusDate: todayKey(), days,
         line: this.isParent ? (pending ? `${pending} demande${pending > 1 ? 's' : ''} à valider` : 'Tout est à jour') : undefined
       });

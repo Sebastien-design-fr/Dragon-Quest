@@ -38,4 +38,6 @@ repositories {
 dependencies {
     implementation project(':capacitor-android')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    // Tuile Galaxy Watch : envoi du résumé à la montre (couche de données Wear OS)
+    implementation "com.google.android.gms:play-services-wearable:19.0.0"
 }
