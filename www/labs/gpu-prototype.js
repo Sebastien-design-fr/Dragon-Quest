@@ -54,8 +54,9 @@ async function refreshLayers(){
     if(!def)return; // flat-sprite fallback until artists approve individual layers
     const ok=await layered.load(def);
     if(request!==layerGeneration||!ok)return;
-    layered.root.visible=true;
-    sprite.visible=false;
+    layered.root.visible=!controls.compare.checked;
+    sprite.visible=controls.compare.checked;
+    layout();
     status.textContent='Rig multicouche chargé: '+controls.variant.value+' bébé';
   }catch(error){if(request===layerGeneration){console.warn('Layers unavailable: flat sprite fallback',error);layered.root.visible=false;sprite.visible=true;}}
 }
@@ -81,7 +82,13 @@ async function loadComparison(){
     comparisonSprite.visible=true;layout();
   }catch(e){if(id===compareGeneration){status.textContent='Comparaison indisponible : illustration absente';console.warn(e);}}
 }
-controls.compare.addEventListener('change',()=>{void loadComparison();layout();});
+controls.compare.addEventListener('change',()=>{
+  if(controls.compare.checked){layered.root.visible=false;sprite.visible=true;}
+  else if(layered.definition && controls.stage.value==='baby' && controls.pose.value==='full'){
+    layered.root.visible=true;sprite.visible=false;
+  }
+  void loadComparison();layout();
+});
 controls.capture.addEventListener('click',()=>{
   try{const a=document.createElement('a');a.download='lumia-bebes-v2.png';a.href=app.canvas.toDataURL('image/png');a.click();}
   catch(e){status.textContent='Capture indisponible (WebGL ou droits du navigateur).';console.warn(e);}
@@ -93,6 +100,11 @@ async function selectTexture(){
   controls.pose.querySelector('option[value="flyMid"]').disabled = !(variant==='dragon' && stage==='adult');
   if (pose==='flyMid' && !(variant==='dragon' && stage==='adult')) {controls.pose.value='flyUp';return selectTexture();}
   const next = pathFor(variant,stage,controls.pose.value);
+  if(pose!=='full' || stage!=='baby'){
+    ++layerGeneration;
+    layered.root.visible=false;
+    sprite.visible=true;
+  }
   busy = true;status.textContent = 'Chargement : '+next;
   try {
     const texture = await poseCache.load(variant,stage,controls.pose.value);
@@ -103,7 +115,7 @@ async function selectTexture(){
     status.textContent = 'Texture chargée : '+texture.width+' × '+texture.height+' px — '+next;
     layout();
     void loadComparison();
-    if(pose==='full')void refreshLayers();
+    if(pose==='full' && stage==='baby')void refreshLayers();
     if (stage === 'baby' && pose === 'full') void poseCache.preload(variant,stage,['sleep','flyUp','flyDown']);
   } catch (err) {
     if (id !== sequence) return;
@@ -123,6 +135,10 @@ function layout(){
     const slotW=comparisonOn?targetW*.49:targetW;
     sprite.scale.set(Math.min(slotW/sprite.texture.width,targetH/sprite.texture.height,1.25));
     sprite.x=comparisonOn?-w*.22:0;
+    layered.root.position.set(sprite.x,0);
+    layered.root.scale.set(sprite.scale.x);
+    layered.root.visible=layered.root.visible && !comparisonOn;
+    if(comparisonOn)sprite.visible=true;
     comparisonSprite.x=w*.22;
     comparisonSprite.y=0;
     if(comparisonSprite.texture?.width && comparisonSprite.texture?.height){
