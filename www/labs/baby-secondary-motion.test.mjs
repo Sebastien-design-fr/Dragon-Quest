@@ -14,6 +14,7 @@ for(let i=0;i<270;i++)blinkCheck.update(1/60,'idle');
 const lidClosed=blinkCheck.update(.06,'idle').eyelid.scaleY;
 assert.ok(lidOpen < .1);
 assert.ok(lidClosed > .1);
+assert.equal(new BabySecondaryMotion().update(.016,'sleep').eyelid.scaleY,1);
 motion.touch(-1);
 const result=motion.update(.15,'idle');
 assert.ok(Number.isFinite(result.jaw.rot));
