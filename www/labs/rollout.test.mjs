@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { BABY_CLIPS } from './clip-player.js';
+import { babyReady,planRollout,retargetClips,validateClips,validateRig } from './rollout.js';
+assert.deepEqual(validateClips(BABY_CLIPS),[]);
+const parts=['body','head','tail','wingNear','wingFar'].map((name,i)=>({name,parent:i?'body':undefined,texture:name+'.webp',position:[i,0]}));
+assert.deepEqual(validateRig({parts}),[]);
+assert.equal(babyReady({}),false);
+assert.equal(planRollout({}).next.length,0);
+const good={artApproved:true,rigValidated:true,animationsValidated:true,androidTested:true,p95FrameMs:19,fps:55,crashes:0};
+const reports={'dragon:baby':good,'dragonne:baby':good};
+assert.equal(babyReady(reports),true);
+assert.equal(planRollout(reports).next.length,6);
+const scaled=retargetClips(BABY_CLIPS,{motionScale:.8,tempo:1.1});
+assert.ok(scaled.fly.duration < BABY_CLIPS.fly.duration);
+assert.equal(BABY_CLIPS.fly.duration,.85);
+assert.deepEqual(validateClips(scaled),[]);
+console.log('Rollout tests passed');
