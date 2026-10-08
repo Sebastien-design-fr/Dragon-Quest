@@ -1,17 +1,20 @@
 import { BabyMotion } from './baby-motion.js';
 import { DepthStage } from './depth-stage.js';
 import { CharacterPoseCache } from './pose-cache.js';
+import { ClipPlayer } from './clip-player.js';
+import { RigDebug } from './rig-debug.js';
 // Prototype isolé, aucun import de la logique du jeu ou changement d'APK.
 const { Application, Assets, Sprite, Container, Graphics } = window.PIXI ?? {};
 const viewport = document.getElementById('viewport');
 const stats = document.getElementById('stats');
 const status = document.getElementById('status');
-const controls = Object.fromEntries(['variant','stage','pose','animate','retina','autoflap','depth'].map(k=>[k,document.getElementById(k)]));
+const controls = Object.fromEntries(['variant','stage','pose','animate','retina','autoflap','depth','rig'].map(k=>[k,document.getElementById(k)]));
 if (!Application) {
   status.textContent = 'PixiJS indisponible : vérifier la connexion CDN.';
   throw new Error('PIXI non disponible');
 }
 const babyMotion = new BabyMotion();
+const clipPlayer = new ClipPlayer();
 const poseCache = new CharacterPoseCache(Assets);
 const app = new Application();
 await app.init({
@@ -30,6 +33,7 @@ scenery.addChild(mountain);
 const sprite = new Sprite();
 sprite.anchor.set(0.5);
 dragonLayer.addChild(sprite);
+const rigDebug = new RigDebug(window.PIXI,dragonLayer);
 let sequence = 0, activePath = '', busy = false;
 let failures = 0, frames = 0, totalFrame = 0, lastMeasurement = performance.now();
 let nextFlap = 0, flapDown = false;
@@ -99,6 +103,11 @@ app.ticker.add((ticker)=>{
     dragonLayer.position.set(app.screen.width*.5,app.screen.height*.54);
     dragonLayer.rotation=0;dragonLayer.scale.set(1);
   }
+  const nextClip = controls.autoflap.checked?'fly':controls.pose.value==='sleep'?'sleep':'idle';
+  if(controls.stage.value==='baby')clipPlayer.play(nextClip);
+  const poseState=clipPlayer.update(dt/1000);
+  rigDebug.visible=controls.rig.checked && controls.stage.value==='baby';
+  rigDebug.draw(poseState);
   depthStage.tick(dt/1000,{x:0,y:0,width:app.screen.width,height:app.screen.height,airborne:controls.autoflap.checked});
   frames++;totalFrame+=dt;
   const now=performance.now();
@@ -118,5 +127,6 @@ app.canvas.addEventListener('pointerdown',event=>{
   const x=((event.clientX-rect.left)/rect.width-.5)*2;
   const y=((event.clientY-rect.top)/rect.height-.5)*2;
   babyMotion.touch(x,y);
+  clipPlayer.play('happy',{reset:true});
   depthStage.movePointer(x,y);
 });
