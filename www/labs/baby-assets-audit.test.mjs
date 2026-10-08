@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import {auditRig,auditBabyAssets} from './baby-assets-audit.js';
 assert.equal(auditRig(null).ready,false);
-assert.deepEqual(auditRig({parts:[{name:'body'}]}).missing,['head','tail','wingNear','wingFar']);
-const parts=['body','head','tail','wingNear','wingFar'].map(name=>({name,texture:name+'.webp'}));
+assert.deepEqual(auditRig({parts:[{name:'body',texture:'body.webp',position:[0,0]}]}).missing,['head','tail','wingNear','wingFar']);
+const parts=['body','head','tail','wingNear','wingFar'].map(name=>({name,texture:name+'.webp',position:[0,0]}));
 const result=await auditBabyAssets(async(url)=>({ok:true,json:async()=>({parts})}));
 assert.equal(result.ready,true);
 assert.equal(result.reports.length,2);
