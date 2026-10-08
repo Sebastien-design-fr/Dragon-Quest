@@ -48,6 +48,7 @@ dragonLayer.addChild(layered.root);
 let layerGeneration=0;
 async function refreshLayers(){
   const request=++layerGeneration;
+  layered.cancelPending();
   layered.root.visible=false;
   sprite.visible=true;
   if(controls.stage.value!=='baby')return;
@@ -86,7 +87,7 @@ async function loadComparison(){
   }catch(e){if(id===compareGeneration){status.textContent='Comparaison indisponible : illustration absente';console.warn(e);}}
 }
 controls.compare.addEventListener('change',()=>{
-  if(controls.compare.checked){layered.root.visible=false;sprite.visible=true;}
+  if(controls.compare.checked){layered.cancelPending();++layerGeneration;layered.root.visible=false;sprite.visible=true;}
   else if(layered.definition && controls.stage.value==='baby' && controls.pose.value==='full'){
     layered.root.visible=true;sprite.visible=false;
   }
@@ -104,6 +105,7 @@ async function selectTexture(){
   if (pose==='flyMid' && !(variant==='dragon' && stage==='adult')) {controls.pose.value='flyUp';return selectTexture();}
   const next = pathFor(variant,stage,controls.pose.value);
   if(pose!=='full' || stage!=='baby'){
+    layered.cancelPending();
     ++layerGeneration;
     layered.root.visible=false;
     sprite.visible=true;
