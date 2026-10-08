@@ -42,6 +42,8 @@ export function soundCard(app: App): HTMLElement {
     h('h3', null, 'Sons'),
     toggle('Sons du dragon', s.sound !== false, v => { app.state.setSound(v); if (v) void Sound.play('chirp', { user: true }); }),
     h('label', { class: 'field-col' }, h('span', { class: 'small' }, 'Volume'), vol),
+    toggle('Ambiance sonore du décor', s.ambience !== false, v => app.state.setSoundOptions({ ambience: v })),
+    toggle('Sons des boutons', s.uiSounds !== false, v => { app.state.setSoundOptions({ uiSounds: v }); if (v) Sound.ui('tap'); }),
     h('p', { class: 'small muted' }, 'Le dragon reste silencieux la nuit (22 h – 7 h), sauf quand tu le touches.'));
 }
 

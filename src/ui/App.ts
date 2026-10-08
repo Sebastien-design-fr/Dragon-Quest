@@ -8,6 +8,7 @@ import type { Duo } from '../family/Duo.js';
 import type { Training } from '../family/Training.js';
 import { VisitScene } from './VisitScene.js';
 import { StageHud } from './StageHud.js';
+import { UI, installTouchFeedback } from './Motion.js';
 import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
@@ -70,6 +71,12 @@ export class App {
   private tray: HTMLElement;
   private evolving = false;
   private evoFrom: StageDef | null = null;
+  private lastTab = '';
+  private shownGold: number | null = null;
+  private shownXp: number | null = null;
+
+  /** Ambiance sonore du décor affiché (dragon de ce téléphone uniquement). */
+  syncAmbience(): void { Sound.ambience(this.showingOwn && !document.hidden ? this.view.stage?.id ?? null : null); }
   /** Geste sur le dragon : caresser (par défaut) ou laver. */
   careMode: 'pet' | 'wash' = 'pet';
   private bubble: HTMLElement;
@@ -86,6 +93,10 @@ export class App {
 
   constructor(readonly root: HTMLElement, readonly catalog: Catalog, readonly state: GameState, readonly view: DragonView, readonly family: FamilyContext) {
     this.hud = root.querySelector('#hud')!;
+    installTouchFeedback(root);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) Sound.stopAmbience(); else this.syncAmbience(); });
+    // le contexte audio ne démarre qu'après un premier geste : l'ambiance commence à ce moment-là
+    root.addEventListener('pointerdown', () => this.syncAmbience(), { once: true, capture: true });
     this.screenEl = root.querySelector('#screen')!;
     this.toastEl = root.querySelector('#toast')!;
     this.tabs = root.querySelector('#tabs')!;
@@ -98,7 +109,12 @@ export class App {
     this.buildTabs();
 
     // Sons : réglages, animations, or et gemmes gagnés.
-    const applySound = () => { Sound.muted = state.data.settings.sound === false; Sound.volume = state.data.settings.volume ?? 0.7; };
+    const applySound = () => {
+      const st = state.data.settings;
+      Sound.muted = st.sound === false; Sound.volume = st.volume ?? 0.7;
+      Sound.ambienceOn = st.ambience !== false; Sound.uiSounds = st.uiSounds !== false;
+      this.syncAmbience();
+    };
     applySound();
     view.onClip = clip => Sound.forClip(clip, view.stage?.id ?? 'adult', view.variant);
     Sound.warm(['purr', 'chirp', 'coins', 'gem']);
@@ -267,6 +283,11 @@ export class App {
     if (this.isParent && wasOwn !== this.showingOwn) void this.switchDragon();
     next.mount(this.screenEl);
     this.screenEl.scrollTop = 0;
+    // transition d'onglet : les blocs arrivent en cascade, du côté de l'onglet choisi
+    const order = this.screens.map(s => s.id);
+    const dir = this.lastTab && order.indexOf(id) < order.indexOf(this.lastTab) ? -1 : 1;
+    if (this.lastTab && this.lastTab !== id) UI.stagger(this.screenEl, dir);
+    this.lastTab = id;
     this.root.classList.toggle('stage-tall', next.id === 'dragon');
     this.root.classList.toggle('stage-compact', next.id !== 'dragon');
     this.stageHud.show(next.id === 'dragon' && this.showingOwn && !!this.family.companion);
@@ -679,6 +700,19 @@ export class App {
         h('div', { class: 'hud-xp-label' }, `${d.xp} / ${need} XP`)),
       h('div', { class: 'gold' }, icon(ICONS.coin, 18), h('span', null, d.gold.toLocaleString('fr-FR')))
     );
+    this.root.dataset.stage = stage.id;
+    // l'or défile jusqu'à sa nouvelle valeur, la barre d'XP glisse au lieu de sauter
+    const goldEl = this.hud.querySelector<HTMLElement>('.gold span');
+    if (goldEl && this.shownGold !== null && this.shownGold !== d.gold) { UI.countUp(goldEl, this.shownGold, d.gold); UI.bump(goldEl.parentElement!); }
+    this.shownGold = d.gold;
+    const pct = Math.min(100, (d.xp / need) * 100);
+    const fillEl = this.hud.querySelector<HTMLElement>('.hud-xp .fill');
+    if (fillEl && this.shownXp !== null && this.shownXp !== pct && pct > this.shownXp) {
+      fillEl.style.width = `${this.shownXp}%`;
+      requestAnimationFrame(() => requestAnimationFrame(() => { fillEl.style.transition = 'width .9s cubic-bezier(.2,.8,.3,1)'; fillEl.style.width = `${pct}%`; }));
+    }
+    this.shownXp = pct;
+    this.syncAmbience();
   }
 
   toast(msg: string): void {

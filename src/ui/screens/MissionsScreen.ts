@@ -141,8 +141,10 @@ export class MissionsScreen implements Screen {
           shields ? h('span', { class: 'q-shield', title: `${shields} bouclier${shields > 1 ? 's' : ''} de série` }, icon(ICONS.shield, 14), `${shields}`) : null),
         !shields && streak ? h('span', { class: 'q-hint' }, 'Un bouclier tous les 7 jours') : null,
         waiting ? h('span', { class: 'q-hint amber' }, `${waiting} en attente des parents`) : null),
-      cost.count ? h('div', { class: 'q-cost' }, icon(ICONS.moon, 14),
-        h('span', null, `Si ${cost.count > 1 ? `ces ${cost.count} quêtes sont oubliées` : 'la dernière quête est oubliée'} ce soir : ${loss || 'ton dragon perd des forces'}`)) : null);
+      // ton positif : un simple rappel le soir ; le détail de la règle reste visible en le touchant
+      cost.count && new Date().getHours() >= 19 ? h('details', { class: 'q-cost' },
+        h('summary', null, icon(ICONS.moon, 14), h('span', null, `${cost.count > 1 ? `Encore ${cost.count} quêtes` : 'Encore une quête'} avant de dormir : ton dragon compte sur toi !`)),
+        h('span', { class: 'small muted' }, `Règle de tes parents : une quête oubliée retire ${loss || 'un peu d’énergie'} le lendemain.`)) : null);
   }
 
   private card(t: Entry, x2: boolean, bonus = false): HTMLElement {
@@ -310,7 +312,7 @@ const ILL: Record<string, string> = {
 };
 
 /** Choisit l'illustration d'une mission d'après les mots de son titre (comme missionLine). */
-function illustration(title: string): string {
+export function illustration(title: string): string {
   const t = title.toLowerCase();
   const k =
     /liti[eè]re|chat|chien|animal|animaux|hamster|lapin|poisson|promener/.test(t) ? 'cat'
@@ -342,21 +344,21 @@ const EMPTY_ART = `<svg viewBox="0 0 160 110" xmlns="http://www.w3.org/2000/svg"
   <text x="124" y="48" font-family="Georgia,serif" font-weight="700" font-size="8" fill="#f2d48a" opacity=".6">z</text>
 </svg>`;
 
-function art(svg: string, cls: string): HTMLElement {
+export function art(svg: string, cls: string): HTMLElement {
   const box = h('div', { class: cls, 'aria-hidden': 'true' });
   box.innerHTML = svg; // contenu statique dessiné ci-dessus
   return box;
 }
 
-function gemIcon(): SVGSVGElement {
+export function gemIcon(): SVGSVGElement {
   return icon('M7 4h10l4 5-9 11L3 9z M3 9h18 M9 4l3 16 3-16', 13);
 }
-function cameraIcon(): SVGSVGElement {
+export function cameraIcon(): SVGSVGElement {
   return icon('M4 8h3l2-3h6l2 3h3v11H4z M12 10a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z', 18);
 }
 
 /** Réduit une photo (≈ 640 px, JPEG) pour l'envoyer par le Wi-Fi de la maison. */
-async function shrink(file: File): Promise<string | null> {
+export async function shrink(file: File): Promise<string | null> {
   try {
     const url = URL.createObjectURL(file);
     const img = new Image();

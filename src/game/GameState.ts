@@ -169,4 +169,6 @@ export class GameState {
   setQuality(q: QualityLevel): void { this.data.settings.quality = q; this.commit(); }
   setEffects(on: boolean): void { this.data.settings.effects = on; this.commit(); }
   setSound(on: boolean, volume = this.data.settings.volume ?? 0.7): void { this.data.settings.sound = on; this.data.settings.volume = volume; this.commit(); }
+  /** Ambiance sonore du décor et sons d'interface (refonte UX). */
+  setSoundOptions(o: { ambience?: boolean; uiSounds?: boolean }): void { Object.assign(this.data.settings, o); this.commit(); }
 }

@@ -253,3 +253,8 @@
   .q-card, .q-card.q-stamped, .q-stamp span, .q-sparks i, .q-chip.x2, .q-perfect .q-ring, .q-banner.amber svg, .q-card.q-stamped .q-ill { animation: none !important; transition: none !important; }
   .q-sparks { display: none; }
 }
+/* rappel du soir (refonte UX) : replié, le détail de la règle en le touchant */
+details.q-cost { display: block; }
+details.q-cost summary { display: flex; align-items: center; gap: 6px; list-style: none; cursor: pointer; }
+details.q-cost summary::-webkit-details-marker { display: none; }
+details.q-cost > .small { display: block; margin-top: 6px; }

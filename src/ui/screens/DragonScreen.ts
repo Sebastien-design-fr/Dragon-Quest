@@ -13,6 +13,7 @@ import { gamesSheet } from '../CareSheets.js';
 import { dailyChestCard, nextStageCard } from '../SurprisesUI.js';
 import { familyQuestCard } from '../FamilyQuestCard.js';
 import { openPhotoMode } from '../PhotoMode.js';
+import { questDeck, questDeckBusy } from '../QuestDeck.js';
 
 export class DragonScreen implements Screen {
   id = 'dragon'; label = 'Dragon'; icon = ICONS.dragon;
@@ -27,16 +28,22 @@ export class DragonScreen implements Screen {
     const { app } = this;
     const comp = app.family.companion;
     const book = app.family.book;
+    if (questDeckBusy()) return; // la carte s'envole : l'écran suivra
     clear(el);
     if (!comp) return;
+    // Refonte UX : la prochaine quête d'abord (un seul geste), puis « À découvrir » en carrousel horizontal.
+    const discover = [
+      dailyChestCard(app), nextStageCard(app),
+      book ? this.expeditionCard(comp) : null,
+      app.family.duo ? familyQuestCard(app) : null,
+      app.family.duo ? this.friendCard(comp) : null
+    ].filter((x): x is HTMLElement => !!x);
     put(el,
       this.nameCard(comp),
       this.alertCard(comp),
-      book ? this.todayStrip() : this.careStrip(comp),
-      h('div', { class: 'ds-pair' }, dailyChestCard(app), nextStageCard(app)),
-      app.family.duo ? familyQuestCard(app) : null,
-      app.family.duo ? this.friendCard(comp) : null,
-      book ? this.expeditionCard(comp) : null,
+      book ? questDeck(app) : this.careStrip(comp),
+      h('div', { class: 'disc-head' }, h('h3', null, 'À découvrir'), h('span', { class: 'small muted' }, 'glisse →')),
+      h('div', { class: 'disc' }, ...discover.map(c => h('div', { class: 'disc-item' }, c))),
       h('div', { class: 'ds-tools' },
         h('button', { class: 'ds-tool', onclick: () => openLair(app) }, icon(ICONS.dragon, 22), h('span', null, 'Sa grotte')),
         h('button', { class: 'ds-tool', onclick: () => openPhotoMode(app) }, icon(ICONS.star, 22), h('span', null, 'Photo')),
@@ -84,39 +91,19 @@ export class DragonScreen implements Screen {
     const rule = book.severityRule();
     const energy = book.data.energy ?? 100;
     let title = '', text = '', tone = 'warn';
-    if (lp && lp.date === todayKey()) { title = 'Quêtes oubliées hier'; text = `${lp.missed.join(', ')}. Perdu : ${lp.xp} XP et ${lp.gold} or. Règle fixée par tes parents : ${rule.label}.`; tone = 'bad'; }
+    if (lp && lp.date === todayKey()) { title = 'Hier, quelques quêtes ont été oubliées'; text = `${lp.missed.join(', ')} (−${lp.xp} XP, −${lp.gold} or · règle : ${rule.label}). Aujourd’hui est un nouveau jour !`; tone = 'warn'; }
     else if (comp.data.sick) { title = `${comp.name} est malade`; text = 'Pas de tours ni de jeux, pas de bonus d’XP. Une journée où toutes les quêtes sont faites le guérira.'; tone = 'bad'; }
     else if (book.data.confiscated) { const def = app.catalog.item(book.data.confiscated.id); title = 'Objet confisqué'; text = `${def?.name ?? 'Un équipement'} : rendu après une journée parfaite.`; }
     else if (energy < 25) { const en = energyLabel(energy); title = `Énergie : ${en.label}`; text = `${en.detail}. Fais tes quêtes pour lui redonner des forces !`; }
     else {
       const cost = book.pendingCost();
-      if (cost.count && new Date().getHours() >= 17) { title = 'Ce soir'; text = `Encore ${cost.count} quête${cost.count > 1 ? 's' : ''}. Oubliées, elles coûteront ${cost.xp} XP et ${cost.gold} or demain matin.`; }
+      // le soir seulement, et sans menace : la carte de quête dit déjà quoi faire
+      if (cost.count && new Date().getHours() >= 19) { title = `${comp.name} compte sur toi ce soir`; text = `Encore ${cost.count} quête${cost.count > 1 ? 's' : ''} avant de dormir.`; }
     }
     if (!title) return null;
     return h('button', { class: `ds-alert ${tone}`, onclick: () => app.show('missions') },
       icon(tone === 'bad' ? ICONS.shield : ICONS.clock, 20),
       h('span', { class: 'grow' }, h('strong', null, title), h('span', { class: 'small' }, text)),
-      h('span', { class: 'chev' }, '›'));
-  }
-
-  /** Bandeau « Aujourd'hui » : anneau des quêtes du jour et la prochaine à faire. */
-  private todayStrip(): HTMLElement {
-    const { app } = this;
-    const book = app.family.book!;
-    const today = book.today();
-    const done = today.filter(t => t.status === 'done').length;
-    const total = today.length;
-    const todo = today.filter(t => t.status === 'todo' || t.status === 'refused')
-      .sort((a, b) => (a.mission.time ?? '99').localeCompare(b.mission.time ?? '99'));
-    const next = todo[0];
-    const ring = h('span', { class: 'ds-ring' }, ringSvg(total ? done / total : 1, 58, 6), h('span', { class: 'ds-ring-n' }, h('strong', null, String(done)), h('small', null, `/ ${total}`)));
-    const streak = book.streak();
-    return h('button', { class: `ds-today${total && done === total ? ' perfect' : ''}`, onclick: () => app.show('missions') },
-      ring,
-      h('span', { class: 'grow ds-today-txt' },
-        h('span', { class: 'ds-kicker' }, 'Aujourd’hui'),
-        next ? h('strong', null, next.mission.title) : h('strong', null, total ? 'Toutes les quêtes sont faites !' : 'Pas de quête aujourd’hui'),
-        h('span', { class: 'small muted' }, next ? `${next.mission.time ? `avant ${next.mission.time.replace(':', ' h ')} · ` : ''}${next.status === 'refused' ? 'à refaire · ' : ''}${todo.length > 1 ? `et ${todo.length - 1} autre${todo.length > 2 ? 's' : ''}` : 'la dernière !'}` : streak > 1 ? `Série : ${streak} jours` : 'Bravo !')),
       h('span', { class: 'chev' }, '›'));
   }
 
