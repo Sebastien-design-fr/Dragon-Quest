@@ -14,12 +14,12 @@ export class LayeredCharacter {
   }
   async load(definition){
     const generation=++this.generation;
-    this.clear();
     this.validate(definition);
     const staged=[];
-    for(const part of definition.parts){
-      const texture=await this.loadTexture(part.texture);
-      if(generation!==this.generation)return false;
+    // Keep the previous character visible until the replacement is ready.
+    const loaded=await Promise.all(definition.parts.map(async part=>({part,texture:await this.loadTexture(part.texture)})));
+    if(generation!==this.generation)return false;
+    for(const {part,texture} of loaded){
       const joint=new this.PIXI.Container();
       const img=new this.PIXI.Sprite(texture);
       img.anchor.set(part.pivot?.[0]??.5,part.pivot?.[1]??.5);
@@ -30,6 +30,7 @@ export class LayeredCharacter {
     }
     if(generation!==this.generation)return false;
     const byName=new Map(staged.map(p=>[p.name,p]));
+    this.clear();
     for(const part of staged.sort((a,b)=>a.z-b.z)){
       const parent=part.parent?byName.get(part.parent)?.joint:this.root;
       if(!parent)throw Error('Missing parent '+part.parent);
