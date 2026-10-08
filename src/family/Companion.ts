@@ -152,6 +152,7 @@ export class Companion {
 
   // ---------- Lecture ----------
   get name(): string { return this.data.name || (this.mode === 'parent' ? 'Ta dragonne' : 'Ton dragon'); }
+  get hasName(): boolean { return !!this.data.name; }
   wellbeing(): number { const d = this.data; return Math.round((d.hunger + d.clean + d.mood) / 3); }
   /** Bonus d'XP des missions : un dragon heureux et bien soigné apprend plus vite. */
   xpBonus(): number { const d = this.data; return this.mode !== 'parent' && !d.sick && d.hunger >= 50 && d.clean >= 50 && d.mood >= 50 ? 1.1 : 1; }

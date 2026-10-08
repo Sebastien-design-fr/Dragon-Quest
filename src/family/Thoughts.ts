@@ -79,7 +79,7 @@ export function thoughts(book: ChildBook | null, c: Companion, childName: string
     'Tu sais que les dragons n’oublient jamais un ami ?',
     'Un jour, je volerai assez haut pour toucher les nuages.',
     'J’aime bien quand tu passes me voir.',
-    `${c.name === 'Ton dragon' ? 'Tu ne m’as pas encore donné de nom…' : `${c.name}… j’adore ce nom.`}`,
+    `${c.hasName ? `${c.name}… j’adore ce nom.` : 'Tu ne m’as pas encore donné de nom…'}`,
     'Gratte-moi derrière les cornes, s’il te plaît !',
     'Si tu fais tes missions, je deviendrai le plus grand dragon du royaume.'
   ].map((text, i) => ({ id: 'idle' + i, text, action: (i === 4 ? 'pet' : null) as ThoughtAction, priority: 10 }))
