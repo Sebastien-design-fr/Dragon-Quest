@@ -485,7 +485,7 @@
     }
   },
   "tints": {
-    "note": "Refonte UX (point 6) — reflets d'écailles, débloqués par niveau. color : RVB 0..255 ; amount : force du reflet (0..1).",
+    "note": "Refonte UX (point 6) — reflets d'écailles. level 1 = disponibles dès le début ; les autres se débloquent en montant de niveau. color : RVB 0..255 ; amount : force du reflet (0..1).",
     "list": [
       {
         "id": "natural",
@@ -507,7 +507,7 @@
           220
         ],
         "amount": 0.42,
-        "level": 3
+        "level": 1
       },
       {
         "id": "emerald",
@@ -518,7 +518,7 @@
           110
         ],
         "amount": 0.4,
-        "level": 5
+        "level": 1
       },
       {
         "id": "ruby",
@@ -529,7 +529,7 @@
           60
         ],
         "amount": 0.4,
-        "level": 8
+        "level": 1
       },
       {
         "id": "amethyst",
@@ -540,7 +540,7 @@
           210
         ],
         "amount": 0.42,
-        "level": 12
+        "level": 4
       },
       {
         "id": "frost",
@@ -551,7 +551,7 @@
           240
         ],
         "amount": 0.38,
-        "level": 16
+        "level": 8
       },
       {
         "id": "ember",
@@ -562,7 +562,40 @@
           40
         ],
         "amount": 0.4,
+        "level": 12
+      },
+      {
+        "id": "jade",
+        "label": "Jade",
+        "color": [
+          90,
+          200,
+          170
+        ],
+        "amount": 0.4,
+        "level": 16
+      },
+      {
+        "id": "silver",
+        "label": "Argent",
+        "color": [
+          205,
+          210,
+          220
+        ],
+        "amount": 0.42,
         "level": 20
+      },
+      {
+        "id": "rose",
+        "label": "Rose des sables",
+        "color": [
+          230,
+          130,
+          150
+        ],
+        "amount": 0.38,
+        "level": 24
       },
       {
         "id": "gold",
@@ -573,7 +606,18 @@
           70
         ],
         "amount": 0.45,
-        "level": 30
+        "level": 28
+      },
+      {
+        "id": "obsidian",
+        "label": "Obsidienne",
+        "color": [
+          30,
+          20,
+          45
+        ],
+        "amount": 0.5,
+        "level": 40
       }
     ]
   }

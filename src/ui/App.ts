@@ -50,7 +50,7 @@ export interface FamilyContext {
   training: Training | null;
 }
 
-export const APP_VERSION = '0.18.0';
+export const APP_VERSION = '0.18.1';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -186,7 +186,12 @@ export class App {
       this.syncEquipment();
       this.refresh();
     });
-    state.events.on('levelUp', ({ level }) => { if (this.showingOwn) levelUpReaction(this, level); });
+    state.events.on('levelUp', ({ level }) => {
+      if (this.showingOwn) levelUpReaction(this, level);
+      // nouveau reflet d'écailles débloqué à ce niveau
+      const t = (catalog.visual?.tints?.list ?? []).find(x => x.level === level);
+      if (t && this.showingOwn) setTimeout(() => this.toast(`Nouveau reflet débloqué : ${t.label} !`), 3200);
+    });
     state.events.on('item', ({ def, how }) => itemReaction(this, def, how));
     state.events.on('equip', ({ def }) => equipReaction(this, def));
     state.events.on('evolve', ({ to }) => { if (this.showingOwn) this.evolve(to); });
