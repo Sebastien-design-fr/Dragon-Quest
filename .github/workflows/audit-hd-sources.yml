@@ -1,0 +1,26 @@
+name: Audit des sources HD - sans integration
+on:
+  push:
+    branches: [lumia-test]
+    paths:
+      - 'scripts/audit-hd-sources.py'
+      - '.github/workflows/audit-hd-sources.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check Pillow
+      - name: Inventaire et planche avant-source
+        run: python scripts/audit-hd-sources.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: audit-sources-40-et-comparaison-8
+          path: hd-audit-output/
+          retention-days: 30
