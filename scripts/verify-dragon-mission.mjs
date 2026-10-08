@@ -7,6 +7,7 @@ const cap = JSON.parse(readFileSync('capacitor.config.json','utf8'));
 const required = [];
 for (const v of ['dragon','dragonne']) {
   for (const s of ['baby','young','adult','legendary']) {
+    required.push(`${v}/${s}/${v}_${s}_full.webp`);
     required.push(`${v}/${s}/${v}_${s}_full.svg`);
   }
 }
@@ -38,9 +39,13 @@ if (!theme.includes('--mission-blue') || !theme.includes('#152446')) {
   throw new Error('Nouvelle identité visuelle Dragon Mission absente');
 }
 
+const assetSource = readFileSync('src/engine/AssetManager.ts','utf8');
+if (!assetSource.includes("const EXTENSIONS = ['webp', 'png', 'jpg', 'svg']")) {
+  throw new Error('Priorité des illustrations peintes WebP incorrecte');
+}
 const viewSource = readFileSync('src/engine/DragonView.ts','utf8');
-if (!viewSource.includes("d.partPath?.toLowerCase().endsWith('.svg')")) {
-  throw new Error('Protection Canvas 2D des dragons SVG absente');
+if (!viewSource.includes("spritePath.endsWith('.webp') || spritePath.endsWith('.svg')")) {
+  throw new Error('Protection Canvas 2D des sprites dragon WebP/SVG absente');
 }
 if (!viewSource.includes('pipeline WebGL')) {
   throw new Error('Correctif anti-sprite-noir Android absent');

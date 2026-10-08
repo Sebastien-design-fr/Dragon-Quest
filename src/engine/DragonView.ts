@@ -482,10 +482,11 @@ export class DragonView {
     const d = this.drawables.find(x => x.part?.shape === 'sprite');
     const img = d?.partPath ? Assets.peek(d.partPath) : null;
     if (!d || !img || !(img as HTMLImageElement).width) return;
-    // Les nouveaux dragons Dragon Mission sont vectoriels. Sur certaines WebView Android,
-    // les envoyer au pipeline WebGL produit une texture noire. Ils restent donc dans le
-    // pipeline Canvas 2D, qui rend le SVG correctement et conserve transparence/couleurs.
-    if (d.partPath?.toLowerCase().endsWith('.svg')) return;
+    // Sur certaines WebView Android, les textures de dragon envoyées au pipeline WebGL
+    // peuvent ressortir noires. Les illustrations peintes WebP et leur repli SVG restent
+    // donc dans le pipeline Canvas 2D, qui conserve leurs couleurs et leur transparence.
+    const spritePath = d.partPath?.toLowerCase() ?? '';
+    if (spritePath.endsWith('.webp') || spritePath.endsWith('.svg')) return;
     if (this.mesh === undefined) this.mesh = MeshRenderer.create();
     if (!this.mesh) return;
     const sk = this.skeleton;
@@ -962,7 +963,7 @@ export class DragonView {
       if (this.layers[d.layer] === false) continue;
       const bone = sk.bone(d.bone);
       if (!bone) continue;
-      if (d === this.skinPart && this.mesh?.ready && !d.partPath?.toLowerCase().endsWith('.svg')) {
+      if (d === this.skinPart && this.mesh?.ready) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         this.mesh.lighting = this.lightU ? { u: this.lightU, mirrored: this.camM.a < 0 } : null;
         const gl = this.mesh.render(this.camM, W, H);

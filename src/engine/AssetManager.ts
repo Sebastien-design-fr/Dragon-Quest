@@ -10,7 +10,7 @@ import { loadJSON } from '../core/data.js';
 import type { EquipmentDef, StageId } from '../core/types.js';
 
 export type Img = HTMLImageElement | ImageBitmap;
-const EXTENSIONS = ['svg', 'webp', 'png', 'jpg'];
+const EXTENSIONS = ['webp', 'png', 'jpg', 'svg'];
 
 interface Entry { refs: number; promise: Promise<Img | null>; image: Img | null }
 
