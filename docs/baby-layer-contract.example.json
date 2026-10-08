@@ -1,0 +1,16 @@
+{
+  "_comment": "Example contract only; real baby dragon layer images must be produced and approved before loading.",
+  "version": 1,
+  "name": "Lumia baby dragon — layered rig contract",
+  "parts": [
+    {"name":"body","texture":"baby/body.webp","position":[0,0],"pivot":[0.5,0.5],"z":20},
+    {"name":"tail","parent":"body","texture":"baby/tail.webp","position":[-90,30],"pivot":[0.1,0.5],"z":10},
+    {"name":"wingFar","parent":"body","texture":"baby/wing-far.webp","position":[-34,-52],"pivot":[0.9,0.85],"z":8},
+    {"name":"neck","parent":"body","texture":"baby/neck.webp","position":[60,-20],"pivot":[0.2,0.7],"z":21},
+    {"name":"head","parent":"neck","texture":"baby/head.webp","position":[20,-35],"pivot":[0.25,0.6],"z":30},
+    {"name":"eye","parent":"head","texture":"baby/eye.webp","position":[25,-10],"pivot":[0.5,0.5],"z":33},
+    {"name":"eyelid","parent":"head","texture":"baby/eyelid.webp","position":[25,-10],"pivot":[0.5,0.5],"z":34},
+    {"name":"jaw","parent":"head","texture":"baby/jaw.webp","position":[30,16],"pivot":[0.25,0.1],"z":29},
+    {"name":"wingNear","parent":"body","texture":"baby/wing-near.webp","position":[-20,-40],"pivot":[0.9,0.85],"z":36}
+  ]
+}
