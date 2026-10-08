@@ -108,6 +108,15 @@ jobs:
           make_latest: false
           files: dragon-mission.apk
 
+      - name: Publish separate Lumia V2 test APK
+        if: github.ref_name == 'graphics-engine-v2'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: lumia-graphics-v2-test
+          prerelease: true
+          make_latest: false
+          files: dragon-mission.apk
+
       - name: APK Dragon Mission consolidé
         if: github.ref == 'refs/heads/lumia-test'
         uses: softprops/action-gh-release@v2
