@@ -98,11 +98,7 @@ export class DragonScreen implements Screen {
     else if (comp.data.sick) { title = `${comp.name} est malade`; text = 'Pas de tours ni de jeux, pas de bonus d’XP. Une journée où toutes les quêtes sont faites le guérira.'; tone = 'bad'; }
     else if (book.data.confiscated) { const def = app.catalog.item(book.data.confiscated.id); title = 'Objet confisqué'; text = `${def?.name ?? 'Un équipement'} : rendu après une journée parfaite.`; }
     else if (energy < 25) { const en = energyLabel(energy); title = `Énergie : ${en.label}`; text = `${en.detail}. Fais tes quêtes pour lui redonner des forces !`; }
-    else {
-      const cost = book.pendingCost();
-      // le soir seulement, et sans menace : la carte de quête dit déjà quoi faire
-      if (cost.count && new Date().getHours() >= 19) { title = `${comp.name} compte sur toi ce soir`; text = `Encore ${cost.count} quête${cost.count > 1 ? 's' : ''} avant de dormir.`; }
-    }
+    // (pas d'alerte « ce soir » : la carte de quête juste en dessous le dit déjà, sans prendre de place)
     if (!title) return null;
     return h('button', { class: `ds-alert ${tone}`, onclick: () => app.show('missions') },
       icon(tone === 'bad' ? ICONS.shield : ICONS.clock, 20),

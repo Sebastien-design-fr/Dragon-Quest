@@ -1,0 +1,70 @@
+/* ==========================================================
+   Passe de densité (octobre 2026) : plus de contenu visible sans défiler.
+   Titres décoratifs ~15 % plus petits, cartes et marges resserrées.
+   On garde : texte courant ≥ 13 px, zones tactiles ≥ 44 px, scène du dragon généreuse.
+   Chargée en dernier : elle ne fait qu'ajuster les tailles définies ailleurs.
+   ========================================================== */
+
+/* ---------- Structure ---------- */
+.hud { padding: 7px 12px; gap: 10px; }
+.hud-stage { font-size: 15px; }
+.screen { padding: 12px 12px 18px; gap: 12px; }
+.card { padding: 12px; gap: 8px; border-radius: 14px; }
+h2 { font-size: 19px; }
+h3 { font-size: 15.5px; }
+.tab { min-height: 48px; gap: 2px; }
+#app.stage-tall { grid-template-rows: auto minmax(290px, 48dvh) 1fr auto; }
+
+/* ---------- Écran principal (pile de quêtes, carrousel) ---------- */
+.qd { gap: 6px; }
+.qd-card { gap: 11px; padding: 13px 13px 12px; border-radius: 20px; }
+.qd-ill { width: 56px; height: 56px; padding: 7px; border-radius: 16px; }
+.qd-title { font-size: 18.5px; }
+.qd-meta { font-size: 12.5px; }
+.qd-r { font-size: 14.5px; padding: 4px 10px 4px 8px; }
+.qd-slide { height: 52px; }
+.qd-knob { width: 44px; height: 44px; }
+.qd-slide-txt { font-size: 14px; }
+.qd-end h3 { font-size: 19px; }
+.qd-end-ring { width: 64px; height: 64px; }
+.disc-head h3 { font-size: 16px; }
+.disc { gap: 10px; }
+.ds-tool { padding-top: 8px; padding-bottom: 8px; }
+.ds-ring-n strong { font-size: 17px; }
+
+/* ---------- Quêtes ---------- */
+.q-today { padding: 12px 14px; gap: 4px 14px; }
+.q-today h2 { font-size: 20px; }
+.q-ring { width: 78px; height: 78px; }
+.q-ring-in strong { font-size: 23px; }
+.q-card { padding: 11px 12px; grid-template-columns: 52px minmax(0, 1fr); column-gap: 10px; row-gap: 5px; }
+.q-ill { width: 52px; height: 52px; }
+.q-ill svg { width: 40px; height: 40px; }
+.q-title { font-size: 15.5px; }
+.q-go { min-height: 46px; font-size: 16px; }
+
+/* ---------- Coffre, profil, surprises ---------- */
+.cp-name { font-size: 22px; }
+.cp-stat strong { font-size: 17px; }
+.sp-next-name { font-size: 18px; letter-spacing: .1em; }
+.pq-quest-head h3 { font-size: 16px; }
+.gems-card strong { font-size: 16px; }
+
+/* ---------- Parents ---------- */
+.ph-hello h2 { font-size: 18px; }
+.ph-title { font-size: 18px; }
+.ph-ring.big .ph-ring-label strong { font-size: 20px; }
+.ph-hero-txt strong { font-size: 17px; }
+.pm-rate { font-size: 17px; }
+
+/* ---------- Petits écrans (Z Flip plié, téléphones compacts) ---------- */
+@media (max-height: 760px) {
+  #app.stage-tall { grid-template-rows: auto minmax(250px, 44dvh) 1fr auto; }
+  .qd-card { gap: 9px; padding: 11px 12px; }
+  .qd-title { font-size: 17px; }
+}
+@media (max-width: 360px) {
+  .qd-title { font-size: 17px; }
+  .qd-r { font-size: 13.5px; }
+  .screen { padding-left: 10px; padding-right: 10px; }
+}
