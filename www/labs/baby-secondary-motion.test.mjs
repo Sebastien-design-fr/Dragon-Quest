@@ -7,6 +7,12 @@ for(const mode of ['idle','sleep','fly']){
     for(const bone of Object.values(sample))for(const value of Object.values(bone))assert.ok(Number.isFinite(value));
   }
 }
+const blinkCheck=new BabySecondaryMotion();
+const lidOpen=blinkCheck.update(.2,'idle').eyelid.scaleY;
+blinkCheck.update(4.5,'idle');
+const lidClosed=blinkCheck.update(.06,'idle').eyelid.scaleY;
+assert.ok(lidOpen < .1);
+assert.ok(lidClosed > .1);
 motion.touch(-1);
 const result=motion.update(.15,'idle');
 assert.ok(Number.isFinite(result.jaw.rot));
