@@ -3,6 +3,8 @@ import { DepthStage } from './depth-stage.js';
 import { CharacterPoseCache } from './pose-cache.js';
 import { ClipPlayer } from './clip-player.js';
 import { RigDebug } from './rig-debug.js';
+import { LayeredCharacter } from './layered-character.js';
+import { applyClipToCharacter, loadLayers } from './character-driver.js';
 // Prototype isolé, aucun import de la logique du jeu ou changement d'APK.
 const { Application, Assets, Sprite, Container, Graphics } = window.PIXI ?? {};
 const viewport = document.getElementById('viewport');
@@ -38,6 +40,26 @@ comparisonSprite.anchor.set(.5);
 comparisonSprite.visible=false;
 dragonLayer.addChild(comparisonSprite);
 const rigDebug = new RigDebug(window.PIXI,dragonLayer);
+const layered = new LayeredCharacter(window.PIXI, path => Assets.load(path));
+dragonLayer.addChild(layered.root);
+let layerGeneration=0;
+async function refreshLayers(){
+  const request=++layerGeneration;
+  layered.root.visible=false;
+  sprite.visible=true;
+  if(controls.stage.value!=='baby')return;
+  try {
+    const def=await loadLayers(controls.variant.value,'baby');
+    if(request!==layerGeneration)return;
+    if(!def)return; // flat-sprite fallback until artists approve individual layers
+    const ok=await layered.load(def);
+    if(request!==layerGeneration||!ok)return;
+    layered.root.visible=true;
+    sprite.visible=false;
+    status.textContent='Rig multicouche chargé: '+controls.variant.value+' bébé';
+  }catch(error){if(request===layerGeneration){console.warn('Layers unavailable: flat sprite fallback',error);layered.root.visible=false;sprite.visible=true;}}
+}
+
 let sequence = 0, activePath = '', busy = false;
 let failures = 0, frames = 0, totalFrame = 0, lastMeasurement = performance.now();
 let nextFlap = 0, flapDown = false;
@@ -81,6 +103,7 @@ async function selectTexture(){
     status.textContent = 'Texture chargée : '+texture.width+' × '+texture.height+' px — '+next;
     layout();
     void loadComparison();
+    if(pose==='full')void refreshLayers();
     if (stage === 'baby' && pose === 'full') void poseCache.preload(variant,stage,['sleep','flyUp','flyDown']);
   } catch (err) {
     if (id !== sequence) return;
@@ -144,6 +167,7 @@ app.ticker.add((ticker)=>{
   const poseState=clipPlayer.update(dt/1000);
   rigDebug.visible=controls.rig.checked && controls.stage.value==='baby';
   rigDebug.draw(poseState);
+  if(layered.root.visible)applyClipToCharacter(layered,poseState);
   depthStage.tick(dt/1000,{x:0,y:0,width:app.screen.width,height:app.screen.height,airborne:controls.autoflap.checked});
   frames++;totalFrame+=dt;
   const now=performance.now();
