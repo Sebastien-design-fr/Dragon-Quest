@@ -111,6 +111,7 @@ async function selectTexture(){
   controls.pose.querySelector('option[value="flyMid"]').disabled = !(variant==='dragon' && stage==='adult');
   if (pose==='flyMid' && !(variant==='dragon' && stage==='adult')) {controls.pose.value='flyUp';return selectTexture();}
   const next = pathFor(variant,stage,controls.pose.value);
+  if(activeRigIdentity!==rigIdentity())updateRigVisibility();
   if(pose!=='full' || stage!=='baby'){
     layered.cancelPending();
     ++layerGeneration;
