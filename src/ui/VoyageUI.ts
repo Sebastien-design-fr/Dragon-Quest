@@ -1,6 +1,6 @@
-// Voyages du petit loup : il vit dans la grotte à côté du dragon. On le touche pour l'envoyer explorer ;
-// il part en courant, un médaillon indique son retour, puis il revient avec sa sacoche pleine.
-// Le dragon reste là pendant tout le voyage : on peut continuer à le nourrir, le caresser, jouer avec lui.
+// Le loup compagnon : il vit dans la grotte à côté du dragon et part en quête pour lui. On le touche pour l'envoyer
+// explorer (et, la première fois, lui donner un nom) ; il part en courant, un médaillon indique son retour, puis il
+// revient avec sa sacoche pleine. Le dragon reste là pendant tout le voyage : on continue à s'en occuper.
 import { DESTINATIONS, duration, fromPlace, type Loot } from '../family/Voyage.js';
 import { FOOD_ART } from './StageHud.js';
 import type { App } from './App.js';
@@ -10,11 +10,13 @@ import { openSheet } from './screens/common.js';
 import { Sound } from '../engine/Sound.js';
 import { FOODS, type FoodId } from '../family/Companion.js';
 import { wolfImage } from './WolfArt.js';
+import { WolfSprite } from './WolfSprite.js';
+import { Assets } from '../engine/AssetManager.js';
 
 /** Place du loup dans la scène (unités de scène, voir DecorLayer) : à gauche du dragon, sur le sol. */
-const SPOT = { dx: -0.38, dy: -0.01, h: 0.19 };
+const SPOT = { dx: -0.355, dy: 0.008, h: 0.135 };
 
-let wolf: { el: HTMLImageElement; badge: HTMLButtonElement; raf: number; mode: 'home' | 'leaving' | 'away' | 'back' | 'arriving'; t0: number } | null = null;
+let wolf: { el: HTMLCanvasElement; sprite: WolfSprite; badge: HTMLButtonElement; raf: number; mode: 'home' | 'leaving' | 'away' | 'back' | 'arriving'; t0: number; happyUntil: number } | null = null;
 
 export function installVoyage(app: App): void {
   const v = app.family.voyage, comp = app.family.companion;
@@ -22,16 +24,20 @@ export function installVoyage(app: App): void {
   if (!v || !comp || !host) return;
   comp.extraNotifs.push(() => v.returnNotif());
 
-  const el = h('img', { class: 'wolf', alt: 'Le petit loup', draggable: 'false' }) as HTMLImageElement;
+  const sprite = new WolfSprite();
+  const el = sprite.canvas;
+  el.className = 'wolf';
+  el.setAttribute('role', 'button');
+  el.setAttribute('aria-label', 'Le loup compagnon');
   const badge = h('button', { class: 'vy-badge', 'aria-label': 'Voyage du petit loup', onclick: (e: Event) => { e.stopPropagation(); voyageSheet(app); } }) as HTMLButtonElement;
   host.append(el, badge);
-  wolf = { el, badge, raf: 0, mode: v.away() ? 'away' : v.data.back ? 'back' : 'home', t0: 0 };
+  wolf = { el, sprite, badge, raf: 0, mode: v.away() ? 'away' : v.data.back ? 'back' : 'home', t0: 0, happyUntil: 0 };
   el.addEventListener('pointerdown', e => { e.stopPropagation(); });
   el.addEventListener('click', e => {
     e.stopPropagation();
     if (!wolf) return;
     if (wolf.mode === 'back') { openBag(app); return; }
-    if (wolf.mode === 'home') { void Sound.play('chuff', { user: true, gain: 0.3, rate: 1.6 }); el.classList.remove('wag'); void el.offsetWidth; el.classList.add('wag'); voyageSheet(app); }
+    if (wolf.mode === 'home') { void Sound.play('chuff', { user: true, gain: 0.3, rate: 1.6 }); wolf.happyUntil = performance.now() + 1500; voyageSheet(app); }
   });
 
   const loop = (now: number) => {
@@ -45,30 +51,27 @@ export function installVoyage(app: App): void {
     const homeX = r.left - hr.left + (f.ox + SPOT.dx * f.u) * s;
     const groundY = r.top - hr.top + (f.oy + SPOT.dy * f.u) * s;
     const exitX = hr.width + hgt * 1.6;
-    let x = homeX, pose: 'sit' | 'run1' | 'run2' = 'sit', bag = false, visible = true, flip = false;
-    const run = Math.floor(now / 110) % 2 ? 'run1' : 'run2';
+    let x = homeX, running = false, bag = false, visible = true, mirror = false;
     if (w.mode === 'leaving') {
       const u = Math.min(1, (now - w.t0) / 1500);
-      x = homeX + (exitX - homeX) * u * u; pose = run;
+      x = homeX + (exitX - homeX) * u * u; running = true;
       if (u >= 1) w.mode = 'away';
     } else if (w.mode === 'arriving') {
       const u = Math.min(1, (now - w.t0) / 1500);
       const e = 1 - (1 - u) * (1 - u);
-      x = exitX + (homeX - exitX) * e; pose = u < 1 ? run : 'sit'; bag = true; flip = true;
+      x = exitX + (homeX - exitX) * e; running = u < 1; bag = true; mirror = u < 1;
       if (u >= 1) {
         w.mode = 'back';
         const back = app.family.voyage?.data.back;
-        if (back) app.say(`Le petit loup est rentré ${fromPlace(app.family.voyage!.dest(back.dest).name)} ! Touche-le pour ouvrir sa sacoche.`, null, 6000);
+        if (back) app.say(app.family.voyage!.fill(`{L} est rentré ${fromPlace(app.family.voyage!.dest(back.dest).name)} ! Touche-le pour ouvrir sa sacoche.`), null, 6000);
       }
     } else if (w.mode === 'away') visible = false;
     else if (w.mode === 'back') bag = true;
     el.hidden = !show || !visible || !f.u;
     if (!el.hidden) {
-      const src = wolfImage(pose, bag);
-      if (el.getAttribute('src') !== src) el.src = src;
-      const wid = hgt * (pose === 'sit' ? 220 / 210 : 240 / 180);
-      el.style.width = `${wid}px`;
-      el.style.transform = `translate(${x - wid / 2}px, ${groundY - hgt}px)${flip && pose !== 'sit' ? ' scaleX(-1)' : ''}`;
+      const wid = hgt * w.sprite.aspect;
+      w.sprite.draw(wid, hgt, now / 1000, { run: running, mirror, bag, happy: w.mode === 'back' || now < w.happyUntil, sleep: app.sleeping && !running });
+      el.style.transform = `translate(${x - wid / 2}px, ${groundY - hgt * 1.12}px)`;
       el.classList.toggle('glow', w.mode === 'back');
     }
     renderBadge(app);
@@ -99,7 +102,7 @@ function renderBadge(app: App): void {
   if (key === badgeKey) return;
   badgeKey = key;
   wolf.badge.classList.toggle('back', back);
-  wolf.badge.replaceChildren(h('img', { src: wolfImage('sit', back), alt: '' }), h('span', null, back ? 'Sacoche !' : key));
+  wolf.badge.replaceChildren(h('img', { src: Assets.art('companions/wolf') ?? wolfImage('sit', back), alt: '' }), h('span', null, back ? 'Sacoche !' : key));
 }
 
 /** Retour : le loup revient en courant avec sa sacoche. */
@@ -116,11 +119,12 @@ export function voyageSheet(app: App): void {
   if (!v || !comp) return;
   if (v.data.back) { openBag(app); return; }
   if (v.away()) { tripSheet(app); return; }
+  if (!v.hasWolfName()) { nameSheet(app, () => voyageSheet(app)); return; }
   const act = app.family.activity;
   const steps = act?.cfg.voyage;
-  openSheet('Où part le petit loup ?', close => [
-    h('div', { class: 'vy-intro' }, h('img', { src: wolfImage('sit', true), alt: '' }),
-      h('p', { class: 'small muted' }, `Le compagnon de ${comp.name} part explorer et revient avec des trouvailles (or, nourriture, parfois un fruit de feu) et une histoire. ${comp.name} reste avec toi pendant ce temps.`
+  openSheet(`Où part ${v.wolfName(true)} ?`, close => [
+    h('div', { class: 'vy-intro' }, h('img', { src: Assets.art('companions/wolf') ?? wolfImage('sit', true), alt: '' }),
+      h('p', { class: 'small muted' }, `Le compagnon de ${comp.name} part en quête pour lui et revient avec des trouvailles (or, nourriture, parfois un fruit de feu) et une histoire. ${comp.name} reste avec toi pendant ce temps.`
         + (steps && act?.data.permission ? ` Tes pas raccourcissent le voyage : ${steps.shortcutMinutes} min de moins tous les ${steps.stepsPerShortcut.toLocaleString('fr-FR')} pas.` : ''))),
     ...DESTINATIONS.map(d => h('button', { class: 'vy-dest', style: { '--c1': d.colors[0], '--c2': d.colors[1] }, disabled: !v.left(), onclick: () => {
       const r = v.start(d.id);
@@ -132,7 +136,32 @@ export function voyageSheet(app: App): void {
       h('span', { class: 'vy-time' }, icon(ICONS.clock, 14), ` ${d.hours} h`),
       h('span', { class: 'grow' }, h('strong', null, d.name), h('span', { class: 'small' }, d.teaser)),
       v.data.visited.includes(d.id) ? h('span', { class: 'chip-mini' }, 'Déjà visité') : h('span', { class: 'chip-mini gold' }, 'Nouveau'))),
-    h('p', { class: 'small muted' }, `${v.left()} voyage${v.left() > 1 ? 's' : ''} possible${v.left() > 1 ? 's' : ''} aujourd’hui.`)
+    h('div', { class: 'row' },
+      h('p', { class: 'small muted grow' }, `${v.left()} voyage${v.left() > 1 ? 's' : ''} possible${v.left() > 1 ? 's' : ''} aujourd’hui.`),
+      h('button', { class: 'btn ghost small-btn', onclick: () => { close(); nameSheet(app); } }, 'Renommer'))
+  ]);
+}
+
+/** Donner (ou changer) le nom du loup. */
+export function nameSheet(app: App, then?: () => void): void {
+  const v = app.family.voyage, comp = app.family.companion;
+  if (!v || !comp) return;
+  const input = h('input', { type: 'text', maxlength: '18', placeholder: 'Fenrir, Lupin, Akela…', value: v.data.wolfName ?? '', 'aria-label': 'Nom du loup' }) as HTMLInputElement;
+  const ideas = ['Fenrir', 'Lupin', 'Akela', 'Sköll', 'Hati', 'Ombre', 'Croc', 'Givre'];
+  openSheet(v.hasWolfName() ? 'Renommer le loup' : 'Le compagnon de ' + comp.name, close => [
+    h('div', { class: 'vy-intro' }, h('img', { src: Assets.art('companions/wolf') ?? wolfImage('sit', false), alt: '' }),
+      h('p', { class: 'small muted' }, v.hasWolfName() ? 'Choisis-lui un nouveau nom.' : `Ce petit loup vit avec ${comp.name} et part en quête pour lui. Comment s’appelle-t-il ?`)),
+    input,
+    h('div', { class: 'vy-names' }, ...ideas.map(n => h('button', { class: 'chip-mini', onclick: () => { input.value = n; } }, n))),
+    h('div', { class: 'row end' }, h('button', { class: 'btn primary', onclick: () => {
+      if (!input.value.trim()) { input.focus(); return; }
+      v.setWolfName(input.value);
+      close();
+      UI.success();
+      if (wolf) wolf.happyUntil = performance.now() + 2500;
+      app.say(`${v.wolfName(true)} ! Il adore son nom.`, null, 4000);
+      if (then) setTimeout(then, 500);
+    } }, 'Valider'))
   ]);
 }
 
@@ -142,7 +171,7 @@ function tripSheet(app: App): void {
   const t = v.data.trip!;
   const d = v.dest(t.dest);
   const total = t.end - t.start, left = v.remaining(), cut = v.shortcut();
-  openSheet('Le petit loup est en voyage', close => [
+  openSheet(`${v.wolfName(true)} est en voyage`, close => [
     h('div', { class: 'vy-dest current', style: { '--c1': d.colors[0], '--c2': d.colors[1] } },
       h('span', { class: 'vy-time' }, icon(ICONS.compass, 16)),
       h('span', { class: 'grow' }, h('strong', null, d.name), h('span', { class: 'small' }, `Retour dans ${duration(left)}`),
@@ -151,7 +180,7 @@ function tripSheet(app: App): void {
     h('div', { class: 'row end' }, h('button', { class: 'btn ghost', onclick: () => {
       v.recall(); close();
       if (wolf) wolf.mode = 'home';
-      app.say('Le petit loup est rentré plus tôt… il n’a rien eu le temps de trouver.', null, 4000);
+      app.say(v.fill('{L} est rentré plus tôt… il n’a rien eu le temps de trouver.'), null, 4000);
       app.refresh();
     } }, 'Le rappeler (sans trouvailles)'))
   ]);
@@ -163,7 +192,7 @@ function depart(app: App): void {
   wolf.mode = 'leaving'; wolf.t0 = performance.now();
   void Sound.play('chuff', { user: true, gain: 0.3, rate: 1.7 });
   if (!app.sleeping) void app.view.play('happy');
-  app.say(`Bon voyage, petit loup ! On t’attend, ${comp.name} et moi.`, null, 3500);
+  app.say(`Bon voyage, ${app.family.voyage?.data.wolfName ?? 'petit loup'} ! On t’attend, ${comp.name} et moi.`, null, 3500);
   UI.success();
   setTimeout(() => app.refresh(), 1600);
 }

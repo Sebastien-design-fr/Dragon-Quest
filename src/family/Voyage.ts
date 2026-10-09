@@ -20,37 +20,37 @@ export const DESTINATIONS: Destination[] = [
   { id: 'foret', name: 'La forêt des brumes', hours: 1, colors: ['#7fb38a', '#1d2b22'], teaser: 'Une petite balade sous les grands arbres.',
     foods: ['meat'], fruit: 0,
     stories: [
-      'Le petit loup a suivi un renard argenté jusqu’à une clairière pleine de champignons lumineux. Il en a parlé à {n} pendant une heure.',
-      'Dans la brume, le petit loup a joué à cache-cache avec un hibou. Le hibou a gagné… trois fois.',
-      'Le petit loup a trouvé un vieux pont de pierre couvert de mousse et l’a traversé sur la pointe des pattes.'
+      '{L} a suivi un renard argenté jusqu’à une clairière pleine de champignons lumineux. Il en a parlé à {n} pendant une heure.',
+      'Dans la brume, {l} a joué à cache-cache avec un hibou. Le hibou a gagné… trois fois.',
+      '{L} a trouvé un vieux pont de pierre couvert de mousse et l’a traversé sur la pointe des pattes.'
     ] },
   { id: 'lac', name: 'Le lac d’argent', hours: 2, colors: ['#8ab6d6', '#16232e'], teaser: 'Pêche, ricochets et reflets de lune.',
     foods: ['fish', 'meat'], fruit: 0.1,
     stories: [
-      'Le petit loup a pêché au bord du lac. Le premier poisson lui a glissé des pattes, le deuxième non : il est pour {n} !',
-      'Un cygne noir a voulu apprendre au petit loup à nager. Il est rentré trempé, mais très fier.',
-      'Le petit loup s’est reposé sur un rocher au milieu du lac en regardant les nuages passer.'
+      '{L} a pêché au bord du lac. Le premier poisson lui a glissé des pattes, le deuxième non : il est pour {n} !',
+      'Un cygne noir a voulu apprendre {al} à nager. Il est rentré trempé, mais très fier.',
+      '{L} s’est reposé sur un rocher au milieu du lac en regardant les nuages passer.'
     ] },
   { id: 'cimes', name: 'Les cimes de braise', hours: 4, colors: ['#e0874a', '#2e1a12'], teaser: 'Les volcans endormis, là où naissent les dragons.',
     foods: ['meat', 'fish'], fruit: 0.35,
     stories: [
-      'Le petit loup a grimpé jusqu’aux volcans endormis. Il a trouvé des pierres encore tièdes et en a rapporté une pour {n}.',
-      'Au sommet, un vieux dragon de pierre a raconté au petit loup des histoires d’autrefois. Il les répète à {n} depuis son retour.',
-      'Le petit loup a hurlé face aux volcans… et l’écho lui a répondu trois fois. Il n’a pas eu peur. Presque pas.'
+      '{L} a grimpé jusqu’aux volcans endormis. Il a trouvé des pierres encore tièdes et en a rapporté une pour {n}.',
+      'Au sommet, un vieux dragon de pierre a raconté {al} des histoires d’autrefois. Il les répète à {n} depuis son retour.',
+      '{L} a hurlé face aux volcans… et l’écho lui a répondu trois fois. Il n’a pas eu peur. Presque pas.'
     ] },
   { id: 'ile', name: 'L’île aux cristaux', hours: 8, colors: ['#a99cf0', '#1a1630'], teaser: 'Un long voyage au-delà de la mer. Idéal pour la nuit.',
     foods: ['fish', 'meat'], fruit: 0.8,
     stories: [
-      'Le petit loup a traversé la mer sur un radeau de branches jusqu’à l’île aux cristaux. La nuit, toute l’île chante doucement.',
-      'Sur l’île, le petit loup a trouvé une grotte entière de cristaux. Il a rempli sa sacoche à ras bord !',
-      'Le petit loup a dormi sous les aurores de l’île et rêvé de {n}. Il est rentré dès le réveil, en courant.'
+      '{L} a traversé la mer sur un radeau de branches jusqu’à l’île aux cristaux. La nuit, toute l’île chante doucement.',
+      'Sur l’île, {l} a trouvé une grotte entière de cristaux. Il a rempli sa sacoche à ras bord !',
+      '{L} a dormi sous les aurores de l’île et rêvé de {n}. Il est rentré dès le réveil, en courant.'
     ] }
 ];
 
 export interface Trip { dest: string; start: number; end: number; stepsDay: string; steps0: number }
 export interface Loot { dest: string; gold: number; food: Partial<Record<FoodId, number>>; story: string; first: boolean; back: number }
 
-interface Data { day: string; count: number; trip: Trip | null; back: Loot | null; visited: string[] }
+interface Data { day: string; count: number; trip: Trip | null; back: Loot | null; visited: string[]; wolfName?: string }
 
 const KEY = 'quete-du-dragon:voyage';
 const H = 3600 * 1000;
@@ -134,17 +134,29 @@ export class Voyage {
     c.data.mood = Math.min(100, c.data.mood + 15);
     if (l.first) {
       this.data.visited.push(l.dest);
-      c.remember('voyage-' + l.dest, `Le petit loup : ${this.dest(l.dest).name}`, l.story);
+      c.remember('voyage-' + l.dest, `${this.wolfName(true)} : ${this.dest(l.dest).name}`, l.story);
     }
     c.save();
     this.save();
     return l;
   }
 
-  /** Accords (dragon / dragonne) et nom dans les histoires. */
+  /** Nom du loup (« le petit loup » tant qu'on ne lui en a pas donné). */
+  wolfName(cap = false): string { const n = this.data.wolfName; return n ? n : cap ? 'Le petit loup' : 'le petit loup'; }
+  hasWolfName(): boolean { return !!this.data.wolfName; }
+  setWolfName(name: string): void {
+    const n = name.trim().slice(0, 18);
+    if (!n) return;
+    const first = !this.data.wolfName;
+    this.data.wolfName = n;
+    if (first) { this.companion.remember('wolf-name', `Le loup s’appelle ${n}`, `Le compagnon de ${this.companion.name} a reçu son nom.`); this.companion.save(); }
+    this.save();
+  }
+
+  /** Accords (dragon / dragonne), nom du dragon ({n}) et du loup ({L} / {l}) dans les textes. */
   fill(t: string): string {
     const f = this.companion.mode === 'parent';
-    return t.replace(/\{n\}/g, this.companion.name).replace(/\{Il\}/g, f ? 'Elle' : 'Il').replace(/\{il\}/g, f ? 'elle' : 'il')
+    return t.replace(/\{al\}/g, this.data.wolfName ? 'à ' + this.data.wolfName : 'au petit loup').replace(/\{L\}/g, this.wolfName(true)).replace(/\{l\}/g, this.wolfName()).replace(/\{n\}/g, this.companion.name).replace(/\{Il\}/g, f ? 'Elle' : 'Il').replace(/\{il\}/g, f ? 'elle' : 'il')
       .replace(/\{le\}/g, f ? 'la' : 'le').replace(/\{e\}/g, f ? 'e' : '');
   }
 
@@ -153,7 +165,7 @@ export class Voyage {
     const t = this.data.trip;
     if (!t) return null;
     const at = new Date(Date.now() + this.remaining());
-    return { key: 'voyage-' + t.start, at, body: this.fill(`Le petit loup est rentré ${fromPlace(this.dest(t.dest).name)} ! Sa sacoche est pleine de trouvailles.`) };
+    return { key: 'voyage-' + t.start, at, body: this.fill(`{L} est rentré ${fromPlace(this.dest(t.dest).name)} ! Sa sacoche est pleine de trouvailles.`) };
   }
 }
 

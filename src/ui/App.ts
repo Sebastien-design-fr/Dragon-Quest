@@ -61,7 +61,7 @@ export interface FamilyContext {
   voyage?: Voyage | null;
 }
 
-export const APP_VERSION = '0.24.1';
+export const APP_VERSION = '0.25.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -128,7 +128,7 @@ export class App {
       }
       const asleep = !!comp && comp.data.blanketDay === nightKey() && comp.data.morningDay !== todayKey();
       const v = this.family.voyage;
-      const travelLine = v?.data.back ? 'Le petit loup est rentré avec des trouvailles' : v?.away() ? 'Le petit loup est en voyage' : '';
+      const travelLine = v?.data.back ? v.fill('{L} est rentré avec des trouvailles') : v?.away() ? v.fill('{L} est en quête') : '';
       void this.family.link.updateWidget({
         name, sub: `${this.stageLabel(stage.label)} · niveau ${this.state.data.level}`,
         image: Assets.dragonPart(stage.id, 'full', this.ownVariant) ?? '', streak: book?.streak() ?? 0,

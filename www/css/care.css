@@ -17,14 +17,14 @@
 .potion-card .row { gap: 10px; align-items: center; }
 
 /* ----- Voyages du petit loup ----- */
-.wolf { position: absolute; left: 0; top: 0; z-index: 3; height: auto; cursor: pointer; transform-origin: 50% 100%; filter: drop-shadow(0 4px 6px rgba(0,0,0,.45)); -webkit-tap-highlight-color: transparent; user-select: none; }
+.wolf { position: absolute; left: -14px; top: -14px; padding: 14px; box-sizing: content-box; z-index: 3; cursor: pointer; touch-action: manipulation; transform-origin: 50% 100%; filter: drop-shadow(0 4px 6px rgba(0,0,0,.45)); -webkit-tap-highlight-color: transparent; user-select: none; }
 .wolf.glow { filter: drop-shadow(0 0 10px rgba(255,214,120,.85)) drop-shadow(0 4px 6px rgba(0,0,0,.45)); animation: wolf-hop 1.6s ease-in-out infinite; }
 @keyframes wolf-hop { 0%, 70%, 100% { margin-top: 0; } 80% { margin-top: -8px; } 90% { margin-top: 0; } }
 .wolf.wag { animation: wolf-wag .45s ease-out; }
 @keyframes wolf-wag { 30% { margin-top: -10px; } 60% { margin-top: 0; } 80% { margin-top: -4px; } }
 .vy-badge { position: absolute; top: 10px; right: 10px; z-index: 4; display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 4px; border-radius: 999px; cursor: pointer;
   background: linear-gradient(180deg, rgba(20,17,24,.78), rgba(10,9,13,.88)); border: 1px solid rgba(217,168,74,.35); color: var(--gold-soft); font-weight: 700; font-size: 13px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-.vy-badge img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: 70% 20%; background: #2a2430; }
+.vy-badge img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: 92% 12%; transform: scale(1); background: #2a2430; }
 .vy-badge.back { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 14px rgba(243,193,90,.45); animation: vy-pulse 1.6s ease-in-out infinite; }
 @keyframes vy-pulse { 50% { transform: scale(1.06); } }
 .vy-intro { display: flex; gap: 12px; align-items: center; }
@@ -56,3 +56,7 @@
 .fr-more { gap: 8px; margin-top: 8px; }
 .fr-more .btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
 .vy-badge[hidden], .wolf[hidden] { display: none !important; }
+
+.vy-names { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.vy-names .chip-mini { cursor: pointer; background: none; padding: 5px 12px; font-size: 13px; }
+.sheet input[aria-label='Nom du loup'] { width: 100%; }
