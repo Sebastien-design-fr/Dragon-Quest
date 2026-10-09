@@ -6,7 +6,7 @@ import type { App } from './App.js';
 import { ICONS, clear, h, icon } from './dom.js';
 import { gamesSheet, statusSheet, tricksSheet } from './CareSheets.js';
 import { sayFor } from '../family/Thoughts.js';
-import { travelStrip, voyageSheet } from './VoyageUI.js';
+import { voyageSheet } from './VoyageUI.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -74,10 +74,6 @@ export class StageHud {
         h('span', { class: 'sh-ico' }, icon(ic, 22), badge ? h('span', { class: 'sh-badge' }, badge) : null), h('span', { class: 'sh-lbl' }, label));
     const asleep = app.sleeping;
     clear(this.bar);
-    // en voyage (ou rentré avec son sac) : un bandeau remplace les soins
-    const strip = travelStrip(app);
-    this.bar.classList.toggle('traveling', !!strip);
-    if (strip) { this.bar.append(strip); return; }
     this.bar.append(
       btn('feed', 'Nourrir', ICONS.meat, asleep ? 'dim' : '', rations ? String(rations) : undefined),
       btn('wash', app.careMode === 'wash' ? 'Lavage' : 'Laver', ICONS.drop, app.careMode === 'wash' ? 'on' : asleep ? 'dim' : ''),

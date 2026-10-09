@@ -8,7 +8,7 @@ import type { Duo } from '../family/Duo.js';
 import type { Training } from '../family/Training.js';
 import type { Activity } from '../family/Activity.js';
 import type { Voyage } from '../family/Voyage.js';
-import { installVoyage, placeNow, traveling } from './VoyageUI.js';
+import { installVoyage } from './VoyageUI.js';
 import { de } from './Lair.js';
 import { installActivity } from './ActivityUI.js';
 import { VisitScene } from './VisitScene.js';
@@ -61,7 +61,7 @@ export interface FamilyContext {
   voyage?: Voyage | null;
 }
 
-export const APP_VERSION = '0.24.0';
+export const APP_VERSION = '0.24.1';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -128,7 +128,7 @@ export class App {
       }
       const asleep = !!comp && comp.data.blanketDay === nightKey() && comp.data.morningDay !== todayKey();
       const v = this.family.voyage;
-      const travelLine = v?.away() ? `${name} est en voyage` : v?.data.back ? `${name} est rentré${this.isParent ? 'e' : ''} avec des trouvailles` : '';
+      const travelLine = v?.data.back ? 'Le petit loup est rentré avec des trouvailles' : v?.away() ? 'Le petit loup est en voyage' : '';
       void this.family.link.updateWidget({
         name, sub: `${this.stageLabel(stage.label)} · niveau ${this.state.data.level}`,
         image: Assets.dragonPart(stage.id, 'full', this.ownVariant) ?? '', streak: book?.streak() ?? 0,
@@ -327,7 +327,7 @@ export class App {
   playPendingVisit(): void {
     this.playHug();
     const v = this.family.duo?.data.pending[0];
-    if (!v || !this.showingOwn || this.sleeping || this.visits.active || this.evolving || traveling(this)) return;
+    if (!v || !this.showingOwn || this.sleeping || this.visits.active || this.evolving) return;
     void this.visits.start(v);
   }
 
@@ -338,7 +338,7 @@ export class App {
     else if (a === 'pet' || a === 'dragon') {
       this.show('dragon');
       if (a === 'pet') setTimeout(() => {
-        if (traveling(this) || !this.family.companion) return;
+        if (!this.family.companion) return;
         if (this.sleeping) { this.say(`Chut… ${this.isParent ? 'elle' : 'il'} dort. Une petite caresse quand même.`, null, 3000); this.family.companion.pet(); return; }
         this.stageHud.action('pet');
       }, 900);
@@ -348,7 +348,7 @@ export class App {
   /** Câlin reçu de l'autre dragon : joué dès que notre dragon est là et éveillé. */
   playHug(): void {
     const duo = this.family.duo;
-    if (!duo?.data.hugs?.length || !this.showingOwn || this.sleeping || this.visits.active || this.evolving || traveling(this)) return;
+    if (!duo?.data.hugs?.length || !this.showingOwn || this.sleeping || this.visits.active || this.evolving) return;
     const hug = duo.takeHug();
     if (!hug) return;
     void this.act('happy');
@@ -443,7 +443,6 @@ export class App {
   /** Parent : bascule entre le dragon de l'enfant et sa propre dragonne. */
   private async switchDragon(): Promise<void> {
     this.bubble.classList.remove('show');
-    placeNow(this, this.showingOwn && traveling(this));
     if (this.showingOwn) {
       await this.view.setStage(this.state.stage, true, this.ownVariant);
       this.syncEquipment();
@@ -512,7 +511,7 @@ export class App {
   /** Le matin, s'il dort encore : rideaux à ouvrir. Le soir, la couverture reste sur lui. */
   private morningCheck(): void {
     const comp = this.family.companion;
-    if (!comp || !this.showingOwn || this.current?.id !== 'dragon' || traveling(this)) return;
+    if (!comp || !this.showingOwn || this.current?.id !== 'dragon') return;
     const hr = new Date().getHours();
     if (this.sleeping && hr >= 6 && hr < 12 && comp.data.morningDay !== todayKey()) { morningCurtain(this); return; }
   }
@@ -542,7 +541,7 @@ export class App {
   /** Réveillé à la main la nuit : on le laisse debout 30 min avant de le recoucher. */
   private wokenAt = 0;
   private bedtime(): void {
-    if (!this.showingOwn || this.visits.active || this.evolving || traveling(this)) return;
+    if (!this.showingOwn || this.visits.active || this.evolving) return;
     const h = new Date().getHours() + new Date().getMinutes() / 60;
     const night = h >= 21.5 || h < 7;
     const wokeThisMorning = h < 12 && this.family.companion?.data.morningDay === todayKey();
@@ -611,7 +610,7 @@ export class App {
   /** Choisit une pensée : les rappels importants d'abord, sans répéter la même trop souvent. */
   think(force: boolean): void {
     const comp = this.family.companion;
-    if (!comp || !this.showingOwn || this.evolving || traveling(this)) return;
+    if (!comp || !this.showingOwn || this.evolving) return;
     if (!force && this.bubble.classList.contains('show')) return;
     if (this.sleeping && !isNight()) return;
     const now = Date.now();
@@ -660,7 +659,6 @@ export class App {
 
   private pointer(e: PointerEvent, kind: 'down' | 'move' | 'up'): void {
     const view = this.view;
-    if (this.showingOwn && traveling(this)) return; // parti en voyage : la scène est vide
     if (kind !== 'up') view.lookAt(e.clientX, e.clientY);
     const comp = this.family.companion;
     if (!comp || !this.showingOwn || this.visits.active) return;

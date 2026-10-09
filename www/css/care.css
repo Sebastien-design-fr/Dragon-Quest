@@ -16,16 +16,22 @@
 .potion-card .pt-ico { color: #c8b6ff; background: radial-gradient(circle at 35% 30%, #3b2f66, #191428); border-color: rgba(170,150,255,.45); }
 .potion-card .row { gap: 10px; align-items: center; }
 
-/* ----- Voyages ----- */
-.sh-bar.traveling { display: block; padding: 8px; }
-.vy-strip { display: flex; align-items: center; gap: 10px; color: var(--text); }
-.vy-strip .grow { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.vy-strip strong { font-size: 13.5px; line-height: 1.25; color: var(--gold-soft); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.vy-strip .small { color: var(--muted); }
-.vy-strip.back strong { color: var(--gold); }
-.vy-ico { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; color: var(--c1, var(--gold)); background: #1b1720; border: 1px solid color-mix(in srgb, var(--c1, #d9a84a) 50%, transparent); animation: vy-spin 6s linear infinite; }
-@keyframes vy-spin { to { transform: rotate(360deg); } }
-.vy-bar { display: block; height: 5px; border-radius: 999px; background: #2a2430; overflow: hidden; margin-top: 3px; }
+/* ----- Voyages du petit loup ----- */
+.wolf { position: absolute; left: 0; top: 0; z-index: 3; height: auto; cursor: pointer; transform-origin: 50% 100%; filter: drop-shadow(0 4px 6px rgba(0,0,0,.45)); -webkit-tap-highlight-color: transparent; user-select: none; }
+.wolf.glow { filter: drop-shadow(0 0 10px rgba(255,214,120,.85)) drop-shadow(0 4px 6px rgba(0,0,0,.45)); animation: wolf-hop 1.6s ease-in-out infinite; }
+@keyframes wolf-hop { 0%, 70%, 100% { margin-top: 0; } 80% { margin-top: -8px; } 90% { margin-top: 0; } }
+.wolf.wag { animation: wolf-wag .45s ease-out; }
+@keyframes wolf-wag { 30% { margin-top: -10px; } 60% { margin-top: 0; } 80% { margin-top: -4px; } }
+.vy-badge { position: absolute; top: 10px; right: 10px; z-index: 4; display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 4px; border-radius: 999px; cursor: pointer;
+  background: linear-gradient(180deg, rgba(20,17,24,.78), rgba(10,9,13,.88)); border: 1px solid rgba(217,168,74,.35); color: var(--gold-soft); font-weight: 700; font-size: 13px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.vy-badge img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: 70% 20%; background: #2a2430; }
+.vy-badge.back { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 14px rgba(243,193,90,.45); animation: vy-pulse 1.6s ease-in-out infinite; }
+@keyframes vy-pulse { 50% { transform: scale(1.06); } }
+.vy-intro { display: flex; gap: 12px; align-items: center; }
+.vy-intro img { width: 84px; flex: none; }
+.vy-intro p { margin: 0; }
+.vy-dest.current { cursor: default; }
+.vy-bar { display: block; height: 5px; border-radius: 999px; background: #2a2430; overflow: hidden; margin-top: 4px; }
 .vy-bar > span { display: block; height: 100%; background: var(--c1, var(--gold)); border-radius: 999px; }
 .vy-dest { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 14px; text-align: left; cursor: pointer; color: var(--text);
   border: 1px solid color-mix(in srgb, var(--c1) 45%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--c2) 85%, var(--panel)), var(--panel)); }
@@ -49,3 +55,4 @@
 /* ----- Câlins et cadeaux cachés ----- */
 .fr-more { gap: 8px; margin-top: 8px; }
 .fr-more .btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.vy-badge[hidden], .wolf[hidden] { display: none !important; }

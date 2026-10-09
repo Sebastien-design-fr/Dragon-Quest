@@ -1,6 +1,6 @@
-// Voyages du dragon (octobre 2026) : il part explorer de 1 à 8 heures et revient avec des trouvailles
-// (or, nourriture, parfois un fruit de feu) et une petite histoire. Les pas faits pendant son absence
-// raccourcissent le voyage. Sans lien avec les quêtes : ni XP, ni gemmes.
+// Voyages (octobre 2026) : le petit loup, compagnon du dragon, part explorer de 1 à 8 heures et revient avec des
+// trouvailles (or, nourriture, parfois un fruit de feu) et une petite histoire. Le dragon reste à la maison : on peut
+// continuer à s'en occuper. Les pas faits pendant l'absence raccourcissent le voyage. Sans lien avec les quêtes.
 import { EventBus } from '../core/events.js';
 import type { GameState } from '../game/GameState.js';
 import { readStore, writeStore } from '../platform/storage.js';
@@ -20,30 +20,30 @@ export const DESTINATIONS: Destination[] = [
   { id: 'foret', name: 'La forêt des brumes', hours: 1, colors: ['#7fb38a', '#1d2b22'], teaser: 'Une petite balade sous les grands arbres.',
     foods: ['meat'], fruit: 0,
     stories: [
-      '{n} a suivi un renard argenté jusqu’à une clairière pleine de champignons lumineux.',
-      'Dans la brume, {n} a joué à cache-cache avec un hibou. Le hibou a gagné… trois fois.',
-      '{n} a trouvé un vieux pont de pierre couvert de mousse et l’a traversé sur la pointe des griffes.'
+      'Le petit loup a suivi un renard argenté jusqu’à une clairière pleine de champignons lumineux. Il en a parlé à {n} pendant une heure.',
+      'Dans la brume, le petit loup a joué à cache-cache avec un hibou. Le hibou a gagné… trois fois.',
+      'Le petit loup a trouvé un vieux pont de pierre couvert de mousse et l’a traversé sur la pointe des pattes.'
     ] },
   { id: 'lac', name: 'Le lac d’argent', hours: 2, colors: ['#8ab6d6', '#16232e'], teaser: 'Pêche, ricochets et reflets de lune.',
     foods: ['fish', 'meat'], fruit: 0.1,
     stories: [
-      '{n} a pêché au bord du lac. Le premier poisson lui a glissé des pattes, le deuxième non !',
-      'Un cygne noir a appris à {n} à glisser sur l’eau. {Il} a surtout beaucoup éclaboussé.',
-      '{n} s’est reposé{e} sur un rocher au milieu du lac en regardant les nuages passer.'
+      'Le petit loup a pêché au bord du lac. Le premier poisson lui a glissé des pattes, le deuxième non : il est pour {n} !',
+      'Un cygne noir a voulu apprendre au petit loup à nager. Il est rentré trempé, mais très fier.',
+      'Le petit loup s’est reposé sur un rocher au milieu du lac en regardant les nuages passer.'
     ] },
   { id: 'cimes', name: 'Les cimes de braise', hours: 4, colors: ['#e0874a', '#2e1a12'], teaser: 'Les volcans endormis, là où naissent les dragons.',
     foods: ['meat', 'fish'], fruit: 0.35,
     stories: [
-      '{n} a volé au-dessus des volcans endormis. L’air chaud {le} portait tout{e} seul{e}, comme une plume.',
-      'Au sommet, {n} a rencontré un vieux dragon de pierre qui lui a raconté des histoires d’autrefois.',
-      '{n} a soufflé sur une coulée de lave refroidie : elle s’est remise à briller un instant !'
+      'Le petit loup a grimpé jusqu’aux volcans endormis. Il a trouvé des pierres encore tièdes et en a rapporté une pour {n}.',
+      'Au sommet, un vieux dragon de pierre a raconté au petit loup des histoires d’autrefois. Il les répète à {n} depuis son retour.',
+      'Le petit loup a hurlé face aux volcans… et l’écho lui a répondu trois fois. Il n’a pas eu peur. Presque pas.'
     ] },
   { id: 'ile', name: 'L’île aux cristaux', hours: 8, colors: ['#a99cf0', '#1a1630'], teaser: 'Un long voyage au-delà de la mer. Idéal pour la nuit.',
     foods: ['fish', 'meat'], fruit: 0.8,
     stories: [
-      '{n} a traversé la mer jusqu’à l’île aux cristaux. La nuit, toute l’île chante doucement.',
-      'Sur l’île, {n} a trouvé une grotte entière de cristaux. {Il} a rapporté ce qu’{il} pouvait porter !',
-      '{n} a dormi sous les aurores de l’île et rêvé de toi. {Il} est rentré{e} dès le réveil.'
+      'Le petit loup a traversé la mer sur un radeau de branches jusqu’à l’île aux cristaux. La nuit, toute l’île chante doucement.',
+      'Sur l’île, le petit loup a trouvé une grotte entière de cristaux. Il a rempli sa sacoche à ras bord !',
+      'Le petit loup a dormi sous les aurores de l’île et rêvé de {n}. Il est rentré dès le réveil, en courant.'
     ] }
 ];
 
@@ -134,7 +134,7 @@ export class Voyage {
     c.data.mood = Math.min(100, c.data.mood + 15);
     if (l.first) {
       this.data.visited.push(l.dest);
-      c.remember('voyage-' + l.dest, `Voyage : ${this.dest(l.dest).name}`, l.story);
+      c.remember('voyage-' + l.dest, `Le petit loup : ${this.dest(l.dest).name}`, l.story);
     }
     c.save();
     this.save();
@@ -153,7 +153,7 @@ export class Voyage {
     const t = this.data.trip;
     if (!t) return null;
     const at = new Date(Date.now() + this.remaining());
-    return { key: 'voyage-' + t.start, at, body: this.fill(`Je suis rentré{e} ${fromPlace(this.dest(t.dest).name)} ! J’ai des trouvailles pour toi.`) };
+    return { key: 'voyage-' + t.start, at, body: this.fill(`Le petit loup est rentré ${fromPlace(this.dest(t.dest).name)} ! Sa sacoche est pleine de trouvailles.`) };
   }
 }
 
