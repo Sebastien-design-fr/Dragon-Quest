@@ -192,3 +192,6 @@
 .ph-hero-need { font-size: 12px; color: #c9b8d8; }
 .ph-hero-need.urgent { color: #ffb08a; font-weight: 700; }
 .ph-hero-go { position: absolute; right: 12px; top: 12px; font-size: 12px; color: #e8c8ff; font-weight: 700; }
+/* bouton « Rappeler » d'une tâche pas encore faite */
+.ph-remind { min-height: 34px; padding: 0 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; flex: none; }
+.ph-remind:disabled { opacity: .6; }

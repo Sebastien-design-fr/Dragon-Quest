@@ -1,11 +1,8 @@
 {
-  "note": "Missions proposées par défaut sur le téléphone de l'enfant (les parents les modifient ensuite depuis leur appli). days : 0 = dimanche … 6 = samedi. validation : trust (créditée tout de suite) ou parent (attend la validation d'un parent).",
+  "note": "Tâches quotidiennes installées au premier lancement sur le téléphone de l'enfant. Tout le reste est ajouté par les parents depuis leur appli. days : 0 = dimanche … 6 = samedi. validation : trust (créditée tout de suite) ou parent (attend la validation d'un parent).",
   "missions": [
-    { "id": "m_chat",     "title": "Nourrir le chat",       "xp": 10, "gold": 5,  "validation": "trust",  "days": [0,1,2,3,4,5,6], "time": "19:30" },
-    { "id": "m_litiere",  "title": "Changer la litière",    "xp": 15, "gold": 8,  "validation": "parent", "days": [0,3,6],         "time": "18:00" },
-    { "id": "m_devoirs",  "title": "Faire ses devoirs",     "xp": 20, "gold": 10, "validation": "parent", "days": [1,2,4,5],       "time": "18:30" },
-    { "id": "m_chambre",  "title": "Ranger sa chambre",     "xp": 25, "gold": 12, "validation": "parent", "days": [3,6],           "time": "17:00" },
-    { "id": "m_sport",    "title": "Séance de sport",       "xp": 15, "gold": 8,  "validation": "trust",  "days": [2,4,6],         "time": null },
-    { "id": "m_sac",      "title": "Préparer son sac",      "xp": 5,  "gold": 3,  "validation": "trust",  "days": [0,1,2,3,4],     "time": "20:30" }
+    { "id": "m_chat",    "title": "Donner à manger au chat", "xp": 10, "gold": 5,  "validation": "trust",  "days": [0,1,2,3,4,5,6], "time": "19:30" },
+    { "id": "m_litiere", "title": "Contrôler la litière",    "xp": 10, "gold": 6,  "validation": "parent", "days": [0,1,2,3,4,5,6], "time": "18:00" },
+    { "id": "m_devoirs", "title": "Faire ses devoirs",       "xp": 20, "gold": 10, "validation": "parent", "days": [1,2,3,4,5],     "time": "18:30" }
   ]
 }

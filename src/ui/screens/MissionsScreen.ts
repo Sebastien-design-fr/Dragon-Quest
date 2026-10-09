@@ -127,7 +127,6 @@ export class MissionsScreen implements Screen {
     const streak = book.streak();
     const shields = book.data.shields;
     const cost = book.pendingCost();
-    const loss = [cost.xp ? `−${cost.xp} XP` : '', cost.gold ? `−${cost.gold} or` : ''].filter(Boolean).join(', ');
 
     return h('section', { class: `q-today${total && done === total ? ' q-perfect' : ''}` },
       total
@@ -142,10 +141,9 @@ export class MissionsScreen implements Screen {
           shields ? h('span', { class: 'q-shield', title: `${shields} bouclier${shields > 1 ? 's' : ''} de série` }, icon(ICONS.shield, 14), `${shields}`) : null),
         !shields && streak ? h('span', { class: 'q-hint' }, 'Un bouclier tous les 7 jours') : null,
         waiting ? h('span', { class: 'q-hint amber' }, `${waiting} en attente des parents`) : null),
-      // ton positif : un simple rappel le soir ; le détail de la règle reste visible en le touchant
-      cost.count && new Date().getHours() >= 19 ? h('details', { class: 'q-cost' },
-        h('summary', null, icon(ICONS.moon, 14), h('span', null, `${cost.count > 1 ? `Encore ${cost.count} quêtes` : 'Encore une quête'} avant de dormir : ton dragon compte sur toi !`)),
-        h('span', { class: 'small muted' }, `Règle de tes parents : une quête oubliée retire ${loss || 'un peu d’énergie'} le lendemain.`)) : null);
+      // un simple rappel le soir (plus aucune sanction)
+      cost.count && new Date().getHours() >= 19 ? h('div', { class: 'q-cost' }, icon(ICONS.moon, 14),
+        h('span', null, `${cost.count > 1 ? `Encore ${cost.count} quêtes` : 'Encore une quête'} avant de dormir : ton dragon compte sur toi !`)) : null);
   }
 
   private card(t: Entry, x2: boolean, bonus = false): HTMLElement {

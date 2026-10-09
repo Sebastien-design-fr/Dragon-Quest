@@ -71,6 +71,7 @@ async function boot(): Promise<void> {
     book.childName = linkState.deviceName;
     companion = new Companion(state);
     book.companion = companion;
+    book.clearSanctions(); // sanctions supprimées : dragon guéri, objet rendu, énergie pleine
     duo = new Duo(link, state, companion, linkState.deviceId, linkState.deviceName, 'child');
     book.onOther = m => duo!.handle(m);
     duo.attachBook(book);

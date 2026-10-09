@@ -1,5 +1,4 @@
 import { Assets } from '../../engine/AssetManager.js';
-import { PENALTY, energyLabel, type Severity } from '../../family/badges.js';
 import { rewardText, type MissionStatus } from '../../family/model.js';
 import type { ParentHub } from '../../family/ParentHub.js';
 import type { App, Screen } from '../App.js';
@@ -58,8 +57,6 @@ export class ValidationsScreen implements Screen {
   private giftAmount = 25;
   private giftMessage = '';
   private treatMessage = '';
-  private warnAmount = 25;
-  private warnReason = '';
   /** Un glissement ou une décision est en cours : le prochain rendu est différé. */
   private busy = false;
   private dirty = false;
@@ -123,8 +120,6 @@ export class ValidationsScreen implements Screen {
     root.append(this.daySummary(c));
 
     // ---- Actions ----
-    const sev: Severity = c.snapshot?.severity ?? 'normal';
-    const alert = !!(c.snapshot?.sick || c.snapshot?.confiscated);
     const pet = c.snapshot?.companion?.name;
     const tile = (cls: string, path: string, title: string, hint: string, open: () => void, dot = false) =>
       h('button', { class: `ph-tile ${cls}`, onclick: open },
@@ -134,11 +129,7 @@ export class ValidationsScreen implements Screen {
     root.append(h('div', { class: 'section-head' }, h('h3', null, 'Actions')));
     root.append(h('div', { class: 'ph-tiles' },
       tile('gift', ICONS.gift, 'Coup de cœur', 'Un bonus surprise', () => this.giftSheet(id, c.name)),
-      tile('treat', ICONS.heart, 'Friandise', pet ? `Un régal pour ${pet}` : 'Pour son dragon', () => this.treatSheet(id, c.name)),
-      tile('warn', ICONS.hand, 'Avertissement', 'Retirer de l’or', () => this.warnSheet(id, c.name)),
-      tile('rules', ICONS.shield, 'Sanctions',
-        alert ? (c.snapshot?.sick ? 'Son dragon est malade' : 'Un objet confisqué') : `Mode ${PENALTY[sev].label.toLowerCase()}`,
-        () => this.rulesSheet(id), alert)));
+      tile('treat', ICONS.heart, 'Friandise', pet ? `Un régal pour ${pet}` : 'Pour son dragon', () => this.treatSheet(id, c.name))));
 
     root.append(this.activityLink(hub));
   }
@@ -332,8 +323,7 @@ export class ValidationsScreen implements Screen {
           total ? legend : null,
           h('span', { class: 'ph-streak' }, icon(ICONS.flame, 15), `${snap.streak} jour${snap.streak > 1 ? 's' : ''} de série`),
           h('span', { class: 'ph-updated' }, icon(ICONS.clock, 13), `reçu à ${hhmm(c.updatedAt)}`))),
-      gauges.childElementCount ? gauges : null,
-      snap.sick ? h('p', { class: 'small bad' }, 'Son dragon est malade.') : null);
+      gauges.childElementCount ? gauges : null);
   }
 
   private daySheet(c: ChildEntry): void {
@@ -350,16 +340,16 @@ export class ValidationsScreen implements Screen {
         list.append(h('div', { class: `ph-mission ${st}` },
           h('span', { class: `check ${st}` }, st === 'done' ? icon(ICONS.check, 16) : st === 'pending' ? icon(ICONS.clock, 15) : null),
           h('span', { class: 'grow' }, m.title, m.optional ? h('span', { class: 'quest-tag bonus' }, 'Bonus') : null),
-          h('span', { class: `pill ${st}` }, STATUS_LABEL[st])));
+          h('span', { class: `pill ${st}` }, STATUS_LABEL[st]),
+          // pas encore faite : un parent peut la rappeler (notification sur son téléphone et sa montre)
+          (st === 'todo' || st === 'refused') && this.app.selectedChild ? h('button', { class: 'btn small-btn ph-remind', onclick: (e: Event) => {
+            const b = e.currentTarget as HTMLButtonElement;
+            b.disabled = true; b.textContent = 'Envoyé';
+            void this.app.family.hub!.remind(this.app.selectedChild!, m.id, m.title);
+          } }, icon(ICONS.clock, 14), ' Rappeler') : null));
       }
       out.push(list);
       out.push(h('h4', null, 'Son dragon'));
-      if (snap.energy !== undefined) {
-        const en = energyLabel(snap.energy);
-        out.push(h('div', { class: `energy-line ${en.level}` },
-          h('span', null, `Énergie : ${snap.energy} % · ${en.label} (${en.detail})`),
-          h('div', { class: 'bar energy-bar' }, h('div', { class: 'fill', style: { width: `${snap.energy}%` } }))));
-      }
       if (snap.companion) {
         const cp = snap.companion;
         const gauge = (label: string, v: number) => h('div', { class: 'care-mini' }, h('span', { class: 'small' }, `${label} ${v} %`),
@@ -368,7 +358,6 @@ export class ValidationsScreen implements Screen {
           h('div', { class: 'small' }, h('strong', null, cp.name), ` · ${cp.moodLabel} · amitié : ${cp.bond}`),
           h('div', { class: 'care-row' }, gauge('Faim', cp.hunger), gauge('Propreté', cp.clean), gauge('Humeur', cp.mood))));
       }
-      if (snap.sick) out.push(h('p', { class: 'small bad' }, `Son dragon est malade (${snap.missStreak ?? 0} jours d’oubli d’affilée).`));
       out.push(h('p', { class: 'small muted' }, [
         `Niveau ${snap.level}`,
         `série : ${snap.streak} jour${snap.streak > 1 ? 's' : ''}`,
@@ -428,58 +417,6 @@ export class ValidationsScreen implements Screen {
           close();
         } }, icon(ICONS.heart, 18), 'Envoyer une friandise')
       ];
-    });
-  }
-
-  private warnSheet(id: string, name: string): void {
-    const hub = this.app.family.hub!;
-    openSheet('Avertissement', close => {
-      const confirmBox = h('div', { class: 'ph-confirm', hidden: true });
-      const send = h('button', { class: 'btn danger ph-wide' }, 'Envoyer l’avertissement');
-      const disarm = () => { confirmBox.hidden = true; send.hidden = false; };
-      const reason = h('input', { type: 'text', maxlength: '80', placeholder: 'Chambre pas rangée malgré 3 rappels', value: this.warnReason,
-        oninput: (e: Event) => { this.warnReason = (e.target as HTMLInputElement).value; disarm(); } });
-      send.addEventListener('click', () => {
-        if (this.warnReason.trim().length < 3) { this.app.toast('Indiquez le motif.'); reason.focus(); return; }
-        clear(confirmBox);
-        confirmBox.append(
-          h('p', { class: 'small' }, `Envoyer un avertissement à ${name} : −${this.warnAmount} or, motif « ${this.warnReason.trim()} » ?`),
-          h('div', { class: 'ph-decide' },
-            h('button', { class: 'btn', onclick: disarm }, 'Annuler'),
-            h('button', { class: 'btn ph-danger-fill', onclick: async () => {
-              await hub.warn(id, this.warnAmount, this.warnReason.trim());
-              this.warnReason = '';
-              this.app.toast('Avertissement envoyé');
-              close();
-            } }, 'Confirmer')));
-        confirmBox.hidden = false; send.hidden = true;
-      });
-      return [
-        h('p', { class: 'small muted' }, `Retire de l’or à ${name} et un peu d’énergie à son dragon. Jamais de niveau ni d’objet. Le motif lui est affiché.`),
-        this.segmented([10, 25, 50], this.warnAmount, n => `−${n} or`, n => { this.warnAmount = n; disarm(); }),
-        h('label', { class: 'field-col' }, h('span', { class: 'small' }, 'Motif (obligatoire)'), reason),
-        send, confirmBox
-      ];
-    });
-  }
-
-  private rulesSheet(id: string): void {
-    const hub = this.app.family.hub!;
-    const c = hub.child(id);
-    const sev: Severity = c?.snapshot?.severity ?? 'normal';
-    openSheet('Missions oubliées', () => {
-      const text = h('p', { class: 'small' }, PENALTY[sev].text);
-      const out: Node[] = [
-        h('p', { class: 'small muted' }, 'Chaque matin, l’appli fait le bilan de la veille. Les missions non faites coûtent de l’XP et de l’or, rendent le dragon triste, puis malade si les oublis se répètent. Une journée parfaite efface tout.'),
-        this.segmented(['doux', 'normal', 'strict'] as Severity[], sev, k => PENALTY[k].label, k => {
-          text.textContent = PENALTY[k].text;
-          void hub.setSeverity(id, k).then(() => this.app.toast(`Sanctions : ${PENALTY[k].label}`));
-        }),
-        text
-      ];
-      if (c?.snapshot?.sick) out.push(h('p', { class: 'small bad' }, `Son dragon est malade (${c.snapshot.missStreak ?? 0} jours d’oubli d’affilée).`));
-      if (c?.snapshot?.confiscated) out.push(h('p', { class: 'small bad' }, `Équipement confisqué : ${this.app.catalog.item(c.snapshot.confiscated)?.name ?? ''}.`));
-      return out;
     });
   }
 

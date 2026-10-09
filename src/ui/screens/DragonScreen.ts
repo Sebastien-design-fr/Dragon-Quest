@@ -1,10 +1,8 @@
-import { energyLabel } from '../../family/badges.js';
 import type { Companion } from '../../family/Companion.js';
 import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon, put } from '../dom.js';
 import { openSheet } from './common.js';
 import { Sound } from '../../engine/Sound.js';
-import { todayKey } from '../../family/model.js';
 import { fill, journeyFor, landmarks } from '../../family/Expedition.js';
 import { openLair } from '../Lair.js';
 import { shareCard } from '../ShareCard.js';
@@ -42,7 +40,6 @@ export class DragonScreen implements Screen {
     ].filter((x): x is HTMLElement => !!x);
     put(el,
       this.nameCard(comp),
-      this.alertCard(comp),
       book ? questDeck(app) : this.careStrip(comp),
       h('div', { class: 'disc-head' }, h('h3', null, 'À découvrir'), h('span', { class: 'small muted' }, 'glisse →')),
       h('div', { class: 'disc' }, ...discover.map(c => h('div', { class: 'disc-item' }, c))),
@@ -83,27 +80,6 @@ export class DragonScreen implements Screen {
         const who = app.family.book?.childName ?? app.family.linkState.deviceName;
         app.say(`${comp.name}… j’adore ! Merci${who ? ', ' + who : ''} !`, null, 5000);
       } }, 'Valider')));
-  }
-
-  /** Une seule alerte à la fois, la plus importante. */
-  private alertCard(comp: Companion): HTMLElement | null {
-    const { app } = this;
-    const book = app.family.book;
-    if (!book) return null;
-    const lp = book.data.lastPenalty;
-    const rule = book.severityRule();
-    const energy = book.data.energy ?? 100;
-    let title = '', text = '', tone = 'warn';
-    if (lp && lp.date === todayKey()) { title = 'Hier, quelques quêtes ont été oubliées'; text = `${lp.missed.join(', ')} (−${lp.xp} XP, −${lp.gold} or · règle : ${rule.label}). Aujourd’hui est un nouveau jour !`; tone = 'warn'; }
-    else if (comp.data.sick) { title = `${comp.name} est malade`; text = 'Pas de tours ni de jeux, pas de bonus d’XP. Une journée où toutes les quêtes sont faites le guérira.'; tone = 'bad'; }
-    else if (book.data.confiscated) { const def = app.catalog.item(book.data.confiscated.id); title = 'Objet confisqué'; text = `${def?.name ?? 'Un équipement'} : rendu après une journée parfaite.`; }
-    else if (energy < 25) { const en = energyLabel(energy); title = `Énergie : ${en.label}`; text = `${en.detail}. Fais tes quêtes pour lui redonner des forces !`; }
-    // (pas d'alerte « ce soir » : la carte de quête juste en dessous le dit déjà, sans prendre de place)
-    if (!title) return null;
-    return h('button', { class: `ds-alert ${tone}`, onclick: () => app.show('missions') },
-      icon(tone === 'bad' ? ICONS.shield : ICONS.clock, 20),
-      h('span', { class: 'grow' }, h('strong', null, title), h('span', { class: 'small' }, text)),
-      h('span', { class: 'chev' }, '›'));
   }
 
   /** Dragonne (parent) : ce que les soins lui apportent aujourd'hui. */

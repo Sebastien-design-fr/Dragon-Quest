@@ -103,7 +103,7 @@ export class ParentMissionsScreen implements Screen {
     else el.append(this.view === 'list' ? this.list(id!, snap) : this.calendar(snap));
 
     el.append(
-      h('p', { class: 'small muted' }, 'Les quêtes bonus sont facultatives : elles rapportent plus (et 2 gemmes) et ne sont jamais sanctionnées.'),
+      h('p', { class: 'small muted' }, 'Les quêtes bonus sont facultatives : elle choisit de les faire ou non, et elles rapportent plus (et 2 gemmes).'),
       h('p', { class: 'small muted' }, 'Les modifications partent vers le téléphone de l’enfant par le Wi-Fi de la maison (ou dès son retour).'));
     el.append(this.rewardsCard(id!, snap.rewards ?? []));
   }
