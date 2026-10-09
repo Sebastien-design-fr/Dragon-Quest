@@ -6,6 +6,11 @@ import { isNight, type Companion } from '../family/Companion.js';
 import { Sound } from '../engine/Sound.js';
 import type { Duo } from '../family/Duo.js';
 import type { Training } from '../family/Training.js';
+import type { Activity } from '../family/Activity.js';
+import type { Voyage } from '../family/Voyage.js';
+import { installVoyage, placeNow, traveling } from './VoyageUI.js';
+import { de } from './Lair.js';
+import { installActivity } from './ActivityUI.js';
 import { VisitScene } from './VisitScene.js';
 import { StageHud } from './StageHud.js';
 import { UI, installTouchFeedback } from './Motion.js';
@@ -50,9 +55,13 @@ export interface FamilyContext {
   duo: Duo | null;
   /** Entraînement par les mini-jeux (caractéristiques et tours spéciaux). */
   training: Training | null;
+  /** Pas du jour et potion d'expérience. */
+  activity?: Activity | null;
+  /** Voyages du dragon. */
+  voyage?: Voyage | null;
 }
 
-export const APP_VERSION = '0.23.0';
+export const APP_VERSION = '0.24.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -101,14 +110,34 @@ export class App {
           next: next ? `${next.title}${next.time ? ' · ' + next.time.replace(':', ' h ') : ''}` : '' });
       }
       const c = comp?.data;
-      const status = !c ? '' : c.sick ? `${name} est malade` : c.hunger < 30 ? `${name} a faim` : c.clean < 25 ? `${name} est tout sale` : '';
+      const status = !c ? '' : c.hunger < 40 ? `${name} a un petit creux` : c.mood < 40 ? `${name} s’ennuie de toi` : '';
       const pending = hub ? hub.pendingList().length : 0;
+      // Quêtes du jour (grand widget, bouton « J'ai fait » des quêtes de confiance)
+      const quests: WidgetData['quests'] = book ? book.today().map(t => ({ id: t.mission.id, title: t.mission.title, time: t.mission.time ?? undefined, status: t.status, trust: t.mission.validation === 'trust' }))
+        .sort((x, y) => (x.time ?? '99').localeCompare(y.time ?? '99')) : undefined;
+      // Parent : la journée de l'enfant
+      let child: WidgetData['child'];
+      const cid = hub?.childIds()[0];
+      const snap = cid ? hub!.child(cid)?.snapshot : null;
+      if (snap) {
+        const fresh = snap.date === todayKey();
+        const list = snap.missions.filter(m => !m.optional && appliesOn(m, new Date()));
+        const st = (id: string) => (fresh ? snap.today[id] ?? 'todo' : 'todo');
+        child = { name: snap.name, total: list.length, done: list.filter(m => st(m.id) === 'done').length, pending,
+          quests: list.sort((x, y) => (x.time ?? '99').localeCompare(y.time ?? '99')).map(m => ({ title: m.title, status: st(m.id) })) };
+      }
+      const asleep = !!comp && comp.data.blanketDay === nightKey() && comp.data.morningDay !== todayKey();
+      const v = this.family.voyage;
+      const travelLine = v?.away() ? `${name} est en voyage` : v?.data.back ? `${name} est rentré${this.isParent ? 'e' : ''} avec des trouvailles` : '';
       void this.family.link.updateWidget({
         name, sub: `${this.stageLabel(stage.label)} · niveau ${this.state.data.level}`,
         image: Assets.dragonPart(stage.id, 'full', this.ownVariant) ?? '', streak: book?.streak() ?? 0,
+        sleepImage: Assets.dragonPart(stage.id, 'sleep', this.ownVariant) ?? undefined,
+        happyImage: Assets.dragonPart(stage.id, 'flyUp', this.ownVariant) ?? undefined,
+        asleep, event: document.documentElement.dataset.event || undefined,
         variant: this.ownVariant, stage: stage.id,
-        status, statusDate: todayKey(), days,
-        line: this.isParent ? (pending ? `${pending} demande${pending > 1 ? 's' : ''} à valider` : 'Tout est à jour') : undefined
+        status: travelLine || status, statusDate: todayKey(), days, quests, child,
+        line: this.isParent ? (child ? `${child.name} : ${child.done} / ${child.total} aujourd’hui${pending ? ` · ${pending} à valider` : ''}` : pending ? `${pending} demande${pending > 1 ? 's' : ''} à valider` : 'Tout est à jour') : undefined
       });
     }, 2000);
   }
@@ -206,9 +235,8 @@ export class App {
     state.events.on('evolve', ({ to }) => { if (this.showingOwn) this.evolve(to); });
 
     const book = family.book, hub = family.hub;
-    const tiredNow = () => (book?.data.energy ?? 100) < 25 || !!family.companion?.data.sick;
-    book?.events.on('change', () => { this.view.tired = tiredNow(); this.refresh(); });
-    if (book) this.view.tired = tiredNow();
+    book?.events.on('change', () => this.refresh());
+    this.view.tired = false;
     book?.events.on('toast', t => this.toast(t));
     book?.events.on('reward', r => { if (r.mission) missionReaction(this, r.xp, r.gold); });
     book?.events.on('story', t => setTimeout(() => this.say(t, null, 10000), 900));
@@ -258,8 +286,6 @@ export class App {
         else this.think(true);
       }, 1500);
       window.setInterval(() => { comp.tick(); this.applyCare(); this.think(false); }, 40000);
-      // Malade : il éternue de petits nuages de fumée.
-      window.setInterval(() => { if (this.showingOwn && comp.data.sick && !this.sleeping) view.emit('sneeze', 'mouth_anchor'); }, 9000);
       document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(() => this.think(true), 1200); });
     }
 
@@ -278,8 +304,15 @@ export class App {
       if (needsHatch(this)) setTimeout(() => { this.show(this.isParent ? 'dragon' : this.screens[0].id); hatchCeremony(this); }, 400);
     }
 
+    installActivity(this);
+    installVoyage(this);
+    // Widget d'écran d'accueil : ouvrir les quêtes, caresser le dragon, voir les demandes à valider
+    family.link.onLaunchAction(a => this.launchAction(a));
+    setTimeout(() => void family.link.takeLaunchAction().then(a => { if (a) this.launchAction(a); }), 700);
     const duo = family.duo;
     duo?.events.on('visit', () => this.playPendingVisit());
+    duo?.events.on('hug', () => setTimeout(() => this.playHug(), 600));
+    duo?.events.on('change', () => syncDecor(this));
     duo?.events.on('toast', t => this.toast(t));
     duo?.events.on('change', () => this.current?.refresh?.());
     setTimeout(() => this.playPendingVisit(), 3500);
@@ -292,9 +325,36 @@ export class App {
 
   /** Joue la prochaine visite en attente, si notre dragon est affiché et éveillé. */
   playPendingVisit(): void {
+    this.playHug();
     const v = this.family.duo?.data.pending[0];
-    if (!v || !this.showingOwn || this.sleeping || this.visits.active || this.evolving) return;
+    if (!v || !this.showingOwn || this.sleeping || this.visits.active || this.evolving || traveling(this)) return;
     void this.visits.start(v);
+  }
+
+  /** Action demandée depuis le widget. */
+  launchAction(a: string): void {
+    if (a === 'missions') this.show(this.isParent ? 'validations' : 'missions');
+    else if (a === 'validations') this.show('validations');
+    else if (a === 'pet' || a === 'dragon') {
+      this.show('dragon');
+      if (a === 'pet') setTimeout(() => {
+        if (traveling(this) || !this.family.companion) return;
+        if (this.sleeping) { this.say(`Chut… ${this.isParent ? 'elle' : 'il'} dort. Une petite caresse quand même.`, null, 3000); this.family.companion.pet(); return; }
+        this.stageHud.action('pet');
+      }, 900);
+    }
+  }
+
+  /** Câlin reçu de l'autre dragon : joué dès que notre dragon est là et éveillé. */
+  playHug(): void {
+    const duo = this.family.duo;
+    if (!duo?.data.hugs?.length || !this.showingOwn || this.sleeping || this.visits.active || this.evolving || traveling(this)) return;
+    const hug = duo.takeHug();
+    if (!hug) return;
+    void this.act('happy');
+    this.view.emit('hearts', 'head_anchor');
+    navigator.vibrate?.([20, 60, 20]);
+    this.say(`${hug.fromDragon} m’a fait un gros câlin${hug.owner ? ` de la part ${de(hug.owner)}` : ''} !`, null, 6000);
   }
 
   get isParent(): boolean { return this.family.linkState.role === 'parent'; }
@@ -383,6 +443,7 @@ export class App {
   /** Parent : bascule entre le dragon de l'enfant et sa propre dragonne. */
   private async switchDragon(): Promise<void> {
     this.bubble.classList.remove('show');
+    placeNow(this, this.showingOwn && traveling(this));
     if (this.showingOwn) {
       await this.view.setStage(this.state.stage, true, this.ownVariant);
       this.syncEquipment();
@@ -416,8 +477,8 @@ export class App {
     const snap = this.selectedChild ? this.family.hub?.child(this.selectedChild)?.snapshot : null;
     // Son état vu par le parent : saleté, maladie, fatigue.
     this.view.dirt = snap?.companion ? Math.max(0, Math.min(1, (70 - snap.companion.clean) / 70)) : 0;
-    this.view.tired = !!snap?.sick || (snap?.energy ?? 100) < 25;
-    void this.view.play(snap?.sick || (snap?.companion && snap.companion.mood < 25) ? 'sad' : 'idle');
+    this.view.tired = false;
+    void this.view.play('idle');
     const defs = (snap?.equipped ?? []).map(id => this.catalog.item(id)).filter((d): d is EquipmentDef => !!d);
     this.view.setEquipment(defs);
   }
@@ -451,7 +512,7 @@ export class App {
   /** Le matin, s'il dort encore : rideaux à ouvrir. Le soir, la couverture reste sur lui. */
   private morningCheck(): void {
     const comp = this.family.companion;
-    if (!comp || !this.showingOwn || this.current?.id !== 'dragon') return;
+    if (!comp || !this.showingOwn || this.current?.id !== 'dragon' || traveling(this)) return;
     const hr = new Date().getHours();
     if (this.sleeping && hr >= 6 && hr < 12 && comp.data.morningDay !== todayKey()) { morningCurtain(this); return; }
   }
@@ -473,6 +534,7 @@ export class App {
     this.stageHud?.render();
     this.current?.refresh?.();
     this.syncAmbience();
+    this.syncWidget();
   }
 
   /** Couché tout seul vers 21 h 30 (bâillement puis dodo), réveillé le matin. */
@@ -480,7 +542,7 @@ export class App {
   /** Réveillé à la main la nuit : on le laisse debout 30 min avant de le recoucher. */
   private wokenAt = 0;
   private bedtime(): void {
-    if (!this.showingOwn || this.visits.active || this.evolving) return;
+    if (!this.showingOwn || this.visits.active || this.evolving || traveling(this)) return;
     const h = new Date().getHours() + new Date().getMinutes() / 60;
     const night = h >= 21.5 || h < 7;
     const wokeThisMorning = h < 12 && this.family.companion?.data.morningDay === todayKey();
@@ -508,7 +570,7 @@ export class App {
   private applyCare(): void {
     const c = this.family.companion;
     if (!c || !this.showingOwn) return;
-    this.view.tired = (this.family.book?.data.energy ?? 100) < 25 || c.data.sick;
+    this.view.tired = false;
     this.view.dirt = Math.max(0, Math.min(1, (70 - c.data.clean) / 70));
     if (!this.sleeping) { const loop = this.baseLoop(); if (this.view.animator.baseId?.split('@')[0] !== loop) void this.view.play(loop); }
   }
@@ -549,7 +611,7 @@ export class App {
   /** Choisit une pensée : les rappels importants d'abord, sans répéter la même trop souvent. */
   think(force: boolean): void {
     const comp = this.family.companion;
-    if (!comp || !this.showingOwn || this.evolving) return;
+    if (!comp || !this.showingOwn || this.evolving || traveling(this)) return;
     if (!force && this.bubble.classList.contains('show')) return;
     if (this.sleeping && !isNight()) return;
     const now = Date.now();
@@ -598,6 +660,7 @@ export class App {
 
   private pointer(e: PointerEvent, kind: 'down' | 'move' | 'up'): void {
     const view = this.view;
+    if (this.showingOwn && traveling(this)) return; // parti en voyage : la scène est vide
     if (kind !== 'up') view.lookAt(e.clientX, e.clientY);
     const comp = this.family.companion;
     if (!comp || !this.showingOwn || this.visits.active) return;

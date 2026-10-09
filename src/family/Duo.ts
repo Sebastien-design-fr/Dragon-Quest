@@ -42,7 +42,7 @@ interface QuestData {
   tuckedDay?: string;
 }
 
-export interface VisitGift { food?: FoodId; item?: string }
+export interface VisitGift { food?: FoodId; item?: string; gold?: number }
 export interface Visit { id: string; from: DragonProfile; message?: string; gift?: VisitGift; fp: number; at: number }
 
 export interface DuoTrick { id: string; label: string; anim: string; at: number }
@@ -59,7 +59,18 @@ export const DUO_LEVELS = [
   { at: 60, label: 'Inséparables' }, { at: 100, label: 'Âmes jumelles' }
 ];
 
+/** Cadeau caché dans la grotte de l'autre : il faut le trouver en touchant le paquet. */
+export interface HiddenGift { id: string; gift: VisitGift; fromDragon: string; owner: string; at: number; slot: number }
+/** Câlin reçu (joué quand on ouvre l'appli). */
+export interface Hug { id: string; fromDragon: string; owner: string; at: number }
+
 interface Data {
+  hugDay?: string;
+  hugsToday?: number;
+  hideDay?: string;
+  hidesToday?: number;
+  hidden?: HiddenGift[];
+  hugs?: Hug[];
   /** Dragons amis connus (par identifiant d'appareil). */
   friends: Record<string, DragonProfile>;
   friendship: number;
@@ -73,7 +84,7 @@ const KEY = 'quete-du-dragon:duo';
 const MAX_VISITS_PER_DAY = 3;
 
 export class Duo {
-  readonly events = new EventBus<{ change: void; visit: Visit; toast: string }>();
+  readonly events = new EventBus<{ change: void; visit: Visit; toast: string; hug: Hug }>();
   data: Data;
   private profileTimer = 0;
 
@@ -162,13 +173,12 @@ export class Duo {
     this.data.quest.claimed = true;
     this.state.addGold(QUEST_REWARD.gold);
     const c = this.companion;
-    c.data.food.fireFruit = (c.data.food.fireFruit ?? 0) + 1;
     c.remember('duo-quest-' + s.week, `Nous deux : ${s.title}`,
       `${c.name} et ${s.friendName ?? 'son ami'} ont réussi ensemble la quête de famille (${s.mine} + ${s.theirs}).`);
     c.save();
     this.gain(5);
     this.save();
-    this.events.emit('toast', `${s.title} : +${QUEST_REWARD.gold} or et un fruit de feu !`);
+    this.events.emit('toast', `${s.title} : +${QUEST_REWARD.gold} or !`);
     return true;
   }
 
@@ -247,6 +257,69 @@ export class Duo {
     }
   }
 
+  // ---------- Câlins et cadeaux cachés ----------
+  static HUGS_PER_DAY = 3;
+  static HIDES_PER_DAY = 2;
+  hugsLeft(): number { if (this.data.hugDay !== todayKey()) { this.data.hugDay = todayKey(); this.data.hugsToday = 0; } return Math.max(0, Duo.HUGS_PER_DAY - (this.data.hugsToday ?? 0)); }
+  hidesLeft(): number { if (this.data.hideDay !== todayKey()) { this.data.hideDay = todayKey(); this.data.hidesToday = 0; } return Math.max(0, Duo.HIDES_PER_DAY - (this.data.hidesToday ?? 0)); }
+
+  /** Un câlin envoyé à l'autre dragon (gratuit, 3 par jour). */
+  async sendHug(): Promise<'ok' | 'limit' | 'nofriend'> {
+    const f = this.friend();
+    if (!f) return 'nofriend';
+    if (this.hugsLeft() <= 0) return 'limit';
+    this.data.hugsToday = (this.data.hugsToday ?? 0) + 1;
+    this.gain(1);
+    const me = this.profile();
+    const hug: Hug = { id: Math.random().toString(36).slice(2, 10), fromDragon: me.name, owner: me.owner, at: Date.now() };
+    await this.link.send(this.target, 'duo.hug', { ...hug, fp: this.data.friendship }, {
+      title: `${me.name} fait un câlin à ${f.name}`, body: `De la part de ${me.owner}`, tag: 'hug-' + hug.id, channel: 'missions'
+    });
+    this.save();
+    return 'ok';
+  }
+
+  /** Cache un cadeau dans la grotte de l'autre (payé avec son or, 2 par jour). */
+  async hideGift(gift: VisitGift, price: number): Promise<'ok' | 'limit' | 'gold' | 'nofriend'> {
+    const f = this.friend();
+    if (!f) return 'nofriend';
+    if (this.hidesLeft() <= 0) return 'limit';
+    if (price > this.state.data.gold) return 'gold';
+    if (price) this.state.addGold(-price);
+    this.data.hidesToday = (this.data.hidesToday ?? 0) + 1;
+    this.gain(2);
+    const me = this.profile();
+    const id = Math.random().toString(36).slice(2, 10);
+    await this.link.send(this.target, 'duo.hide', { id, gift, fromDragon: me.name, owner: me.owner, at: Date.now(), fp: this.data.friendship }, {
+      title: `${me.name} a caché quelque chose…`, body: `Un cadeau t’attend quelque part dans la grotte de ${f.name}. À toi de le trouver !`, tag: 'hide-' + id, channel: 'missions'
+    });
+    this.save();
+    return 'ok';
+  }
+
+  hiddenGifts(): HiddenGift[] { return this.data.hidden ?? []; }
+
+  /** Cadeau caché trouvé : il est ajouté (nourriture ou objet). */
+  findHidden(id: string): HiddenGift | null {
+    const g = (this.data.hidden ?? []).find(x => x.id === id);
+    if (!g) return null;
+    this.data.hidden = (this.data.hidden ?? []).filter(x => x.id !== id);
+    if (g.gift.food) { this.companion.data.food[g.gift.food] = (this.companion.data.food[g.gift.food] ?? 0) + 1; }
+    if (g.gift.item) this.state.grant(g.gift.item);
+    if (g.gift.gold) this.state.addGold(g.gift.gold);
+    this.companion.remember('duo-hide-' + g.id, `Nous deux : cadeau caché de ${g.fromDragon}`, `Trouvé dans la grotte, de la part de ${g.owner}.`);
+    this.companion.save();
+    this.save();
+    return g;
+  }
+
+  /** Câlins reçus pas encore joués. */
+  takeHug(): Hug | null {
+    const h = (this.data.hugs ?? [])[0] ?? null;
+    if (h) { this.data.hugs = (this.data.hugs ?? []).slice(1); this.save(); }
+    return h;
+  }
+
   /** Messages reçus (renvoyés par ChildBook / ParentHub). */
   handle(msg: LinkMessage): boolean {
     if (msg.outgoing) return false;
@@ -276,6 +349,30 @@ export class Duo {
       return true;
     }
     if (msg.type === 'duo.request') { this.queueProfile(0); return true; }
+    if (msg.type === 'duo.hug') {
+      const hug: Hug = { id: String(p.id ?? Math.random()), fromDragon: String(p.fromDragon ?? 'Son ami'), owner: String(p.owner ?? ''), at: Number(p.at) || Date.now() };
+      this.data.friendship = Math.max(this.data.friendship, Number(p.fp) || 0);
+      this.gain(1);
+      this.data.hugs = [...(this.data.hugs ?? []), hug].slice(-5);
+      this.companion.data.mood = Math.min(100, this.companion.data.mood + 8);
+      this.companion.save();
+      this.save();
+      this.events.emit('hug', hug);
+      return true;
+    }
+    if (msg.type === 'duo.hide') {
+      if (!p.id || !p.gift) return false;
+      if ((this.data.hidden ?? []).some(x => x.id === p.id)) return false;
+      const used = new Set((this.data.hidden ?? []).map(x => x.slot));
+      let slot = Math.floor(Math.random() * 6);
+      for (let i = 0; i < 6 && used.has(slot); i++) slot = (slot + 1) % 6;
+      this.data.friendship = Math.max(this.data.friendship, Number(p.fp) || 0);
+      this.gain(2);
+      this.data.hidden = [...(this.data.hidden ?? []), { id: String(p.id), gift: p.gift as VisitGift, fromDragon: String(p.fromDragon ?? ''), owner: String(p.owner ?? ''), at: Number(p.at) || Date.now(), slot }].slice(-6);
+      this.save();
+      this.events.emit('toast', `${p.fromDragon ?? 'Quelqu’un'} a caché un cadeau dans ta grotte… touche-le pour l’ouvrir !`);
+      return true;
+    }
     return false;
   }
 

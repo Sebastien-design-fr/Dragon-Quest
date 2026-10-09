@@ -3,6 +3,7 @@ import type { EquipmentDef } from '../../core/types.js';
 import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon } from '../dom.js';
 import { categoryChips, rarityBadge, stageNames, thumb } from './common.js';
+import { potionCard } from '../ActivityUI.js';
 
 export type ChestSegment = 'shop' | 'owned' | 'rewards';
 
@@ -59,6 +60,8 @@ export class ChestScreen implements Screen {
       el.append(h('div', { class: 'event-banner', style: { borderColor: active[0].accent, color: active[0].accent } },
         icon(ICONS.star, 18), `Collection ${active.map(c => c.label).join(', ')} disponible !`));
     }
+    const potion = potionCard(app);
+    if (potion) el.append(potion);
     if (!this.selected) el.append(h('p', { class: 'small muted cp-hint' }, icon(ICONS.spark, 14), app.isParent ? ' Touche un objet pour l’essayer sur ta dragonne.' : ' Touche un objet pour l’essayer sur ton dragon.'));
     el.append(categoryChips(app, this.category, id => { this.category = id; this.refresh(); }, 'Tout'));
 

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Petit widget (2 × 2) : le dragon et le compteur. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/qd_root" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:gravity="center_horizontal" android:padding="12dp" android:background="@drawable/qd_widget_bg">
+    <ImageView android:id="@+id/qd_dragon" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:scaleType="fitCenter" android:adjustViewBounds="true" android:src="@drawable/qd_dragon_default" android:contentDescription="Ton dragon" />
+    <TextView android:id="@+id/qd_count" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:textColor="#FFF3DC" android:textSize="18sp" android:textStyle="bold" android:text="2 / 3" />
+    <ProgressBar android:id="@+id/qd_bar" style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent" android:layout_height="5dp" android:layout_marginTop="3dp"
+        android:progressTint="#F3A53A" android:progressBackgroundTint="#3A3342" android:max="3" android:progress="2" />
+</LinearLayout>

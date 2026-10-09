@@ -14,6 +14,7 @@ import { openPhotoMode } from '../PhotoMode.js';
 import { questDeck, questDeckBusy } from '../QuestDeck.js';
 import { appearanceSheet, collectionCard } from '../Appearance.js';
 import { eventCard } from '../Seasonal.js';
+import { stepsCard } from '../ActivityUI.js';
 
 export class DragonScreen implements Screen {
   id = 'dragon'; label = 'Dragon'; icon = ICONS.dragon;
@@ -33,7 +34,7 @@ export class DragonScreen implements Screen {
     if (!comp) return;
     // Refonte UX : la prochaine quête d'abord (un seul geste), puis « À découvrir » en carrousel horizontal.
     const discover = [
-      eventCard(app), dailyChestCard(app), nextStageCard(app), collectionCard(app),
+      eventCard(app), book ? stepsCard(app) : null, dailyChestCard(app), nextStageCard(app), collectionCard(app),
       book ? this.expeditionCard(comp) : null,
       app.family.duo ? familyQuestCard(app) : null,
       app.family.duo ? this.friendCard(comp) : null
@@ -41,6 +42,7 @@ export class DragonScreen implements Screen {
     put(el,
       this.nameCard(comp),
       book ? questDeck(app) : this.careStrip(comp),
+      book ? null : stepsCard(app),
       h('div', { class: 'disc-head' }, h('h3', null, 'À découvrir'), h('span', { class: 'small muted' }, 'glisse →')),
       h('div', { class: 'disc' }, ...discover.map(c => h('div', { class: 'disc-item' }, c))),
       h('div', { class: 'ds-tools' },
@@ -116,10 +118,58 @@ export class DragonScreen implements Screen {
         h('div', { class: 'grow' }, h('div', { class: 'small muted' }, `${f.variant === 'dragonne' ? 'La dragonne' : 'Le dragon'} de ${f.owner}`), h('div', { class: 'item-name' }, `${f.name} · niveau ${f.level}`)),
         h('div', { class: 'bond' }, h('div', { class: 'small' }, `${comp.name} & ${f.name} : ${lv.label}`),
           h('div', { class: 'bar bond-bar' }, h('div', { class: 'fill', style: { width: `${Math.round(lv.progress * 100)}%` } })))),
-      h('p', { class: 'small muted' }, 'Chaque visite et chaque cadeau les rapprochent, et débloque des tours à deux.'),
+      h('p', { class: 'small muted' }, 'Chaque visite, câlin ou cadeau les rapproche, et débloque des tours à deux.'),
       h('div', { class: 'row' },
         h('button', { class: 'btn primary grow', onclick: () => this.visitSheet(comp) }, `Rendre visite à ${f.name}`),
-        h('span', { class: 'small muted' }, `${duo.visitsLeft()} / 3 aujourd’hui`)));
+        h('span', { class: 'small muted' }, `${duo.visitsLeft()} / 3 aujourd’hui`)),
+      h('div', { class: 'row fr-more' },
+        h('button', { class: 'btn grow', disabled: !duo.hugsLeft(), onclick: async () => {
+          const r = await duo.sendHug();
+          if (r === 'limit') { app.toast('Déjà 3 câlins aujourd’hui'); return; }
+          if (r !== 'ok') return;
+          app.view.emit('hearts', 'head_anchor');
+          void app.act('happy');
+          app.say(`Je transmets ton câlin à ${f.name} !`, null, 4000);
+          this.refresh();
+        } }, icon(ICONS.heart, 16), ` Câlin (${duo.hugsLeft()})`),
+        h('button', { class: 'btn grow', disabled: !duo.hidesLeft(), onclick: () => this.giftSheet(comp, 'hide') }, icon(ICONS.gift, 16), ' Cacher un cadeau')));
+  }
+
+  private giftSheet(comp: Companion, mode: 'hide'): void {
+    void mode;
+    const { app } = this;
+    const duo = app.family.duo!;
+    const f = duo.friend()!;
+    let gift: { food?: 'meat' | 'fish' | 'fireFruit'; item?: string; gold?: number } | undefined = { food: 'meat' };
+    let price = 25;
+    openSheet(`Un cadeau caché pour ${f.name}`, close => {
+      const gifts = h('div', { class: 'gift-list' });
+      const render = () => {
+        const items = app.catalog.shopItems(null, {}).filter(d => !f.owned.includes(d.id) && d.compatibleDragonStages.includes(f.stage) && app.catalog.categories.get(d.category)?.kind !== 'effect').slice(0, 12);
+        const opt = (label: string, cost: number, g: typeof gift) => h('button', {
+          class: `gift${JSON.stringify(g) === JSON.stringify(gift) ? ' on' : ''}`,
+          onclick: () => { gift = g; price = cost; render(); }
+        }, h('span', null, label), h('span', { class: 'small muted' }, `${cost} or`));
+        gifts.replaceChildren(
+          opt('Viande grillée', 25, { food: 'meat' }), opt('Poisson des montagnes', 40, { food: 'fish' }), opt('Fruit de feu', 120, { food: 'fireFruit' }),
+          ...items.map(d => opt(d.name, d.price, { item: d.id })));
+      };
+      render();
+      return [
+        h('p', { class: 'small muted' }, `${comp.name} va cacher le cadeau dans la grotte de ${f.name}. ${f.owner} devra le trouver et le toucher pour l’ouvrir.`),
+        h('span', { class: 'small' }, `Quel cadeau ? (ton or : ${app.state.data.gold}) · ${duo.hidesLeft()} / 2 aujourd’hui`), gifts,
+        h('div', { class: 'row end' }, h('button', { class: 'btn primary', onclick: async () => {
+          if (!gift) return;
+          const r = await duo.hideGift(gift, price);
+          if (r === 'limit') { app.toast('Déjà 2 cadeaux cachés aujourd’hui'); return; }
+          if (r === 'gold') { app.toast('Pas assez d’or pour ce cadeau'); return; }
+          if (r !== 'ok') return;
+          close();
+          app.say(`Chut… je file le cacher chez ${f.name} !`, null, 4000);
+          this.refresh();
+        } }, 'Cacher le cadeau'))
+      ];
+    });
   }
 
   private visitSheet(comp: Companion): void {
@@ -216,9 +266,9 @@ export class DragonScreen implements Screen {
         close();
         void app.act('roar');
         app.view.emit('evolutionBurst', 'body_center');
-        app.say(`Le coffre contenait ${loot.gems} gemmes, ${loot.gold} or et un fruit de feu !`, null, 7000);
+        app.say(`Le coffre contenait ${loot.gems} gemmes et ${loot.gold} or !`, null, 7000);
       } }, 'Ouvrir le coffre'));
-      else if (!e.opened) nodes.push(h('p', { class: 'small muted' }, `Le coffre (5 gemmes, 120 or, un fruit de feu) t’attend au bout. Nouvelle expédition chaque lundi.`));
+      else if (!e.opened) nodes.push(h('p', { class: 'small muted' }, `Le coffre (5 gemmes, 120 or) t’attend au bout. Nouvelle expédition chaque lundi.`));
       return nodes;
     });
   }

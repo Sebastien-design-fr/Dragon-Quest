@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget moyen : le dragon à gauche, les quêtes du jour et les boutons à droite. -->
+<!-- Écran externe (Galaxy Z Flip) : le dragon en grand, puis l'essentiel. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/qd_root" android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="horizontal" android:gravity="center_vertical" android:padding="12dp" android:background="@drawable/qd_widget_bg">
-    <ImageView android:id="@+id/qd_dragon" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+    android:orientation="vertical" android:gravity="center_horizontal" android:padding="14dp" android:background="@drawable/qd_widget_bg">
+    <ImageView android:id="@+id/qd_dragon" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
         android:scaleType="fitCenter" android:adjustViewBounds="true" android:src="@drawable/qd_dragon_default" android:contentDescription="Ton dragon" />
-    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.35"
-        android:layout_marginStart="10dp" android:orientation="vertical">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
             <TextView android:id="@+id/qd_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:textColor="#F2D48A" android:textSize="17sp" android:textStyle="bold" android:fontFamily="serif"
+                android:textColor="#F2D48A" android:textSize="18sp" android:textStyle="bold" android:fontFamily="serif"
                 android:maxLines="1" android:ellipsize="end" android:text="Pyros" />
             <TextView android:id="@+id/qd_streak" android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:textColor="#FFB25A" android:textSize="13sp" android:textStyle="bold" android:text="🔥 4" />
@@ -17,7 +15,7 @@
         <TextView android:id="@+id/qd_sub" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:textColor="#A2988A" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" android:text="Jeune dragon · niveau 8" />
         <TextView android:id="@+id/qd_count" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_marginTop="4dp" android:textColor="#FFF3DC" android:textSize="22sp" android:textStyle="bold" android:text="2 / 3" />
+            android:layout_marginTop="4dp" android:textColor="#FFF3DC" android:textSize="20sp" android:textStyle="bold" android:text="2 / 3" />
         <ProgressBar android:id="@+id/qd_bar" style="@android:style/Widget.ProgressBar.Horizontal"
             android:layout_width="match_parent" android:layout_height="6dp" android:layout_marginTop="4dp"
             android:progressTint="#F3A53A" android:progressBackgroundTint="#3A3342" android:max="3" android:progress="2" />
@@ -33,5 +31,4 @@
                 android:background="@drawable/qd_btn_ghost_bg" android:gravity="center" android:paddingStart="12dp" android:paddingEnd="12dp"
                 android:textColor="#F2D48A" android:textSize="13sp" android:text="♥ Câlin" />
         </LinearLayout>
-    </LinearLayout>
 </LinearLayout>

@@ -1,0 +1,18 @@
+{
+  "note": "Réglages des pas, de la potion d'expérience et des voyages. child = téléphone de l'enfant, parent = téléphone d'un parent. Les quêtes restent la source principale d'XP de l'enfant : ces gains sont volontairement petits pour elle.",
+  "steps": {
+    "child":  [ { "at": 2000, "xp": 2, "gold": 2 }, { "at": 5000, "xp": 3, "gold": 3 }, { "at": 8000, "xp": 3, "gold": 3 }, { "at": 10000, "xp": 2, "gold": 2 } ],
+    "parent": [ { "at": 2000, "xp": 5, "gold": 4 }, { "at": 5000, "xp": 10, "gold": 8 }, { "at": 8000, "xp": 12, "gold": 10 }, { "at": 10000, "xp": 13, "gold": 8 } ]
+  },
+  "xpShop": {
+    "child":  { "xp": 10, "prices": [40] },
+    "parent": { "xp": 10, "prices": [20, 30, 40] }
+  },
+  "voyage": {
+    "perDay": 3,
+    "stepsPerShortcut": 1000,
+    "shortcutMinutes": 10,
+    "maxShortcut": 0.5,
+    "gold": { "child": [3, 8], "parent": [8, 18] }
+  }
+}

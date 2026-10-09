@@ -59,11 +59,11 @@ export function thoughts(book: ChildBook | null, c: Companion, childName: string
 
   // 3. Besoins
   if (isNight() && !d.tucked) out.push({ id: 'night', text: 'Il est tard… tu me mets au lit ? Et toi aussi, va dormir !', action: 'sleep', priority: 80 });
-  if (d.hunger < 25) out.push({ id: 'hungry', text: d.food.ration + d.food.meat + d.food.fish + d.food.fireFruit + d.food.treat > 0 ? 'J’ai tellement faim… tu as des rations pour moi ?' : 'J’ai faim… une mission validée, ça me ferait une ration !', action: 'feed', priority: 85 });
+  if (d.hunger < 40) out.push({ id: 'hungry', text: d.food.ration + d.food.meat + d.food.fish + d.food.fireFruit + d.food.treat > 0 ? 'J’ai un petit creux… tu me lances quelque chose ?' : 'J’ai un petit creux… le garde-manger se remplit demain matin.', action: 'feed', priority: 85 });
   else if (d.hunger < 50) out.push({ id: 'peckish', text: 'Mon ventre gargouille un peu…', action: 'feed', priority: 50 });
-  if (d.clean < 25) out.push({ id: 'dirty', text: 'Mes écailles sont toutes ternes… tu me frottes ?', action: 'wash', priority: 75 });
+  if (d.clean < 40) out.push({ id: 'dirty', text: 'Mes écailles sont toutes ternes… tu me frottes ?', action: 'wash', priority: 75 });
   else if (d.clean < 50) out.push({ id: 'dusty', text: 'J’ai un peu de poussière sur le dos.', action: 'wash', priority: 45 });
-  if (d.mood < 25) out.push({ id: 'lonely', text: 'Tu m’as manqué… tu restes un peu avec moi ?', action: 'pet', priority: 72 });
+  if (d.mood < 40) out.push({ id: 'lonely', text: 'Tu m’as manqué… tu restes un peu avec moi ?', action: 'pet', priority: 72 });
 
   // 3. Envies et petits mots
   if (!d.played && book && book.today().some(t => t.status === 'done')) out.push({ id: 'play', text: 'On joue à attraper les gemmes ? J’ai trop envie !', action: 'play', priority: 35 });

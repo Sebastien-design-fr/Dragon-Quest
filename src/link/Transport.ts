@@ -51,7 +51,15 @@ export interface Transport {
   onInbox(cb: () => void): void;
   /** Widget d'écran d'accueil (refonte UX) : résumé du dragon et des quêtes. */
   updateWidget(data: WidgetData): Promise<void>;
+  /** Pas du jour comptés par le téléphone (capteur de pas). */
+  getSteps(): Promise<StepsInfo>;
+  requestStepsPermission(): Promise<void>;
+  /** Action demandée depuis le widget (« missions », « pet », « validations »…), une seule fois. */
+  takeLaunchAction(): Promise<string | null>;
+  onLaunchAction(cb: (action: string) => void): void;
 }
+
+export interface StepsInfo { available: boolean; permission: boolean; today: number }
 
 export interface WidgetData {
   name: string; sub: string; image: string; streak: number; status: string; statusDate: string;
@@ -60,6 +68,16 @@ export interface WidgetData {
   /** Téléphone d'un parent : ligne affichée à la place des quêtes. */
   line?: string;
   days: Array<{ date: string; total: number; done: number; next: string }>;
+  /** Illustrations selon l'humeur : endormi (la nuit, ou couché) et joyeux (journée parfaite). */
+  sleepImage?: string; happyImage?: string;
+  /** Le dragon dort jusqu'au lendemain matin (couché par son maître). */
+  asleep?: boolean;
+  /** Événement en cours (thème du widget). */
+  event?: string;
+  /** Quêtes du jour pour le grand widget (et le bouton « J'ai fait » des quêtes de confiance). */
+  quests?: Array<{ id: string; title: string; time?: string; status: string; trust: boolean }>;
+  /** Parent : avancement de l'enfant et demandes à valider. */
+  child?: { name: string; done: number; total: number; pending: number; quests: Array<{ title: string; status: string }> };
 }
 
 // =====================================================================
@@ -78,7 +96,11 @@ interface HomeLinkPlugin {
   requestBatteryExemption(): Promise<void>;
   leaveFamily(): Promise<void>;
   addListener(event: 'inbox', cb: () => void): Promise<unknown>;
+  addListener(event: 'launchAction', cb: (e: { action: string }) => void): Promise<unknown>;
   updateWidget(o: { data: WidgetData }): Promise<void>;
+  getSteps(): Promise<StepsInfo>;
+  requestStepsPermission(): Promise<void>;
+  takeLaunchAction(): Promise<{ action?: string }>;
 }
 
 export class NativeTransport implements Transport {
@@ -107,6 +129,10 @@ export class NativeTransport implements Transport {
   leaveFamily() { return this.p.leaveFamily(); }
   onInbox(cb: () => void) { void this.p.addListener('inbox', cb); }
   async updateWidget(data: WidgetData) { try { await this.p.updateWidget({ data }); } catch { /* ancienne version native */ } }
+  async getSteps(): Promise<StepsInfo> { try { return await this.p.getSteps(); } catch { return { available: false, permission: false, today: 0 }; } }
+  async requestStepsPermission() { try { await this.p.requestStepsPermission(); } catch { /* ancienne version native */ } }
+  async takeLaunchAction() { try { return (await this.p.takeLaunchAction()).action || null; } catch { return null; } }
+  onLaunchAction(cb: (action: string) => void) { void this.p.addListener('launchAction', e => { if (e?.action) cb(e.action); }).catch(() => undefined); }
 }
 
 function parse(v: unknown): any {
@@ -232,6 +258,17 @@ export class SimTransport implements Transport {
   async requestBatteryExemption() { /* sans objet dans le navigateur */ }
   /** Navigateur : le résumé du widget est gardé pour les tests. */
   async updateWidget(data: WidgetData) { localStorage.setItem(`sim:${this.device}:widget`, JSON.stringify(data)); }
+  /** Navigateur : pas simulés (sim:<appareil>:steps), autorisation (sim:<appareil>:stepsPerm, accordée par défaut). */
+  async getSteps(): Promise<StepsInfo> {
+    const perm = this.read<boolean>(this.key('stepsPerm'), true);
+    return { available: true, permission: perm, today: perm ? this.read<number>(this.key('steps'), 0) : 0 };
+  }
+  async requestStepsPermission() { this.write(this.key('stepsPerm'), true); }
+  private launchCbs: Array<(a: string) => void> = [];
+  async takeLaunchAction() { const a = this.read<string | null>(this.key('launch'), null); localStorage.removeItem(this.key('launch')); return a; }
+  onLaunchAction(cb: (action: string) => void) { this.launchCbs.push(cb); }
+  /** Tests : simule un appui sur le widget. */
+  launch(action: string) { this.launchCbs.forEach(c => c(action)); }
 
   async leaveFamily() {
     localStorage.removeItem(this.key('cfg'));

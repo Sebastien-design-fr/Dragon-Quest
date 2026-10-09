@@ -305,7 +305,6 @@ export class ValidationsScreen implements Screen {
     const mini = (label: string, v: number, path: string) => h('div', { class: 'ph-mini', title: `${label} : ${v} %` },
       ring([[v, levelColor(v)]], 40, icon(path, 15)), h('span', null, label));
     const gauges = h('div', { class: 'ph-minis' });
-    if (snap.energy !== undefined) gauges.append(mini('Énergie', snap.energy, ICONS.flame));
     if (snap.companion) {
       const cp = snap.companion;
       gauges.append(mini('Faim', cp.hunger, ICONS.meat), mini('Propreté', cp.clean, ICONS.drop), mini('Humeur', cp.mood, ICONS.heart));

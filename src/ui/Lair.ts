@@ -79,6 +79,27 @@ function debrisItem(slot: number): DecorItem {
 
 let dragging = false;
 
+/** Paquet-cadeau caché (dessiné une fois). */
+let parcelUrl: string | null = null;
+function parcel(): string {
+  if (parcelUrl) return parcelUrl;
+  const c = document.createElement('canvas'); c.width = 200; c.height = 180;
+  const g = c.getContext('2d')!;
+  const box = g.createLinearGradient(0, 60, 0, 180); box.addColorStop(0, '#7d4fc4'); box.addColorStop(1, '#3d2470');
+  g.fillStyle = box; g.beginPath(); g.roundRect(22, 66, 156, 108, 12); g.fill();
+  g.fillStyle = '#9466dc'; g.beginPath(); g.roundRect(12, 50, 176, 34, 10); g.fill();
+  g.fillStyle = '#f2c14e'; g.fillRect(88, 50, 24, 124);
+  g.fillStyle = '#f7d77a'; g.fillRect(12, 60, 176, 12);
+  g.strokeStyle = '#f2c14e'; g.lineWidth = 12; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(100, 50); g.bezierCurveTo(60, 0, 30, 30, 70, 46); g.stroke();
+  g.beginPath(); g.moveTo(100, 50); g.bezierCurveTo(140, 0, 170, 30, 130, 46); g.stroke();
+  g.fillStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.roundRect(30, 88, 50, 10, 5); g.fill();
+  parcelUrl = c.toDataURL('image/png');
+  return parcelUrl;
+}
+/** Places des cadeaux cachés : derrière un objet, dans un coin… */
+const HIDE_SPOTS: Array<[number, number]> = [[-0.4, -0.08], [0.42, -0.07], [-0.3, -0.12], [0.32, -0.1], [-0.46, -0.14], [0.46, -0.13]];
+
 /** Objets et débris de la grotte posés dans la scène (dragon de ce téléphone uniquement). */
 export function syncDecor(app: App): void {
   if (dragging) return;
@@ -95,12 +116,35 @@ export function syncDecor(app: App): void {
     }
   }
   for (const s of debrisSlots(app)) items.push(debrisItem(s));
+  for (const g of app.family.duo?.hiddenGifts() ?? []) {
+    const [dx, dy] = HIDE_SPOTS[g.slot % HIDE_SPOTS.length];
+    items.push({ key: `gift:${g.id}`, img: parcel(), dx, dy, w: 0.09, anchor: 'floor', debris: true, front: true, light: { x: 0.5, y: 0.4, r: 0.1, color: '255,215,120' } });
+  }
   items.push(...eventDecor(app));   // décor de saison (Halloween…), non déplaçable
   app.view.decor.set(items);
 }
 
+/** « de Pyros », « d’Améthyste ». */
+export function de(name: string): string { return /^[aeiouyéèêàâîïôûh]/i.test(name) ? `d’${name}` : `de ${name}`; }
+
+/** Cadeau caché trouvé : il s'ouvre, le dragon est ravi. */
+function openHidden(app: App, key: string): void {
+  const duo = app.family.duo;
+  const g = duo?.findHidden(key.slice(5));
+  if (!g) return;
+  const it = app.view.decor.items.find(i => i.key === key);
+  if (it) it.gone = 0.001;
+  UI.success();
+  const what = g.gift.item ? app.catalog.item(g.gift.item)?.name ?? 'un objet' : g.gift.food === 'fireFruit' ? 'un fruit de feu' : g.gift.food === 'fish' ? 'un poisson des montagnes' : g.gift.food === 'meat' ? 'de la viande grillée' : 'une surprise';
+  app.view.emit('hearts', 'head_anchor');
+  void app.act('happy');
+  app.say(`Un cadeau ${de(g.fromDragon)}${g.owner ? ` (de la part ${de(g.owner)})` : ''} : ${what} !`, null, 6000);
+  editorRefresh?.();
+}
+
 /** Ramasser un débris : la pièce s'efface, le dragon est content. */
 function tidy(app: App, key: string): void {
+  if (key.startsWith('gift:')) { openHidden(app, key); return; }
   const comp = app.family.companion!;
   const slot = Number(key.split(':')[1]);
   const it = app.view.decor.items.find(i => i.key === key);

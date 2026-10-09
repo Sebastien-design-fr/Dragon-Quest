@@ -29,6 +29,58 @@ public class HomeLinkPlugin extends Plugin {
     public void load() {
         current = this;
         if (LinkStore.isPaired(getContext())) HomeLinkService.start(getContext());
+        try { capture(getActivity().getIntent(), false); } catch (Exception ignored) { }
+    }
+
+    // ---------- Actions lancées depuis le widget (ouvrir les quêtes, caresser, valider…) ----------
+    static final String EXTRA_OPEN = "qd_open";
+    private static volatile String pendingAction;
+
+    private void capture(Intent it, boolean live) {
+        if (it == null) return;
+        String a = it.getStringExtra(EXTRA_OPEN);
+        if (a == null || a.isEmpty()) return;
+        it.removeExtra(EXTRA_OPEN);
+        if (live) { pendingAction = null; notifyListeners("launchAction", new JSObject().put("action", a)); }
+        else pendingAction = a;
+    }
+
+    @Override
+    protected void handleOnNewIntent(Intent intent) {
+        super.handleOnNewIntent(intent);
+        capture(intent, true);
+    }
+
+    @PluginMethod
+    public void takeLaunchAction(PluginCall call) {
+        JSObject res = new JSObject();
+        if (pendingAction != null) res.put("action", pendingAction);
+        pendingAction = null;
+        call.resolve(res);
+    }
+
+    // ---------- Pas du jour ----------
+    @PluginMethod
+    public void getSteps(PluginCall call) {
+        final Context c = ctx();
+        StepCounter.readOnce(c, () -> {
+            JSObject res = new JSObject();
+            res.put("available", StepCounter.available(c));
+            res.put("permission", StepCounter.permitted(c));
+            res.put("today", StepCounter.today(c));
+            call.resolve(res);
+            if (StepCounter.permitted(c)) StepCounter.listen(c);
+        });
+    }
+
+    @PluginMethod
+    public void requestStepsPermission(PluginCall call) {
+        try {
+            if (Build.VERSION.SDK_INT >= 29 && !StepCounter.permitted(ctx()) && getActivity() != null) {
+                androidx.core.app.ActivityCompat.requestPermissions(getActivity(), new String[] { android.Manifest.permission.ACTIVITY_RECOGNITION }, 7302);
+            }
+        } catch (Exception ignored) { }
+        call.resolve();
     }
 
     /** Prévient l'appli ouverte qu'il y a du nouveau dans la boîte de réception. */

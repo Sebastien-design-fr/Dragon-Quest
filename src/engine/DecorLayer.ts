@@ -16,6 +16,8 @@ export interface DecorItem {
   flip?: boolean;
   /** Toujours derrière le dragon (tapis, nid, objets muraux). */
   behind?: boolean;
+  /** Toujours devant le dragon (cadeau caché à trouver). */
+  front?: boolean;
   light?: { x: number; y: number; r: number; color: string };
   /** Débris : il rétrécit et s'efface quand on le ramasse. */
   debris?: boolean;
@@ -84,7 +86,7 @@ export class DecorLayer {
    */
   draw(ctx: CanvasRenderingContext2D, which: 'back' | 'front', W: number, ground: number, u: number, time: number, dt: number, dpr: number): void {
     if (which === 'back') { this.frame = { ox: W / 2, oy: ground, u }; this.rects = []; }
-    const inFront = (it: DecorItem) => !it.behind && it.anchor === 'floor' && it.dy > 0.045;
+    const inFront = (it: DecorItem) => !!it.front || (!it.behind && it.anchor === 'floor' && it.dy > 0.045);
     const list = this.items.filter(it => (which === 'front') === inFront(it))
       .sort((a, b) => (a.anchor === 'ground' ? -1 : 0) - (b.anchor === 'ground' ? -1 : 0) || (a.anchor === 'wall' ? -1 : 0) - (b.anchor === 'wall' ? -1 : 0) || a.dy - b.dy);
     ctx.setTransform(1, 0, 0, 1, 0, 0);

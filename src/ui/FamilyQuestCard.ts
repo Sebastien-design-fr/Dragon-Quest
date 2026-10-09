@@ -68,7 +68,7 @@ function fill(app: App, card: HTMLElement, rerender: () => void): void {
     card.append(h('div', { class: 'pq-quest-claimed' }, icon(ICONS.check, 18), ' Récompense récupérée. Rendez-vous lundi pour la prochaine quête !'));
   } else if (q.done) {
     card.append(
-      h('p', { class: 'small pq-quest-note' }, `Bravo à vous deux ! ${comp?.name ?? 'Ton dragon'} reçoit 100 or, un fruit de feu et un souvenir pour l’album.`),
+      h('p', { class: 'small pq-quest-note' }, `Bravo à vous deux ! ${comp?.name ?? 'Ton dragon'} reçoit 100 or et un souvenir pour l’album.`),
       h('button', {
         class: 'btn primary pq-claim', onclick: () => { if (duo.claimQuest()) rerender(); }
       }, icon(ICONS.gift, 18), ' Récupérer la récompense'));

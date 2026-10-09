@@ -12,24 +12,21 @@ export function statusSheet(app: App): void {
   const comp = app.family.companion;
   if (!comp) return;
   const d = comp.data;
-  const book = app.family.book;
   const bond = comp.bondLevel();
   const gauge = (label: string, v: number, ic: string, hint: string) => h('div', { class: 'cs-gauge' },
     h('div', { class: 'row' }, icon(ic, 18), h('strong', { class: 'grow' }, label), h('span', { class: 'small muted' }, `${Math.round(v)} %`)),
-    h('div', { class: `bar care-bar ${v < 25 ? 'low' : v < 50 ? 'mid' : ''}` }, h('div', { class: 'fill', style: { width: `${Math.round(v)}%` } })),
+    h('div', { class: `bar care-bar ${v < 50 ? 'mid' : ''}` }, h('div', { class: 'fill', style: { width: `${Math.round(v)}%` } })),
     h('p', { class: 'small muted' }, hint));
   openSheet(`${comp.name} · ${comp.mood().label}`, () => ([
     gauge('Faim', d.hunger, ICONS.meat, 'Nourris-le avec le bouton Nourrir : lance-lui à manger, il attrape au vol.'),
     gauge('Propreté', d.clean, ICONS.drop, 'Bouton Laver, puis frotte ses écailles avec ton doigt.'),
     gauge('Humeur', d.mood, ICONS.heart, 'Câlins, jeux, tours… gratte-lui la tête, chatouille son ventre, touche sa queue !'),
-    book ? gauge('Énergie', book.data.energy ?? 100, ICONS.flame, 'Chaque quête lui redonne de l’énergie ; les quêtes oubliées en font perdre.') : null,
     h('div', { class: 'cs-gauge' },
       h('div', { class: 'row' }, icon(ICONS.heart, 18), h('strong', { class: 'grow' }, `Amitié : ${bond.label}`), h('span', { class: 'small muted' }, `niveau ${bond.level}`)),
       h('div', { class: 'bar bond-bar' }, h('div', { class: 'fill', style: { width: `${Math.round(bond.progress * 100)}%` } })),
       h('p', { class: 'small muted' }, 'Plus vous êtes amis, plus il apprend de tours.')),
     app.isParent ? h('p', { class: 'small muted' }, `Chaque soin la fait grandir : encore ${comp.careXpLeft()} XP possibles aujourd’hui.`)
-      : comp.xpBonus() > 1 ? h('p', { class: 'small good' }, 'Dragon heureux : tes quêtes rapportent +10 % d’XP.')
-        : h('p', { class: 'small muted' }, 'Bien nourri, propre et de bonne humeur, il te donne +10 % d’XP sur tes quêtes.')
+      : h('p', { class: 'small muted' }, 'Le garde-manger se remplit chaque matin. Quand tu n’es pas là, il t’attend tranquillement : il peut s’ennuyer un peu, jamais être malade.')
   ] as Array<HTMLElement | null>).filter((n): n is HTMLElement => !!n));
 }
 
@@ -37,28 +34,32 @@ export function statusSheet(app: App): void {
 export function tricksSheet(app: App): void {
   const comp = app.family.companion;
   if (!comp) return;
-  const tired = (app.family.book?.data.energy ?? 100) < 25;
   const training = app.family.training;
   openSheet('Les tours de ' + comp.name, close => {
-    const guard = (level: number): boolean => {
-      if (comp.data.sick) { app.say('Je suis trop malade pour faire des tours… une journée parfaite me guérira.', 'missions'); close(); return false; }
-      if (tired && level > 1) { app.say('Je suis trop fatigué… fais une quête pour me redonner des forces.', 'missions'); close(); return false; }
-      return true;
+    const guard = (_level: number): boolean => true;
+    // À force de répéter un tour, il le maîtrise : 1 à 3 étoiles (2 répétitions comptées par tour et par jour).
+    const starsOf = (id: string) => {
+      const n = comp.stars(id), next = comp.nextMastery(id);
+      return h('span', { class: 'tk-stars', title: next ? `Encore ${next - (comp.data.practice?.[id] ?? 0)} répétitions pour l’étoile suivante` : 'Maîtrisé' },
+        ...[0, 1, 2].map(i => h('i', { class: i < n ? 'on' : '' }, '★')));
     };
-    const row = (unlocked: boolean, label: string, need: string, run: () => void) =>
-      h('button', { class: `trick ${unlocked ? '' : 'locked'}`, onclick: () => { if (!unlocked) { app.toast(need); return; } run(); } },
-        icon(unlocked ? ICONS.spark : ICONS.lock, 18), h('span', { class: 'grow' }, label), h('span', { class: 'small muted' }, unlocked ? 'Faire' : need));
+    const row = (unlocked: boolean, label: string, need: string, run: () => void, id?: string) =>
+      h('button', { class: `trick ${unlocked ? '' : 'locked'}`, onclick: () => { if (!unlocked) { app.toast(need); return; } run(); if (id) comp.practise(id, label); } },
+        icon(unlocked ? ICONS.spark : ICONS.lock, 18), h('span', { class: 'grow' }, label),
+        unlocked && id ? starsOf(id) : null,
+        h('span', { class: 'small muted' }, unlocked ? 'Faire' : need));
     const nodes: Node[] = [
       h('button', { class: 'cs-blow', onclick: () => { close(); startBlow(app); } },
         icon(ICONS.flame, 22), h('span', { class: 'grow' }, h('strong', null, 'Souffle magique'), h('span', { class: 'small muted' }, 'Souffle dans le micro du téléphone : il crache du feu avec toi !'))),
       h('h4', null, 'Tours d’amitié'),
-      ...comp.tricks().map(t => row(t.unlocked, t.label, `Amitié ${t.level}`, () => { if (guard(t.level)) { close(); void app.act(t.anim); } }))
+      h('p', { class: 'small muted' }, 'Répète ses tours pour qu’il les maîtrise : chaque étoile renforce votre amitié.'),
+      ...comp.tricks().map(t => row(t.unlocked, t.label, `Amitié ${t.level}`, () => { if (guard(t.level)) { close(); void app.act(t.anim); if (comp.stars(t.id) >= 3) app.view.emit('happySparkle', 'head_anchor'); } }, t.id))
     ];
     if (training) {
       nodes.push(h('h4', null, 'Tours d’entraînement'), h('p', { class: 'small muted' }, 'Ils se débloquent en jouant aux mini-jeux (bouton Jouer).'));
       for (const t of training.tricks()) {
         const label = STATS.find(s => s.id === t.stat)?.label ?? t.stat;
-        nodes.push(row(t.unlocked, t.label, `${label} ${t.level}`, () => { if (guard(2)) { close(); void app.act(t.anim); app.view.emit(t.stat === 'feu' ? 'fireRing' : 'happySparkle', 'head_anchor'); } }));
+        nodes.push(row(t.unlocked, t.label, `${label} ${t.level}`, () => { if (guard(2)) { close(); void app.act(t.anim); app.view.emit(t.stat === 'feu' ? 'fireRing' : 'happySparkle', 'head_anchor'); } }, 'tr_' + t.id));
       }
     }
     return nodes;
@@ -70,9 +71,6 @@ export function gamesSheet(app: App): void {
   const comp = app.family.companion;
   const training = app.family.training;
   if (!comp) return;
-  const done = app.family.book?.today().filter(t => t.status === 'done' || t.status === 'pending').length ?? 0;
-  if (comp.data.sick) { app.say('Je suis malade… on jouera quand je serai guéri. Fais toutes tes quêtes aujourd’hui !', 'missions', 5000); return; }
-  if (!app.isParent && done === 0) { app.say('On jouera dès que tu auras fait une quête aujourd’hui !', 'missions', 5000); return; }
   const variant = app.isParent ? 'dragonne' : 'dragon';
   const stage = app.view.stage?.id ?? 'baby';
   const img = (k: string) => Assets.dragonPart(stage, k, variant) ?? Assets.dragonPart(stage, 'full', variant) ?? '';

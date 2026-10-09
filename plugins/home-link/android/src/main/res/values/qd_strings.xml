@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="qd_widget_desc">Ton dragon et tes quêtes du jour</string>
+    <string name="qd_cover_desc">Ton dragon sur l’écran externe</string>
 </resources>

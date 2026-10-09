@@ -100,6 +100,8 @@ public class HomeLinkService extends Service {
         startNsd();
         watchNetwork();
         scheduler.scheduleWithFixedDelay(this::flushNow, 2, 30, TimeUnit.SECONDS);
+        // pas du jour : écoute continue du capteur (dès que l'autorisation est donnée)
+        scheduler.scheduleWithFixedDelay(() -> StepCounter.listen(this), 3, 600, TimeUnit.SECONDS);
     }
 
     private void goForeground() {
@@ -123,6 +125,7 @@ public class HomeLinkService extends Service {
     @Override
     public void onDestroy() {
         instance = null;
+        StepCounter.stop(this);
         try { if (server != null) server.close(); } catch (Exception ignored) {}
         stopNsd();
         if (networkCallback != null) {

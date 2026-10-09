@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Grand widget (4 × 3 et plus) : le dragon, puis la liste des quêtes du jour. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/qd_root" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="12dp" android:background="@drawable/qd_widget_bg">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="96dp" android:orientation="horizontal" android:gravity="center_vertical">
+        <ImageView android:id="@+id/qd_dragon" android:layout_width="96dp" android:layout_height="96dp" 
+        android:scaleType="fitCenter" android:adjustViewBounds="true" android:src="@drawable/qd_dragon_default" android:contentDescription="Ton dragon" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:layout_marginStart="10dp" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView android:id="@+id/qd_name" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:textColor="#F2D48A" android:textSize="17sp" android:textStyle="bold" android:fontFamily="serif"
+                    android:maxLines="1" android:ellipsize="end" android:text="Pyros" />
+                <TextView android:id="@+id/qd_streak" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textColor="#FFB25A" android:textSize="13sp" android:textStyle="bold" android:text="🔥 4" />
+            </LinearLayout>
+            <TextView android:id="@+id/qd_sub" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textColor="#A2988A" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" android:text="Jeune dragon · niveau 8" />
+        <TextView android:id="@+id/qd_count" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" android:textColor="#FFF3DC" android:textSize="20sp" android:textStyle="bold" android:text="2 / 3" />
+            <ProgressBar android:id="@+id/qd_bar" style="@android:style/Widget.ProgressBar.Horizontal"
+                android:layout_width="match_parent" android:layout_height="6dp" android:layout_marginTop="4dp"
+                android:progressTint="#F3A53A" android:progressBackgroundTint="#3A3342" android:max="3" android:progress="2" />
+        </LinearLayout>
+    </LinearLayout>
+    <TextView android:id="@+id/qd_next" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="6dp" android:textColor="#A2988A" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" android:text="Quêtes du jour" />
+    <LinearLayout android:id="@+id/qd_list" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
+        <LinearLayout android:id="@+id/qd_q0" android:layout_width="match_parent" android:layout_height="34dp" android:layout_marginTop="4dp"
+            android:background="@drawable/qd_row_bg" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="10dp" android:paddingEnd="4dp">
+            <TextView android:id="@+id/qd_q0_mark" android:layout_width="22dp" android:layout_height="wrap_content" android:textColor="#F3A53A" android:textSize="14sp" android:textStyle="bold" android:text="○" />
+            <TextView android:id="@+id/qd_q0_title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:textColor="#ECE4D4" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" android:text="Quête" />
+            <TextView android:id="@+id/qd_q0_btn" android:layout_width="wrap_content" android:layout_height="26dp"
+                android:background="@drawable/qd_btn_bg" android:gravity="center" android:paddingStart="10dp" android:paddingEnd="10dp"
+                android:textColor="#24170A" android:textSize="12sp" android:textStyle="bold" android:text="J’ai fait" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/qd_q1" android:layout_width="match_parent" android:layout_height="34dp" android:layout_marginTop="4dp"
+            android:background="@drawable/qd_row_bg" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="10dp" android:paddingEnd="4dp">
+            <TextView android:id="@+id/qd_q1_mark" android:layout_width="22dp" android:layout_height="wrap_content" android:textColor="#F3A53A" android:textSize="14sp" android:textStyle="bold" android:text="○" />
+            <TextView android:id="@+id/qd_q1_title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:textColor="#ECE4D4" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" android:text="Quête" />
+            <TextView android:id="@+id/qd_q1_btn" android:layout_width="wrap_content" android:layout_height="26dp"
+                android:background="@drawable/qd_btn_bg" android:gravity="center" android:paddingStart="10dp" android:paddingEnd="10dp"
+                android:textColor="#24170A" android:textSize="12sp" android:textStyle="bold" android:text="J’ai fait" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/qd_q2" android:layout_width="match_parent" android:layout_height="34dp" android:layout_marginTop="4dp"
+            android:background="@drawable/qd_row_bg" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="10dp" android:paddingEnd="4dp">
+            <TextView android:id="@+id/qd_q2_mark" android:layout_width="22dp" android:layout_height="wrap_content" android:textColor="#F3A53A" android:textSize="14sp" android:textStyle="bold" android:text="○" />
+            <TextView android:id="@+id/qd_q2_title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:textColor="#ECE4D4" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" android:text="Quête" />
+            <TextView android:id="@+id/qd_q2_btn" android:layout_width="wrap_content" android:layout_height="26dp"
+                android:background="@drawable/qd_btn_bg" android:gravity="center" android:paddingStart="10dp" android:paddingEnd="10dp"
+                android:textColor="#24170A" android:textSize="12sp" android:textStyle="bold" android:text="J’ai fait" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/qd_q3" android:layout_width="match_parent" android:layout_height="34dp" android:layout_marginTop="4dp"
+            android:background="@drawable/qd_row_bg" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="10dp" android:paddingEnd="4dp">
+            <TextView android:id="@+id/qd_q3_mark" android:layout_width="22dp" android:layout_height="wrap_content" android:textColor="#F3A53A" android:textSize="14sp" android:textStyle="bold" android:text="○" />
+            <TextView android:id="@+id/qd_q3_title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:textColor="#ECE4D4" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" android:text="Quête" />
+            <TextView android:id="@+id/qd_q3_btn" android:layout_width="wrap_content" android:layout_height="26dp"
+                android:background="@drawable/qd_btn_bg" android:gravity="center" android:paddingStart="10dp" android:paddingEnd="10dp"
+                android:textColor="#24170A" android:textSize="12sp" android:textStyle="bold" android:text="J’ai fait" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/qd_q4" android:layout_width="match_parent" android:layout_height="34dp" android:layout_marginTop="4dp"
+            android:background="@drawable/qd_row_bg" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="10dp" android:paddingEnd="4dp">
+            <TextView android:id="@+id/qd_q4_mark" android:layout_width="22dp" android:layout_height="wrap_content" android:textColor="#F3A53A" android:textSize="14sp" android:textStyle="bold" android:text="○" />
+            <TextView android:id="@+id/qd_q4_title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:textColor="#ECE4D4" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" android:text="Quête" />
+            <TextView android:id="@+id/qd_q4_btn" android:layout_width="wrap_content" android:layout_height="26dp"
+                android:background="@drawable/qd_btn_bg" android:gravity="center" android:paddingStart="10dp" android:paddingEnd="10dp"
+                android:textColor="#24170A" android:textSize="12sp" android:textStyle="bold" android:text="J’ai fait" />
+        </LinearLayout>
+    </LinearLayout>
+        <LinearLayout android:id="@+id/qd_buttons" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="4dp" android:orientation="horizontal" android:gravity="center_vertical">
+        <TextView android:id="@+id/qd_btn_done" android:layout_width="wrap_content" android:layout_height="30dp"
+            android:background="@drawable/qd_btn_bg" android:gravity="center" android:paddingStart="12dp" android:paddingEnd="12dp"
+            android:textColor="#24170A" android:textSize="13sp" android:textStyle="bold" android:text="✓ J’ai fait" android:layout_marginEnd="8dp" />
+        <TextView android:id="@+id/qd_btn_pet" android:layout_width="wrap_content" android:layout_height="30dp"
+            android:background="@drawable/qd_btn_ghost_bg" android:gravity="center" android:paddingStart="12dp" android:paddingEnd="12dp"
+            android:textColor="#F2D48A" android:textSize="13sp" android:text="♥ Câlin" />
+    </LinearLayout>
+</LinearLayout>

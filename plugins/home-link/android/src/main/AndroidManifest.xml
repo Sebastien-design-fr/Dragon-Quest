@@ -15,6 +15,9 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Pas du jour (capteur de pas du téléphone, sans réseau) -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
 
     <application>
         <service
@@ -41,6 +44,22 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/qd_widget_info" />
+        </receiver>
+
+        <!-- Écran externe des Galaxy Z Flip (Flex Window) : Réglages > Écran externe > Widgets -->
+        <receiver
+            android:name="fr.questedudragon.homelink.DragonCoverWidget"
+            android:label="Quête du Dragon"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/qd_cover_widget_info" />
+            <meta-data
+                android:name="com.samsung.android.appwidget.provider"
+                android:resource="@xml/qd_samsung_cover" />
         </receiver>
 
         <receiver

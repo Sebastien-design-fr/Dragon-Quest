@@ -6,6 +6,8 @@ import { DragonView } from './engine/DragonView.js';
 import { ChildBook } from './family/ChildBook.js';
 import { Companion } from './family/Companion.js';
 import { Duo } from './family/Duo.js';
+import { Activity } from './family/Activity.js';
+import { Voyage } from './family/Voyage.js';
 import { ParentHub } from './family/ParentHub.js';
 import { Reminders } from './family/Reminders.js';
 import { Catalog } from './game/Catalog.js';
@@ -86,7 +88,10 @@ async function boot(): Promise<void> {
   });
 
   const training = new Training();
-  new App(root, catalog, state, view, { link, linkState, reminders, book, hub, companion, duo, training });
+  const activity = new Activity(link, state, linkState.role === 'parent' ? 'parent' : 'child');
+  await activity.load();
+  const voyage = companion ? new Voyage(state, companion, activity, linkState.role === 'parent' ? 'parent' : 'child') : null;
+  new App(root, catalog, state, view, { link, linkState, reminders, book, hub, companion, duo, training, activity, voyage });
   duo?.hello();
 }
 

@@ -1,0 +1,51 @@
+/* Octobre 2026 : pas du jour, potion d'expérience, voyages, maîtrise des tours, câlins et cadeaux cachés. */
+
+/* ----- Pas du jour ----- */
+.steps-card { display: flex; flex-direction: column; gap: 8px; }
+.st-ico, .pt-ico { width: 38px; height: 38px; flex: none; border-radius: 50%; display: grid; place-items: center; color: var(--gold); background: radial-gradient(circle at 35% 30%, #3a2e1c, #1c1610); border: 1px solid rgba(217,168,74,.35); }
+.st-track { position: relative; height: 10px; margin: 6px 6px 0; border-radius: 999px; background: #2a2430; }
+.st-fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: linear-gradient(90deg, #c9852e, #f3c25a); transition: width .6s cubic-bezier(.2,.8,.3,1); }
+.st-mark { position: absolute; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; display: grid; place-items: center; background: #1c1820; border: 2px solid #4a4050; color: #1a1408; }
+.st-mark.on { background: var(--gold); border-color: #ffe3a0; }
+.st-legend { position: relative; display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); padding: 0 0 0 28%; }
+.st-legend span.on { color: var(--gold-soft); }
+.steps-card p { margin: 0; }
+
+/* ----- Potion d'expérience (boutique) ----- */
+.potion-card { margin-bottom: 10px; border-color: rgba(150,120,255,.35); background: linear-gradient(135deg, rgba(90,70,170,.22), var(--panel)); }
+.potion-card .pt-ico { color: #c8b6ff; background: radial-gradient(circle at 35% 30%, #3b2f66, #191428); border-color: rgba(170,150,255,.45); }
+.potion-card .row { gap: 10px; align-items: center; }
+
+/* ----- Voyages ----- */
+.sh-bar.traveling { display: block; padding: 8px; }
+.vy-strip { display: flex; align-items: center; gap: 10px; color: var(--text); }
+.vy-strip .grow { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.vy-strip strong { font-size: 13.5px; line-height: 1.25; color: var(--gold-soft); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vy-strip .small { color: var(--muted); }
+.vy-strip.back strong { color: var(--gold); }
+.vy-ico { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; color: var(--c1, var(--gold)); background: #1b1720; border: 1px solid color-mix(in srgb, var(--c1, #d9a84a) 50%, transparent); animation: vy-spin 6s linear infinite; }
+@keyframes vy-spin { to { transform: rotate(360deg); } }
+.vy-bar { display: block; height: 5px; border-radius: 999px; background: #2a2430; overflow: hidden; margin-top: 3px; }
+.vy-bar > span { display: block; height: 100%; background: var(--c1, var(--gold)); border-radius: 999px; }
+.vy-dest { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 14px; text-align: left; cursor: pointer; color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--c1) 45%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--c2) 85%, var(--panel)), var(--panel)); }
+.vy-dest .grow { display: flex; flex-direction: column; gap: 2px; }
+.vy-dest strong { color: var(--c1); }
+.vy-dest:disabled { opacity: .5; }
+.vy-time { flex: none; font-size: 12px; font-weight: 700; color: var(--c1); display: inline-flex; align-items: center; gap: 2px; min-width: 44px; }
+.vy-loot { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin: 10px 0; }
+.vy-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); text-align: center; animation: vy-pop .5s cubic-bezier(.2,.9,.3,1.3) both; }
+.vy-item:nth-child(2) { animation-delay: .12s; } .vy-item:nth-child(3) { animation-delay: .24s; } .vy-item:nth-child(4) { animation-delay: .36s; }
+@keyframes vy-pop { from { transform: scale(.6); opacity: 0; } }
+.vy-food { width: 44px; height: 44px; display: block; }
+.vy-food svg { width: 100%; height: 100%; }
+.vy-coin { color: var(--gold); }
+
+/* ----- Maîtrise des tours ----- */
+.tk-stars { display: inline-flex; gap: 1px; font-size: 13px; margin-right: 6px; }
+.tk-stars i { font-style: normal; color: #4a4250; }
+.tk-stars i.on { color: var(--gold); text-shadow: 0 0 6px rgba(243,193,90,.6); }
+
+/* ----- Câlins et cadeaux cachés ----- */
+.fr-more { gap: 8px; margin-top: 8px; }
+.fr-more .btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }

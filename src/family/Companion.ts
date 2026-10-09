@@ -1,6 +1,7 @@
-// Le dragon compagnon (côté enfant) : il a faim, se salit, s'ennuie, et s'attache à celle qui s'occupe de lui.
-// Tout ce qu'il faut pour le soigner se gagne avec les vraies missions (rations, friandises, mini-jeu).
-// Il ne meurt jamais et ne s'enfuit jamais : négligé, il devient triste et terne, puis se remet vite.
+// Le dragon compagnon : il a faim, se salit, s'ennuie, et s'attache à celle ou celui qui s'occupe de lui.
+// Octobre 2026 : les soins sont indépendants des quêtes (les quêtes donnent l'XP et l'or, rien d'autre).
+// Le garde-manger se remplit chaque jour, gratuitement. Absent (école, travail, vacances), le dragon ne souffre pas :
+// rien ne baisse la nuit, presque rien pendant les heures de cours, et les jauges s'arrêtent à « il s'ennuie ».
 import { EventBus } from '../core/events.js';
 import type { GameState } from '../game/GameState.js';
 import { readStore, writeStore } from '../platform/storage.js';
@@ -11,10 +12,10 @@ export type FoodId = 'ration' | 'meat' | 'fish' | 'fireFruit' | 'treat';
 export interface FoodDef { id: FoodId; label: string; hint: string; hunger: number; mood: number; bond: number; price: number | null }
 
 export const FOODS: FoodDef[] = [
-  { id: 'ration', label: 'Ration de dragon', hint: 'Gagnée à chaque mission accomplie', hunger: 30, mood: 0, bond: 0, price: null },
+  { id: 'ration', label: 'Ration de dragon', hint: 'Le garde-manger se remplit chaque matin', hunger: 30, mood: 0, bond: 0, price: null },
   { id: 'meat', label: 'Viande grillée', hint: 'Bien nourrissante', hunger: 50, mood: 6, bond: 0, price: 25 },
-  { id: 'fish', label: 'Poisson des montagnes', hint: 'Son plat préféré', hunger: 45, mood: 14, bond: 1, price: 40 },
-  { id: 'fireFruit', label: 'Fruit de feu', hint: 'Gagné quand toutes les missions du jour sont faites', hunger: 35, mood: 22, bond: 3, price: 120 },
+  { id: 'fish', label: 'Poisson des montagnes', hint: 'Un délice des torrents', hunger: 45, mood: 14, bond: 1, price: 40 },
+  { id: 'fireFruit', label: 'Fruit de feu', hint: 'Une rareté : on en trouve en voyage', hunger: 35, mood: 22, bond: 3, price: 120 },
   { id: 'treat', label: 'Friandise des parents', hint: 'Envoyée par tes parents', hunger: 15, mood: 25, bond: 3, price: null }
 ];
 
@@ -74,13 +75,32 @@ interface Data {
   /** Rituels : rideau ouvert ce matin, couverture ce soir. */
   morningDay: string;
   blanketDay: string;
+  /** Tours : nombre de répétitions (maîtrise) et répétitions comptées aujourd'hui. */
+  practice: Record<string, number>;
+  practiceToday: Record<string, number>;
 }
+
+/** Répétitions pour 1, 2 et 3 étoiles de maîtrise (au plus 2 comptées par tour et par jour). */
+export const MASTERY = [3, 8, 15];
+export const PRACTICE_PER_DAY = 2;
 
 const KEY = 'quete-du-dragon:companion';
 const H = 3600 * 1000;
 
-// Baisse par heure (le jour) ; la nuit (22 h – 7 h), il dort : faim divisée par 2, humeur stable.
+// Baisse par heure (le jour). La nuit (22 h – 7 h), il dort : rien ne baisse.
+// En semaine de 8 h à 16 h 30 (école, travail), la baisse est divisée par 4.
 const DECAY = { hunger: 4, clean: 1.4, mood: 2.2 };
+/** Plancher des jauges : au pire, il s'ennuie (jamais affamé, jamais malade). */
+export const FLOOR = 30;
+/** Garde-manger : rations disponibles chaque matin (gratuites). */
+export const PANTRY = { ration: 5, fish: 2 };
+
+/** Coefficient de baisse à cette heure : 0 la nuit, 0,25 pendant les heures de cours / de travail. */
+export function decayRate(d: Date): number {
+  if (isNight(d)) return 0;
+  const h = d.getHours() + d.getMinutes() / 60, wd = d.getDay();
+  return wd >= 1 && wd <= 5 && h >= 8 && h < 16.5 ? 0.25 : 1;
+}
 
 export function isNight(d = new Date()): boolean { const h = d.getHours(); return h >= 22 || h < 7; }
 
@@ -99,7 +119,7 @@ export class Companion {
       name: null, hunger: 80, clean: 85, mood: 75, bond: 0, updatedAt: now,
       food: { ration: 3, meat: 0, fish: 1, fireFruit: 0, treat: 0 },
       day: todayKey(), pets: 0, petBond: 0, played: false, tucked: false, album: [], lastOpen: now, seenStage: null, sick: false, decor: [], debris: 2, lairDay: todayKey(), tidied: 0, careXp: 0,
-      fav: (['meat', 'fish', 'fireFruit'] as FoodId[])[Math.floor(Math.random() * 3)], favKnown: false, morningDay: '', blanketDay: ''
+      fav: (['meat', 'fish', 'fireFruit'] as FoodId[])[Math.floor(Math.random() * 3)], favKnown: false, morningDay: '', blanketDay: '', practice: {}, practiceToday: {}
     };
     const saved = readStore<Partial<Data>>(storageKey, {});
     this.data = { ...defaults, ...saved, food: { ...defaults.food, ...(saved.food ?? {}) } };
@@ -108,6 +128,12 @@ export class Companion {
   }
 
   private key: string;
+  /** Garde-manger du jour : gratuit, sans lien avec les quêtes. */
+  private fillPantry(): void {
+    const f = this.data.food;
+    f.ration = Math.max(f.ration ?? 0, PANTRY.ration);
+    f.fish = Math.max(f.fish ?? 0, PANTRY.fish);
+  }
   save(): void { writeStore(this.key, this.data); this.events.emit('change', undefined); }
 
   // ---------- Temps qui passe ----------
@@ -119,14 +145,13 @@ export class Companion {
     while (t < now) {
       const step = Math.min(H, now - t);
       const k = step / H;
-      const night = isNight(new Date(t));
-      d.hunger -= DECAY.hunger * k * (night ? 0.5 : 1);
-      d.clean -= DECAY.clean * k;
-      // Il s'ennuie plus vite s'il a faim ou s'il est sale ; la nuit, il dort.
-      if (!night) d.mood -= DECAY.mood * k * (d.hunger < 30 || d.clean < 30 ? 1.6 : 1);
+      const r = decayRate(new Date(t)) * k;
+      d.hunger -= DECAY.hunger * r;
+      d.clean -= DECAY.clean * r;
+      d.mood -= DECAY.mood * r * (d.hunger < 45 || d.clean < 45 ? 1.4 : 1);
       t += step;
     }
-    d.hunger = clamp(d.hunger); d.clean = clamp(d.clean); d.mood = clamp(d.mood);
+    d.hunger = floor(d.hunger); d.clean = floor(d.clean); d.mood = floor(d.mood);
     d.updatedAt = now;
     // Chaque nouveau jour, un peu de désordre s'accumule dans la grotte.
     if (d.lairDay !== todayKey()) {
@@ -135,9 +160,11 @@ export class Companion {
       d.lairDay = todayKey();
     }
     if (d.day !== todayKey()) {
-      d.day = todayKey(); d.pets = 0; d.petBond = 0; d.played = false; d.tucked = false; d.careXp = 0;
-      if (this.mode === 'parent') { d.food.ration = Math.min(8, d.food.ration + 3); }
+      d.day = todayKey(); d.pets = 0; d.petBond = 0; d.played = false; d.tucked = false; d.careXp = 0; d.practiceToday = {};
+      this.fillPantry();
     }
+    const any = d as Data & { pantryV2?: boolean };
+    if (!any.pantryV2) { any.pantryV2 = true; d.sick = false; this.fillPantry(); }
   }
 
   /** À l'ouverture de l'appli : s'il ne l'a pas vue depuis longtemps, il lui fait la fête. */
@@ -153,9 +180,8 @@ export class Companion {
   // ---------- Lecture ----------
   get name(): string { return this.data.name || (this.mode === 'parent' ? 'Ta dragonne' : 'Ton dragon'); }
   wellbeing(): number { const d = this.data; return Math.round((d.hunger + d.clean + d.mood) / 3); }
-  /** Bonus d'XP des missions : un dragon heureux et bien soigné apprend plus vite. */
-  xpBonus(): number { const d = this.data; return this.mode !== 'parent' && !d.sick && d.hunger >= 50 && d.clean >= 50 && d.mood >= 50 ? 1.1 : 1; }
-  sad(): boolean { return this.data.sick || this.data.mood < 25 || this.wellbeing() < 30; }
+  /** Il s'ennuie (jamais pire : les jauges ne descendent pas sous le plancher). */
+  sad(): boolean { return this.data.mood < 40 || this.wellbeing() < 42; }
 
   bondLevel(): { level: number; label: string; next: number | null; progress: number } {
     const b = this.data.bond;
@@ -168,19 +194,16 @@ export class Companion {
   mood(): { key: string; label: string } {
     const d = this.data;
     if (isNight() && !d.tucked && d.hunger > 25) return { key: 'sleepy', label: 'Il a sommeil' };
-    if (d.sick) return { key: 'sick', label: 'Malade' };
-    if (d.hunger < 25) return { key: 'hungry', label: 'Affamé' };
-    if (d.clean < 25) return { key: 'dirty', label: 'Tout sale' };
-    if (d.mood < 25) return { key: 'sad', label: 'Triste' };
+    if (d.hunger < 40) return { key: 'hungry', label: 'Un petit creux' };
+    if (d.clean < 40) return { key: 'dirty', label: 'Un peu poussiéreux' };
+    if (d.mood < 40) return { key: 'sad', label: 'Il s’ennuie de toi' };
     const w = this.wellbeing();
     if (w >= 80) return { key: 'great', label: 'Rayonnant' };
     if (w >= 55) return { key: 'good', label: 'Content' };
     return { key: 'meh', label: 'Un peu morose' };
   }
 
-  // ---------- Gains venant des missions ----------
-  onMission(): void { this.tick(); this.data.food.ration++; this.addBond(1); this.data.mood = clamp(this.data.mood + 6); this.save(); }
-  onPerfectDay(): void { this.data.food.fireFruit++; this.events.emit('toast', 'Fruit de feu gagné pour ta journée parfaite !'); this.save(); }
+  // ---------- Cadeaux ----------
   onTreat(from: string): void {
     this.data.food.treat++;
     this.events.emit('toast', `${from} t’a envoyé une friandise pour ${this.name} !`);
@@ -260,17 +283,13 @@ export class Companion {
     return true;
   }
 
-  canPlay(missionsDoneToday: number): 'ok' | 'played' | 'locked' | 'sick' {
-    this.tick();
-    if (this.data.sick) return 'sick';
-    if (this.data.played) return 'played';
-    if (this.mode === 'parent') return 'ok';
-    return missionsDoneToday > 0 ? 'ok' : 'locked';
-  }
+  canPlay(): 'ok' | 'played' { this.tick(); return this.data.played ? 'played' : 'ok'; }
 
-  /** Fin de partie récompensée. factor : 1 pour le premier jeu du jour, 0.5 pour les suivants. */
+  /** Fin de partie récompensée. factor : 1 pour le premier jeu du jour, 0.5 pour les suivants.
+   *  Côté enfant, l'or des jeux reste petit (15 au plus) : l'or vient surtout des quêtes. */
   finishGame(score: number, factor = 1): number {
-    const gold = Math.round(Math.min(40, Math.round(score * 1.5)) * factor);
+    const cap = this.mode === 'parent' ? 40 : 15;
+    const gold = Math.round(Math.min(cap, Math.round(score * (this.mode === 'parent' ? 1.5 : 0.6))) * factor);
     this.data.played = true;
     this.careXp(25);
     this.data.mood = clamp(this.data.mood + 20);
@@ -282,9 +301,6 @@ export class Companion {
 
   /** Partie rejouée pour le plaisir : un peu de bonne humeur, sans récompense. */
   cheer(): void { this.tick(); this.data.mood = clamp(this.data.mood + 4); this.save(); }
-
-  /** Sanction : humeur en baisse (missions oubliées). */
-  punish(mood: number): void { this.tick(); this.data.mood = clamp(this.data.mood - mood); this.data.debris = Math.min(8, this.data.debris + 2); this.save(); }
 
   // ---------- Grotte ----------
   lair(): { owned: string[]; debris: number } { this.tick(); return { owned: this.data.decor, debris: this.data.debris }; }
@@ -309,12 +325,37 @@ export class Companion {
     this.save();
   }
 
+  /** Ancienne sanction (dragon malade) : il ne peut plus que guérir. */
   setSick(on: boolean): void {
-    if (this.data.sick === on) return;
-    this.data.sick = on;
-    if (on) this.events.emit('toast', `${this.name} est tombé malade… une journée où toutes les missions sont faites le guérira.`);
-    else { this.data.mood = clamp(this.data.mood + 20); this.events.emit('react', { anim: 'happy', fx: 'hearts', say: 'cured' }); }
+    if (on || !this.data.sick) return;
+    this.data.sick = false;
+    this.data.mood = clamp(this.data.mood + 20);
     this.save();
+  }
+
+  /** Étoiles de maîtrise d'un tour (0 à 3). */
+  stars(id: string): number { const n = this.data.practice?.[id] ?? 0; return MASTERY.filter(m => n >= m).length; }
+  /** Prochain palier de maîtrise (répétitions) ou null s'il est maîtrisé. */
+  nextMastery(id: string): number | null { const n = this.data.practice?.[id] ?? 0; return MASTERY.find(m => n < m) ?? null; }
+
+  /** Il fait un tour : à force de répéter, il le maîtrise (étoiles). Retourne les étoiles gagnées (0 si rien de neuf). */
+  practise(id: string, label: string): { stars: number; gained: boolean; counted: boolean } {
+    const d = this.data;
+    d.practice = d.practice ?? {}; d.practiceToday = d.practiceToday ?? {};
+    if ((d.practiceToday[id] ?? 0) >= PRACTICE_PER_DAY) { d.mood = clamp(d.mood + 2); this.save(); return { stars: this.stars(id), gained: false, counted: false }; }
+    const before = this.stars(id);
+    d.practiceToday[id] = (d.practiceToday[id] ?? 0) + 1;
+    d.practice[id] = (d.practice[id] ?? 0) + 1;
+    d.mood = clamp(d.mood + 4);
+    const after = this.stars(id);
+    if (after > before) {
+      this.addBond(after === 3 ? 3 : 1);
+      this.careXp(after * 5);
+      if (after === 3) this.remember('trick-' + id, `Tour maîtrisé : ${label}`, `${this.name} fait « ${label.toLowerCase()} » à la perfection.`);
+      this.events.emit('toast', after === 3 ? `${label} : tour maîtrisé !` : `${label} : ${'★'.repeat(after)} (il progresse)`);
+    }
+    this.save();
+    return { stars: after, gained: after > before, counted: true };
   }
 
   tricks(): Array<TrickDef & { unlocked: boolean }> {
@@ -367,14 +408,21 @@ export class Companion {
    * Notifications « du dragon » à programmer : quand il aura faim, et s'il ne l'a pas vue depuis 2 jours.
    * Jamais la nuit ni pendant l'école : décalées au créneau calme suivant. Au plus 2 par jour.
    */
+  /** Notifications venant d'autres modules (retour de voyage…), prioritaires. */
+  extraNotifs: Array<() => { key: string; at: Date; body: string } | null> = [];
+
   careNotifs(): Array<{ key: string; at: Date; body: string }> {
     this.tick();
     const d = this.data, now = Date.now();
     const out: Array<{ key: string; at: Date; body: string }> = [];
-    if (d.hunger > 25) {
-      const at = calmSlot(new Date(now + ((d.hunger - 25) / DECAY.hunger) * H));
-      out.push({ key: 'hungry-' + todayKey(at), at, body: 'J’ai faim… tu viens me voir ? Une mission = une ration !' });
-    } else out.push({ key: 'hungry-now-' + todayKey(), at: calmSlot(new Date(now + 3 * H)), body: 'Mon ventre gargouille très fort… tu n’oublies pas ton dragon ?' });
+    for (const f of this.extraNotifs) { const n = f(); if (n && n.at.getTime() > now) out.push({ ...n, at: calmSlot(n.at) }); }
+    // quand aura-t-il un petit creux (faim sous 40) ? on simule les heures à venir (nuit et école comprises)
+    let hunger = d.hunger, t = now;
+    while (hunger >= 40 && t < now + 72 * H) { hunger -= DECAY.hunger * decayRate(new Date(t)); t += H; }
+    if (hunger < 40) {
+      const at = calmSlot(new Date(Math.max(t, now + H)));
+      out.push({ key: 'hungry-' + todayKey(at), at, body: 'J’ai un petit creux… tu viens me donner à manger ? Le garde-manger est plein !' });
+    }
     const miss = calmSlot(new Date(d.lastOpen + 48 * H));
     out.push({ key: 'miss-' + todayKey(miss), at: miss, body: 'Tu me manques… je t’attends dans ma grotte.' });
     // au plus 2 par jour
@@ -405,3 +453,4 @@ function calmSlot(d: Date): Date {
 }
 
 function clamp(v: number): number { return v < 0 ? 0 : v > 100 ? 100 : v; }
+function floor(v: number): number { return v < FLOOR ? FLOOR : v > 100 ? 100 : v; }

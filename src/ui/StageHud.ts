@@ -6,6 +6,7 @@ import type { App } from './App.js';
 import { ICONS, clear, h, icon } from './dom.js';
 import { gamesSheet, statusSheet, tricksSheet } from './CareSheets.js';
 import { sayFor } from '../family/Thoughts.js';
+import { travelStrip, voyageSheet } from './VoyageUI.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -18,7 +19,7 @@ export const FOOD_ART: Record<FoodId, string> = {
   treat: `<svg viewBox="0 0 48 48"><path d="M4 18l9 6-9 6zM44 18l-9 6 9 6z" fill="#d9a84a"/><rect x="12" y="14" width="24" height="20" rx="10" fill="#c2477a"/><path d="M16 18c4 4 12 4 16 0M16 30c4-4 12-4 16 0" stroke="#f6b8d2" stroke-width="2" fill="none"/></svg>`
 };
 
-type ActionId = 'feed' | 'wash' | 'play' | 'tricks' | 'fly' | 'sleep';
+type ActionId = 'feed' | 'wash' | 'play' | 'tricks' | 'fly' | 'sleep' | 'voyage';
 
 export class StageHud {
   private root: HTMLElement;
@@ -50,18 +51,16 @@ export class StageHud {
     const comp = app.family.companion;
     if (!comp) { this.root.hidden = true; return; }
     const d = comp.data;
-    const book = app.family.book;
     // Jauges en anneaux
     const ring = (v: number, ic: string, label: string) => {
-      const lv = v < 25 ? 'low' : v < 50 ? 'mid' : 'ok';
+      const lv = v < 50 ? 'mid' : 'ok'; // jamais rouge : il ne souffre pas, au pire il s'ennuie
       return h('span', { class: `sh-ring ${lv}`, style: { '--v': String(Math.round(v)) }, title: `${label} : ${Math.round(v)} %` }, icon(ic, 15));
     };
     clear(this.status);
     this.status.append(
       h('span', { class: 'sh-name' }, h('strong', null, comp.name), h('em', null, comp.mood().label)),
       h('span', { class: 'sh-rings' },
-        ring(d.hunger, ICONS.meat, 'Faim'), ring(d.clean, ICONS.drop, 'Propreté'), ring(d.mood, ICONS.heart, 'Humeur'),
-        book ? ring(book.data.energy ?? 100, ICONS.flame, 'Énergie') : null));
+        ring(d.hunger, ICONS.meat, 'Faim'), ring(d.clean, ICONS.drop, 'Propreté'), ring(d.mood, ICONS.heart, 'Humeur')));
     this.renderBar();
   }
 
@@ -75,12 +74,16 @@ export class StageHud {
         h('span', { class: 'sh-ico' }, icon(ic, 22), badge ? h('span', { class: 'sh-badge' }, badge) : null), h('span', { class: 'sh-lbl' }, label));
     const asleep = app.sleeping;
     clear(this.bar);
+    // en voyage (ou rentré avec son sac) : un bandeau remplace les soins
+    const strip = travelStrip(app);
+    this.bar.classList.toggle('traveling', !!strip);
+    if (strip) { this.bar.append(strip); return; }
     this.bar.append(
       btn('feed', 'Nourrir', ICONS.meat, asleep ? 'dim' : '', rations ? String(rations) : undefined),
       btn('wash', app.careMode === 'wash' ? 'Lavage' : 'Laver', ICONS.drop, app.careMode === 'wash' ? 'on' : asleep ? 'dim' : ''),
       btn('play', 'Jouer', ICONS.game, asleep ? 'dim' : ''),
       btn('tricks', 'Tours', ICONS.spark, asleep ? 'dim' : ''),
-      btn('fly', 'Voler', ICONS.wing, asleep ? 'dim' : ''),
+      btn('voyage', 'Voyage', ICONS.compass, asleep ? 'dim' : ''),
       btn('sleep', asleep ? 'Réveiller' : evening ? 'Coucher' : 'Sieste', ICONS.moon, asleep ? 'on' : ''));
   }
 
@@ -90,6 +93,7 @@ export class StageHud {
     const comp = app.family.companion;
     if (!comp) return;
     this.closeRadial();
+    if (id === 'voyage') { voyageSheet(app); return; }
     if (app.sleeping && id !== 'sleep') { app.say(id === 'feed' ? 'Zzz… il dort. Réveille-le d’abord.' : 'Chut… il dort.', null, 2500); return; }
     switch (id) {
       case 'feed': this.openTray(); break;
@@ -114,7 +118,7 @@ export class StageHud {
     const x = clientX - r.left, y = clientY - r.top;
     const items: Array<[ActionId | 'pet', string, string]> = [
       ['feed', 'Nourrir', ICONS.meat], ['wash', 'Laver', ICONS.drop], ['pet', 'Câlin', ICONS.hand],
-      ['play', 'Jouer', ICONS.game], ['fly', 'Voler', ICONS.wing], ['tricks', 'Tours', ICONS.spark], ['sleep', 'Dodo', ICONS.moon]
+      ['play', 'Jouer', ICONS.game], ['fly', 'Voler', ICONS.wing], ['tricks', 'Tours', ICONS.spark], ['voyage', 'Voyage', ICONS.compass], ['sleep', 'Dodo', ICONS.moon]
     ];
     const R = 86;
     // éventail au-dessus du doigt (vers le bas si le doigt est en haut de la scène)
@@ -165,7 +169,7 @@ export class StageHud {
           } }, `+ ${f.price}`) : null));
         this.bindToken(tok, f.id, () => fill());
       }
-      if (!list.children.length) list.append(h('p', { class: 'small muted' }, 'Plus rien à manger : chaque quête accomplie te donne une ration.'));
+      if (!list.children.length) list.append(h('p', { class: 'small muted' }, 'Plus rien pour aujourd’hui : le garde-manger se remplit demain matin.'));
     };
     fill();
     this.tray = tray;

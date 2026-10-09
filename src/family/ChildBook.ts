@@ -218,20 +218,15 @@ export class ChildBook {
   companion: Companion | null = null;
 
   /**
-   * Crédite une récompense. Pour une mission (mission = true), l'XP est modulé par l'énergie
-   * du dragon AVANT que la mission ne la fasse remonter : un dragon épuisé ne gagne pas d'XP
-   * sur la mission qui le relance. Retourne le texte de la récompense obtenue.
+   * Crédite une récompense : une quête = de l'XP et de l'or, rien d'autre (les soins du dragon sont à part).
+   * Retourne le texte de la récompense obtenue.
    */
   private reward(xp: number, gold: number, mission = false): string {
-    const mult = 1; // plus de malus d'énergie (sanctions supprimées)
-    const care = mission && mult > 0 ? this.companion?.xpBonus() ?? 1 : 1;
-    const gainedXp = Math.round(xp * mult * care);
+    const gainedXp = Math.round(xp);
     if (gold) this.state.addGold(gold);
     if (gainedXp) this.state.addXp(gainedXp);
-    if (mission) { this.data.energy = Math.min(ENERGY.max, this.data.energy + ENERGY.perMission); this.companion?.onMission(); }
     if (gainedXp || gold) this.events.emit('reward', { xp: gainedXp, gold, mission });
-    const text = (rewardText(gainedXp, gold) || 'aucune récompense') + (mission ? ', +1 ration' : '') + (care > 1 ? ' (dragon heureux : XP +10 %)' : '');
-    return text;
+    return rewardText(gainedXp, gold) || 'aucune récompense';
   }
 
   /** Statistiques pour les badges. */
@@ -364,11 +359,11 @@ export class ChildBook {
     const e = this.data.expedition;
     if (e.opened || e.steps < this.expeditionGoal()) return null;
     e.opened = true;
-    const loot = { gems: 5, gold: 120, fruit: true };
+    const loot = { gems: 5, gold: 120, fruit: false };
     this.data.gems += loot.gems;
     this.state.addGold(loot.gold);
-    if (this.companion) { this.companion.data.food.fireFruit++; this.companion.remember('exp-' + e.week, `Expédition : ${journeyFor(e.week).title}`, 'Arrivé au bout de l’expédition de la semaine.'); this.companion.save(); }
-    this.log(`Coffre d’expédition : +${loot.gems} gemmes, +${loot.gold} or, un fruit de feu`);
+    if (this.companion) { this.companion.remember('exp-' + e.week, `Expédition : ${journeyFor(e.week).title}`, 'Arrivé au bout de l’expédition de la semaine.'); this.companion.save(); }
+    this.log(`Coffre d’expédition : +${loot.gems} gemmes, +${loot.gold} or`);
     this.save();
     return loot;
   }
@@ -456,8 +451,6 @@ export class ChildBook {
         const s = this.streak();
         this.data.stats.perfectDays++;
         this.data.stats.maxStreak = Math.max(this.data.stats.maxStreak, s);
-        this.data.energy = Math.min(ENERGY.max, this.data.energy + ENERGY.perfectDayBonus);
-        this.companion?.onPerfectDay();
         this.forgive();
         this.data.gems += 2;
         this.rollWeek(); this.data.week.perfect++;
@@ -622,6 +615,15 @@ export class ChildBook {
         this.companion?.onTreat(by);
         this.log(`Friandise envoyée par ${by}${p.message ? ` — « ${p.message} »` : ''}`);
         return true;
+      }
+      case 'widget.done': {
+        // « J'ai fait » touché sur le widget (appli fermée) : quête de confiance du jour validée ici
+        const m = this.data.missions.find(x => x.id === p.missionId);
+        if (!m || m.validation !== 'trust' || (p.date && p.date !== todayKey())) return false;
+        const st = this.status(m.id);
+        if (st === 'done' || st === 'pending') return false;
+        void this.complete(m.id);
+        return false;
       }
       case 'status.request':
         this.queueStatus(0);
