@@ -65,21 +65,13 @@ export interface FamilyContext {
   voyage?: Voyage | null;
 }
 
-/** Vibrations calées sur le souffle de feu : réception du bond, jet qui gronde (pulsations irrégulières), petits bonds du retour. */
+/** Souffle de feu : une seule vibration discrète au moment où les flammes jaillissent (rien de lassant). */
 function fireHaptics(): void {
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-  const v = (p: number | number[]) => { try { navigator.vibrate?.(p); } catch { /* pas de vibreur */ } };
-  setTimeout(() => v(28), 480);
-  setTimeout(() => {
-    const pat: number[] = [70];
-    for (let t = 70; t < 1700;) { const off = 25 + Math.round(Math.random() * 35), on = 30 + Math.round(Math.random() * 45); pat.push(off, on); t += off + on; }
-    v(pat);
-  }, 1130);
-  setTimeout(() => v(14), 3450);
-  setTimeout(() => v(18), 3780);
+  setTimeout(() => { try { navigator.vibrate?.(18); } catch { /* pas de vibreur */ } }, 1130);
 }
 
-export const APP_VERSION = '0.29.3';
+export const APP_VERSION = '0.29.4';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */

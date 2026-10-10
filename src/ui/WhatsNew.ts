@@ -9,8 +9,8 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
-  { version: '0.29.3', items: [
-    { icon: ICONS.flame, title: 'Le feu se sent', text: 'Les flammes éclairent la grotte, le loup se tapit puis se secoue, le téléphone vibre au rythme du feu et le son suit tout le tour. Pendant les fêtes, le souffle a sa petite surprise.' }
+  { version: '0.29.4', items: [
+    { icon: ICONS.flame, title: 'Le feu se sent', text: 'Les flammes éclairent la grotte, le loup se tapit puis se secoue, le son suit tout le tour. Pendant les fêtes, le souffle a sa petite surprise.' }
   ] },
   { version: '0.29.2', items: [
     { icon: ICONS.flame, title: 'Un vrai souffle de feu', text: 'Ton dragon recule d’un bond pour prendre son élan, crache de vraies flammes (avec braises et fumée), puis revient à sa place.' }
