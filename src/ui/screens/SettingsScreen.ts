@@ -61,7 +61,8 @@ export function comfortCard(app: App): HTMLElement {
     h('span', { class: 'small' }, 'Taille du texte'),
     size,
     toggle('Douceur du soir (lumière tamisée après 21 h)', s.nightSoft !== false, v => app.state.setComfort({ nightSoft: v })),
-    toggle('Météo réelle dans la grotte (Rozay-en-Brie)', s.weather !== false, v => app.state.setComfort({ weather: v })));
+    toggle('Météo réelle dans la grotte (Rozay-en-Brie)', s.weather !== false, v => app.state.setComfort({ weather: v })),
+    toggle(app.isParent ? 'Ta dragonne te répond à voix haute' : 'Ton dragon te répond à voix haute', s.talkVoice !== false, v => app.state.setComfort({ talkVoice: v })));
 }
 
 /** Version de l'appli : 7 appuis activent les outils de test. */

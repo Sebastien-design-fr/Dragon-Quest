@@ -68,7 +68,13 @@ export interface Transport {
   listen(maxMs?: number): Promise<SpeechResult>;
   stopListening(): Promise<void>;
   onSpeech(cb: (e: SpeechEvent) => void): void;
+  /** La voix du dragon : lit la phrase à voix haute ; la promesse se résout quand il a fini de parler. */
+  speak(text: string, pitch: number, rate: number): Promise<void>;
+  stopSpeaking(): Promise<void>;
 }
+
+/** Durée estimée d'une phrase lue (secours si la fin n'est pas signalée). */
+const speechMs = (text: string, rate: number) => 900 + text.length * 70 / Math.max(0.5, rate);
 
 export interface SpeechResult { matches: string[]; error?: 'permission' | 'unavailable' | 'nomatch' | 'network' | 'busy' | string }
 export interface SpeechEvent { state: 'ready' | 'speaking' | 'level' | 'partial' | 'thinking'; text?: string; level?: number }
@@ -126,6 +132,9 @@ interface HomeLinkPlugin {
   listen(o: { lang: string; maxMs: number }): Promise<{ matches?: string[]; error?: string }>;
   stopListening(): Promise<void>;
   addListener(event: 'speech', cb: (e: SpeechEvent) => void): Promise<unknown>;
+  speak(o: { id: string; text: string; pitch: number; rate: number }): Promise<void>;
+  stopSpeaking(): Promise<void>;
+  addListener(event: 'voice', cb: (e: { id: string; ok: boolean }) => void): Promise<unknown>;
 }
 
 export class NativeTransport implements Transport {
@@ -168,6 +177,21 @@ export class NativeTransport implements Transport {
   }
   async stopListening() { try { await this.p.stopListening(); } catch { /* ancienne version native */ } }
   onSpeech(cb: (e: SpeechEvent) => void) { void this.p.addListener('speech', cb).catch(() => undefined); }
+  private voiceWait = new Map<string, () => void>();
+  private voiceHooked = false;
+  speak(text: string, pitch: number, rate: number): Promise<void> {
+    if (!this.voiceHooked) {
+      this.voiceHooked = true;
+      void this.p.addListener('voice', e => { const f = this.voiceWait.get(e?.id); if (f) { this.voiceWait.delete(e.id); f(); } }).catch(() => undefined);
+    }
+    const id = 'v' + Date.now() + Math.random().toString(36).slice(2, 6);
+    return new Promise(resolve => {
+      const timer = setTimeout(() => { this.voiceWait.delete(id); resolve(); }, speechMs(text, rate) + 4000);
+      this.voiceWait.set(id, () => { clearTimeout(timer); resolve(); });
+      this.p.speak({ id, text, pitch, rate }).catch(() => { clearTimeout(timer); this.voiceWait.delete(id); resolve(); });
+    });
+  }
+  async stopSpeaking() { try { await this.p.stopSpeaking(); } catch { /* */ } for (const f of this.voiceWait.values()) f(); this.voiceWait.clear(); }
 }
 
 function parse(v: unknown): any {
@@ -334,6 +358,21 @@ export class SimTransport implements Transport {
   private recognizer: any = null;
   async stopListening() { try { this.recognizer?.stop(); } catch { /* */ } }
   onSpeech(cb: (e: SpeechEvent) => void) { this.speechCbs.push(cb); }
+  /** Navigateur : synthèse vocale du navigateur si elle existe (sim:<appareil>:spoken garde la dernière phrase pour les tests). */
+  speak(text: string, pitch: number, rate: number): Promise<void> {
+    localStorage.setItem(this.key('spoken'), JSON.stringify(text));
+    const ss = window.speechSynthesis;
+    if (!ss || this.read<boolean>(this.key('mute'), false)) return new Promise(r => setTimeout(r, Math.min(1500, speechMs(text, rate) / 4)));
+    return new Promise(resolve => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'fr-FR'; u.pitch = pitch; u.rate = rate;
+      const timer = setTimeout(resolve, speechMs(text, rate) + 3000);
+      u.onend = () => { clearTimeout(timer); resolve(); };
+      u.onerror = () => { clearTimeout(timer); resolve(); };
+      ss.cancel(); ss.speak(u);
+    });
+  }
+  async stopSpeaking() { try { window.speechSynthesis?.cancel(); } catch { /* */ } }
   private launchCbs: Array<(a: string) => void> = [];
   async takeLaunchAction() { const a = this.read<string | null>(this.key('launch'), null); localStorage.removeItem(this.key('launch')); return a; }
   onLaunchAction(cb: (action: string) => void) { this.launchCbs.push(cb); }

@@ -130,6 +130,25 @@ public class HomeLinkPlugin extends Plugin {
         });
     }
 
+    // ---------- La voix du dragon (synthèse vocale) ----------
+    @PluginMethod
+    public void speak(PluginCall call) {
+        String text = call.getString("text", "");
+        String id = call.getString("id", String.valueOf(System.currentTimeMillis()));
+        Double pitch = call.getDouble("pitch", 0.75);
+        Double rate = call.getDouble("rate", 0.95);
+        if (text == null || text.isEmpty()) { call.resolve(); return; }
+        DragonVoice.speak(ctx(), id, text, pitch == null ? 0.75f : pitch.floatValue(), rate == null ? 0.95f : rate.floatValue(),
+            (uid, ok) -> notifyListeners("voice", new JSObject().put("id", uid).put("ok", ok)));
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void stopSpeaking(PluginCall call) {
+        DragonVoice.stop();
+        call.resolve();
+    }
+
     @PluginMethod
     public void stopListening(PluginCall call) {
         VoiceCommand.stop(getActivity());

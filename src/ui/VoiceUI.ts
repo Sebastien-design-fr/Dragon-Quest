@@ -8,10 +8,10 @@ import { ICONS, h, icon } from './dom.js';
 /** Sans accents, minuscules, ponctuation retirée. */
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 
-interface Command { id: string; label: string; words: string[]; unlocked: boolean; need: string; run: () => void }
+export interface Command { id: string; label: string; words: string[]; unlocked: boolean; need: string; run: () => void }
 
 /** Ordres possibles (tours d'amitié, tours d'entraînement, quelques gestes toujours permis). Les plus précis d'abord. */
-function commands(app: App): Command[] {
+export function commands(app: App): Command[] {
   const comp = app.family.companion!;
   const training = app.family.training;
   const list: Command[] = [];

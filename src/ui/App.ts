@@ -23,6 +23,7 @@ import { hatchCeremony, needsHatch } from './Hatch.js';
 import { installLairTaps, syncDecor } from './Lair.js';
 import { fireSeasonReaction, installSeasonal, syncSeasonal } from './Seasonal.js';
 import { installWeather } from './Weather.js';
+import { installTalk } from './TalkUI.js';
 import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
@@ -72,7 +73,7 @@ function fireHaptics(): void {
   setTimeout(() => { try { navigator.vibrate?.(18); } catch { /* pas de vibreur */ } }, 1130);
 }
 
-export const APP_VERSION = '0.30.0';
+export const APP_VERSION = '0.31.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -269,6 +270,7 @@ export class App {
     // Gestes sur le dragon : la tête suit le doigt ; frotter = caresser ou laver.
     this.bubble = h('button', { class: 'bubble', onclick: () => this.bubbleTap() });
     root.querySelector('.stage-view')?.append(this.bubble);
+    installTalk(this);
     this.stageHud = new StageHud(this);
     const cv = view.canvas;
     cv.addEventListener('pointerdown', e => this.pointer(e, 'down'));
@@ -705,6 +707,9 @@ export class App {
     this.shownAt.set(t.id, now);
     this.say(t.text, t.action);
   }
+
+  /** Ouvre une action de soin sur l'écran du dragon (nourrir, laver, jouer…). */
+  focusAction(a: string): void { this.show('dragon'); (this.current as { focus?: (a: string) => void })?.focus?.(a); }
 
   private bubbleTap(): void {
     const a = this.bubbleAction;

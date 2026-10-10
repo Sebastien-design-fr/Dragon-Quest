@@ -7,7 +7,7 @@ import { GAMES } from './games/index.js';
 import { lastCatch } from './games/Fishing.js';
 import { openSheet } from './screens/common.js';
 import { startBlow } from './Sensors.js';
-import { startVoice } from './VoiceUI.js';
+import { openTalk } from './TalkUI.js';
 
 /** Détail des jauges, de l'amitié et du bonus. */
 export function statusSheet(app: App): void {
@@ -53,8 +53,8 @@ export function tricksSheet(app: App): void {
     const nodes: Node[] = [
       h('button', { class: 'cs-blow', onclick: () => { close(); startBlow(app); } },
         icon(ICONS.flame, 22), h('span', { class: 'grow' }, h('strong', null, 'Souffle magique'), h('span', { class: 'small muted' }, 'Souffle dans le micro du téléphone : il crache du feu avec toi !'))),
-      h('button', { class: 'cs-blow cs-voice', onclick: () => { close(); setTimeout(() => void startVoice(app), 250); } },
-        icon(ICONS.mic, 22), h('span', { class: 'grow' }, h('strong', null, 'Donne-lui un ordre'), h('span', { class: 'small muted' }, 'Appuie, puis dis le tour à voix haute : « Crache du feu ! », « La révérence ! », « Danse ! »'))),
+      h('button', { class: 'cs-blow cs-voice', onclick: () => { close(); setTimeout(() => openTalk(app), 250); } },
+        icon(ICONS.mic, 22), h('span', { class: 'grow' }, h('strong', null, 'Parle-lui'), h('span', { class: 'small muted' }, 'Discute avec lui, ou donne-lui un ordre : « Crache du feu ! », « La révérence ! », « Danse ! »'))),
       h('h4', null, 'Tours d’amitié'),
       h('p', { class: 'small muted' }, 'Répète ses tours pour qu’il les maîtrise : chaque étoile renforce votre amitié.'),
       ...comp.tricks().map(t => row(t.unlocked, t.label, `Amitié ${t.level}`, () => { if (guard(t.level)) { close(); void app.act(t.anim); if (comp.stars(t.id) >= 3) app.view.emit('happySparkle', 'head_anchor'); } }, t.id))
