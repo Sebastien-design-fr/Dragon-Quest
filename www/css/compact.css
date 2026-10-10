@@ -83,6 +83,8 @@
 .ev-fx { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
 .ev-fx i { position: absolute; top: -10px; display: block; }
 .ev-fx-snow i { border-radius: 50%; background: rgba(255,255,255,.85); box-shadow: 0 0 4px rgba(255,255,255,.6); animation: ev-fall linear infinite; }
+.ev-fx-snow i { transition: opacity 1.2s ease; }
+.ev-fx-snow.melt i { opacity: 0 !important; transition-duration: .8s; }
 .ev-fx-confetti i { width: 6px; height: 10px; border-radius: 1px; animation: ev-fall-spin linear infinite; }
 .ev-fx-hearts i { top: auto; bottom: -20px; background: #ff7a9a; clip-path: path('M8 14 C-2 6 2 -1 8 4 C14 -1 18 6 8 14 Z'); opacity: .7; animation: ev-rise linear infinite; }
 .ev-fx-fireflies i { width: 5px; height: 5px; border-radius: 50%; background: #fff3a0; box-shadow: 0 0 8px 3px rgba(255,236,120,.7); animation: ev-float ease-in-out infinite alternate; }

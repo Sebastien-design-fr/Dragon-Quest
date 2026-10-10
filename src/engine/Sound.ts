@@ -3,7 +3,7 @@
 
 // Voix (octobre 2026) : chuff (salut amical par le nez), snort (ébrouement), rumble (grondement de contentement),
 // yawn (bâillement), baby (petit grognement rauque) — fabriquées par art/sounds/creature.py.
-export type SoundId = 'chuff' | 'snort' | 'rumble' | 'yawn' | 'baby' | 'sleep' | 'roar_young' | 'roar_adult' | 'roar_legendary' | 'fire' | 'eat'
+export type SoundId = 'chuff' | 'snort' | 'rumble' | 'yawn' | 'baby' | 'sleep' | 'roar_young' | 'roar_adult' | 'roar_legendary' | 'fire' | 'fire_ring' | 'eat'
   | 'attack' | 'wings' | 'coins' | 'gem' | 'chest' | 'levelup' | 'evolution';
 
 const GAIN: Partial<Record<SoundId, number>> = { coins: 1.6, gem: 1.6, chest: 1.4, rumble: 1.1, chuff: 0.9, roar_legendary: 0.9, evolution: 0.9 };
@@ -232,7 +232,7 @@ class SoundManager {
       eat: () => void this.play('eat', { user: true, rate: pitch }),
       attack: () => void this.play('attack', { user: true, rate: pitch }),
       fire: () => void this.play('fire', { user: true, rate: pitch }),
-      ring: () => void this.play('fire', { user: true, rate: pitch * 1.1 }),
+      ring: () => void this.play('fire_ring', { user: true, rate: pitch * 1.1 }),
       roar: () => void this.play(roar, { user: true, rate: variant === 'dragonne' ? 1.1 : 1 }),
       level_up: () => void this.play('levelup', { user: true }),
       evolution: () => void this.play('evolution', { user: true }),

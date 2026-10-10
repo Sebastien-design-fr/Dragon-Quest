@@ -18,3 +18,8 @@ pulsations graves). Remplacés par des voix synthétisées sur le modèle des gr
 pas de redistribution des fichiers bruts — ils restent dans `art/sounds/mixkit/`, exclu du dépôt) :
 rugissements (bébé, jeune, adulte, légendaire), contentement, ébrouement, bâillement, repas, ronflement pendant
 le sommeil, inspiration avant le feu, montée d'énergie de l'évolution. Seul le « salut » (chuff) reste synthétisé.
+
+## Octobre 2026 — souffle de feu v2 (`fire_v2.py`)
+Calé sur la nouvelle animation (bond en arrière, inspiration, long jet, retour) : battement d'ailes, réception,
+inspiration, flammes + grondement + crépitements, deux petits bonds. L'ancien son est gardé pour l'anneau de feu
+(`fire_ring.mp3`).

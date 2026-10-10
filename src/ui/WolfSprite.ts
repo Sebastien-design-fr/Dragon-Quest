@@ -4,7 +4,7 @@
 import { Assets } from '../engine/AssetManager.js';
 import { wolfImage } from './WolfArt.js';
 
-export interface WolfPose { run: boolean; mirror: boolean; bag: boolean; happy: boolean; sleep: boolean; wear?: string[] }
+export interface WolfPose { run: boolean; mirror: boolean; bag: boolean; happy: boolean; sleep: boolean; wear?: string[]; /** 0..1 : tapi (tête basse, queue rentrée), quand le dragon crache du feu. */ cower?: number }
 
 const BAG = (() => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 50"><path d="M14 10 C20 0 40 0 46 10" stroke="#5a341a" stroke-width="4" fill="none"/>
@@ -115,7 +115,7 @@ export class WolfSprite {
     const breathT = p.sleep ? 4.6 : p.run ? 0.9 : 3.2;
     const b = Math.sin((t * Math.PI * 2) / breathT);
     const wag = p.run ? 6 : p.happy ? 4.5 : p.sleep ? 0.4 : 1.1;
-    const wagAmp = p.run ? 0.035 : p.happy ? 0.05 : 0.018;
+    const wagAmp = (p.run ? 0.035 : p.happy ? 0.05 : 0.018) * (1 - 0.8 * (p.cower ?? 0));
     const hop = p.run ? Math.abs(Math.sin(t * Math.PI * 3.2)) * H * 0.09 : 0;
     // oreilles : petit frémissement de temps en temps
     if (!p.run && !p.sleep && t > this.twitchAt + 4 + Math.random() * 6) this.twitchAt = t;
@@ -136,11 +136,13 @@ export class WolfSprite {
       dy += Math.sin((t * Math.PI * 2) / breathT + 0.9) * H * 0.012 * head;
       dy += tw * H * 0.012 * bell(x, 0.78, 0.08);
       if (p.sleep) dy += H * 0.06 * head; // tête baissée quand il dort
-      const dh = H * sy;
+      const cw = p.cower ?? 0;
+      if (cw) { dy += H * cw * (0.07 * head + 0.05 * tail - 0.01 * Math.sin(t * 40) * head); }
+      const dh = H * sy * (1 - 0.06 * cw);
       g.drawImage(this.img, i * sw, 0, sw + 0.6, ih, i * dw, top + (H - dh) + dy - hop, dw + 0.6, dh);
     }
     // décalage vertical de la zone du cou (suit la tête et la respiration)
-    const neckDy = Math.sin((t * Math.PI * 2) / breathT + 0.9) * H * 0.012 * smooth(0.62, 0.8, 0.72) + (p.sleep ? H * 0.06 * smooth(0.62, 0.8, 0.72) : 0) - hop;
+    const neckDy = Math.sin((t * Math.PI * 2) / breathT + 0.9) * H * 0.012 * smooth(0.62, 0.8, 0.72) + (p.sleep ? H * 0.06 * smooth(0.62, 0.8, 0.72) : 0) + (p.cower ?? 0) * H * (0.07 * smooth(0.62, 0.8, 0.72) + 0.06 * 0.62) - hop;
     const wear = p.wear ?? [];
     const order = (id: string) => id === 'medaille' ? 2 : id.startsWith('collier') ? 1 : 0;
     for (const id of [...wear].sort((a, z) => order(a) - order(z))) this.drawAccessory(g, id, W, H, top, neckDy, b, hop);

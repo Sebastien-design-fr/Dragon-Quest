@@ -205,3 +205,42 @@ export function birthdayAskCard(app: App): HTMLElement | null {
     h('button', { class: 'btn ghost small-btn', onclick: () => { app.state.setComfort({ birthdayAsked: true }); app.refresh(); } }, 'Plus tard'));
   return card;
 }
+
+// ---------- le souffle de feu pendant les fêtes ----------
+const fireSaid = new Set<string>();
+/** Le dragon crache du feu pendant une fête : petit effet propre à la fête (une phrase la première fois). */
+export function fireSeasonReaction(app: App): void {
+  const ev = activeEvent(app);
+  if (!ev || !app.showingOwn) return;
+  const say = (text: string, at: number) => { if (fireSaid.has(ev)) return; fireSaid.add(ev); setTimeout(() => app.say(text, null, 4500), at); };
+  const burst = (preset: string, at: number, anchor = 'head_anchor') => setTimeout(() => app.view.emit(preset, anchor), at);
+  switch (ev) {
+    case 'noel': {
+      // la neige fond pendant le souffle, puis retombe doucement
+      const snow = app.root.querySelector<HTMLElement>('.ev-fx-snow');
+      if (snow) { setTimeout(() => snow.classList.add('melt'), 1200); setTimeout(() => snow.classList.remove('melt'), 7000); }
+      say('Oups… j’ai fait fondre la neige ! Elle va vite retomber.', 3300);
+      break;
+    }
+    case 'anniversaire':
+      burst('rewardBurst', 3000); burst('levelUpBurst', 3200);
+      say('Les bougies sont allumées : fais un vœu !', 3300);
+      break;
+    case 'nouvelan':
+      for (const [t, a] of [[2950, 'head_anchor'], [3250, 'body_center'], [3550, 'head_anchor']] as const) burst('levelUpBurst', t, a);
+      say('Un feu d’artifice pour la nouvelle année !', 3300);
+      break;
+    case 'valentin':
+      burst('hearts', 2900, 'mouth_anchor'); burst('hearts', 3200, 'head_anchor');
+      say('Un cœur de feu, rien que pour toi.', 3300);
+      break;
+    case 'ete':
+      burst('sparkle', 3000, 'mouth_anchor');
+      say('Les lucioles adorent mes flammes !', 3300);
+      break;
+    case 'halloween':
+      say('Bouh ! Même les citrouilles ont eu chaud.', 3300);
+      break;
+    default: break;
+  }
+}

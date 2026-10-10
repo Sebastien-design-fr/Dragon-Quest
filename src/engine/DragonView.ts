@@ -131,6 +131,9 @@ export class DragonView {
   private flash = 0;
   private shake = 0;
   private tempEmitters: { id: string; until: number }[] = [];
+  /** Lumière du feu sur la scène (0..1) : monte pendant le souffle, retombe doucement ; pic bref pour l'anneau de feu. */
+  private fireLight = 0;
+  private fireKick = 0;
   private raf = 0;
   private last = 0;
   private dpr = 1;
@@ -449,6 +452,7 @@ export class DragonView {
         } else {
           const p = src();
           if (p) this.particles.burst(e.preset, p.x, p.y, p.scale);
+          if (e.preset === 'fireRing') this.fireKick = Math.max(this.fireKick, 0.75);
         }
         break;
       }
@@ -857,6 +861,7 @@ export class DragonView {
     ctx.filter = 'none';
     // objets de la grotte posés devant le dragon (premier plan)
     if (this.showBackdrop) this.decor.draw(ctx, 'front', W, feet.y, decorU, this.time, dt, this.dpr);
+    this.drawFireLight(ctx, W, H, dt);
     if (this.layers.foregroundEffect) { this.camM.apply(ctx); this.particles.draw(ctx, 'foreground'); }
     if (evo) drawEvolutionRing(ctx, evo.c, evo.f, W, feet.x, feet.y, this.dpr);
 
@@ -868,6 +873,43 @@ export class DragonView {
     }
     if (this.showAnchors) this.drawAnchors(sk);
   }
+
+  /** Les flammes éclairent la grotte : halo chaud et vacillant devant la gueule, reflet orangé sur toute la scène. */
+  private drawFireLight(ctx: CanvasRenderingContext2D, W: number, H: number, dt: number): void {
+    const breathing = this.tempEmitters.some(t => t.id.startsWith('temp:fireBreath:'));
+    this.fireLight = damp(this.fireLight, breathing ? 1 : 0, breathing ? 7 : 2.2, dt);
+    this.fireKick = Math.max(0, this.fireKick - dt * 1.5);
+    const I = Math.min(1, this.fireLight + this.fireKick);
+    if (I < 0.01 || !this.effectsEnabled) return;
+    const m = this.tmp3;
+    if (!this.anchorWorld('mouth_anchor', m)) return;
+    const mouth = this.camM.point(m.e, m.f);
+    const dir = this.camM.a < 0 ? -1 : 1;
+    const flick = 0.82 + 0.12 * Math.sin(this.time * 23) + 0.08 * Math.sin(this.time * 37 + 1.3) + 0.06 * (Math.random() - 0.5);
+    const k = I * flick;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'lighter';
+    // grand halo sur la scène, décalé dans le sens du jet
+    const cx = mouth.x + dir * W * 0.22, cy = mouth.y + H * 0.04, R = Math.max(W, H) * 0.75;
+    const g1 = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+    g1.addColorStop(0, `rgba(255,140,45,${0.32 * k})`); g1.addColorStop(0.35, `rgba(240,90,25,${0.16 * k})`); g1.addColorStop(1, 'rgba(120,30,0,0)');
+    ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
+    // éclat vif autour de la gueule
+    const r2 = Math.min(W, H) * 0.22;
+    const g2 = ctx.createRadialGradient(mouth.x + dir * r2 * 0.4, mouth.y, 0, mouth.x + dir * r2 * 0.4, mouth.y, r2);
+    g2.addColorStop(0, `rgba(255,220,150,${0.35 * k})`); g2.addColorStop(1, 'rgba(255,140,40,0)');
+    ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+    // le sol devant le dragon renvoie la lumière
+    const feet = this.camM.point(0, 0);
+    const g3 = ctx.createRadialGradient(cx, feet.y, 0, cx, feet.y, W * 0.5);
+    g3.addColorStop(0, `rgba(255,120,40,${0.18 * k})`); g3.addColorStop(1, 'rgba(255,120,40,0)');
+    ctx.save(); ctx.translate(0, feet.y); ctx.scale(1, 0.3); ctx.translate(0, -feet.y);
+    ctx.fillStyle = g3; ctx.fillRect(0, feet.y - W * 0.5, W, W); ctx.restore();
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  /** Intensité actuelle de la lumière du feu (0..1), pour éclairer les éléments posés par-dessus (le loup). */
+  get fireGlow(): number { return Math.min(1, this.fireLight + this.fireKick); }
 
   /** Taches de saleté posées sur les écailles (uniquement sur le dragon, pas autour). */
   private withDirt(src: HTMLCanvasElement, W: number, H: number): HTMLCanvasElement {

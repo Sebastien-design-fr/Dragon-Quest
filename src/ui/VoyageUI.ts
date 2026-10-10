@@ -18,7 +18,7 @@ import { unlocked } from './Unlocks.js';
 /** Place du loup dans la scène (unités de scène, voir DecorLayer) : à gauche du dragon, sur le sol. */
 const SPOT = { dx: -0.34, dy: 0.008, h: 0.17 };
 
-let wolf: { el: HTMLCanvasElement; sprite: WolfSprite; badge: HTMLButtonElement; raf: number; mode: 'home' | 'leaving' | 'away' | 'back' | 'arriving' | 'play'; t0: number; happyUntil: number; nextPlay: number; x: number; y: number; w: number } | null = null;
+let wolf: { el: HTMLCanvasElement; sprite: WolfSprite; badge: HTMLButtonElement; raf: number; mode: 'home' | 'leaving' | 'away' | 'back' | 'arriving' | 'play'; t0: number; happyUntil: number; fireAt: number; nextPlay: number; x: number; y: number; w: number } | null = null;
 
 export function installVoyage(app: App): void {
   const v = app.family.voyage, comp = app.family.companion;
@@ -33,7 +33,7 @@ export function installVoyage(app: App): void {
   el.setAttribute('aria-label', 'Le loup compagnon');
   const badge = h('button', { class: 'vy-badge', 'aria-label': 'Voyage du petit loup', onclick: (e: Event) => { e.stopPropagation(); voyageSheet(app); } }) as HTMLButtonElement;
   host.append(el, badge);
-  wolf = { el, sprite, badge, raf: 0, mode: v.away() ? 'away' : v.data.back ? 'back' : 'home', t0: 0, happyUntil: 0, nextPlay: performance.now() + 40000, x: 0, y: 0, w: 0 };
+  wolf = { el, sprite, badge, raf: 0, mode: v.away() ? 'away' : v.data.back ? 'back' : 'home', t0: 0, happyUntil: 0, fireAt: -1e9, nextPlay: performance.now() + 40000, x: 0, y: 0, w: 0 };
   el.addEventListener('pointerdown', e => { e.stopPropagation(); });
   el.addEventListener('click', e => {
     e.stopPropagation();
@@ -79,15 +79,27 @@ export function installVoyage(app: App): void {
       if (u > 0.47 && u < 0.5 && !app.sleeping && app.view.animator.baseId?.startsWith('idle')) void app.view.play('happy');
     } else if (w.mode === 'away') visible = false;
     else if (w.mode === 'back') bag = true;
+    // souffle de feu du dragon : le loup sursaute quand le dragon atterrit près de lui, se tapit pendant les flammes, puis se secoue, rassuré
+    let cower = 0, hop = 0;
+    const ft = (now - w.fireAt) / 1000;
+    if ((w.mode === 'home' || w.mode === 'back') && ft >= 0 && ft < 4.6) {
+      const sm = (a: number, b: number) => { const k = Math.max(0, Math.min(1, (ft - a) / (b - a))); return k * k * (3 - 2 * k); };
+      if (ft > 0.42 && ft < 0.8) hop = Math.sin(((ft - 0.42) / 0.38) * Math.PI) * hgt * 0.16;
+      x -= hgt * 0.32 * (sm(0.42, 0.8) - sm(3.5, 4.2));
+      cower = sm(0.9, 1.2) - sm(3.0, 3.5);
+      if (ft > 3.5 && ft < 3.55) w.happyUntil = now + 1600;
+    }
     // de temps en temps, il va jouer avec le dragon (s'il est réveillé et que personne ne le touche)
     if (w.mode === 'home' && show && !app.sleeping && now > w.nextPlay && !document.querySelector('.sheet')) { w.mode = 'play'; w.t0 = now; }
     el.hidden = !show || !visible || !f.u;
     if (!el.hidden) {
       const wid = hgt * w.sprite.aspect;
-      w.sprite.draw(wid, hgt, now / 1000, { run: running, mirror, bag, happy: w.mode === 'back' || now < w.happyUntil, sleep: app.sleeping && !running, wear: Object.values(app.family.voyage?.data.wolfWear ?? {}) as string[] });
-      el.style.transform = `translate(${x - wid / 2}px, ${groundY - hgt * 1.12}px)`;
+      w.sprite.draw(wid, hgt, now / 1000, { run: running, mirror, bag, happy: w.mode === 'back' || now < w.happyUntil, sleep: app.sleeping && !running, cower, wear: Object.values(app.family.voyage?.data.wolfWear ?? {}) as string[] });
+      el.style.transform = `translate(${x - wid / 2}px, ${groundY - hgt * 1.12 - hop}px)`;
       w.x = x; w.y = groundY - hgt; w.w = wid;
       el.classList.toggle('glow', w.mode === 'back');
+      const fg = app.view.fireGlow;
+      el.style.filter = fg > 0.02 ? `brightness(${(1 + 0.22 * fg).toFixed(3)}) sepia(${(0.22 * fg).toFixed(3)}) saturate(${(1 + 0.3 * fg).toFixed(3)})` : '';
     }
     renderBadge(app);
     w.raf = requestAnimationFrame(loop);
@@ -315,4 +327,11 @@ export function openBag(app: App): void {
     loot.first ? h('p', { class: 'small muted' }, 'Premier voyage ici : un souvenir a été ajouté à l’album.') : null
   ].filter((n): n is HTMLDivElement | HTMLParagraphElement => !!n) as Node[]);
   app.refresh();
+}
+
+/** Le dragon crache du feu : le loup réagit (sursaut, se tapit, puis se secoue). */
+export function wolfReactToFire(): void {
+  if (!wolf || wolf.mode === 'away' || wolf.mode === 'leaving' || wolf.mode === 'arriving') return;
+  if (wolf.mode === 'play') wolf.mode = 'home';
+  wolf.fireAt = performance.now();
 }

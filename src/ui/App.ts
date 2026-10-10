@@ -8,7 +8,7 @@ import type { Duo } from '../family/Duo.js';
 import type { Training } from '../family/Training.js';
 import type { Activity } from '../family/Activity.js';
 import type { Voyage } from '../family/Voyage.js';
-import { installVoyage } from './VoyageUI.js';
+import { installVoyage, wolfReactToFire } from './VoyageUI.js';
 import { checkRoutine } from './Today.js';
 import { installUnlocks } from './Unlocks.js';
 import { installTips } from './Tips.js';
@@ -21,7 +21,7 @@ import { UI, installTouchFeedback } from './Motion.js';
 import { applyTint } from './Appearance.js';
 import { hatchCeremony, needsHatch } from './Hatch.js';
 import { installLairTaps, syncDecor } from './Lair.js';
-import { installSeasonal, syncSeasonal } from './Seasonal.js';
+import { fireSeasonReaction, installSeasonal, syncSeasonal } from './Seasonal.js';
 import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
@@ -65,7 +65,21 @@ export interface FamilyContext {
   voyage?: Voyage | null;
 }
 
-export const APP_VERSION = '0.29.2';
+/** Vibrations calées sur le souffle de feu : réception du bond, jet qui gronde (pulsations irrégulières), petits bonds du retour. */
+function fireHaptics(): void {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  const v = (p: number | number[]) => { try { navigator.vibrate?.(p); } catch { /* pas de vibreur */ } };
+  setTimeout(() => v(28), 480);
+  setTimeout(() => {
+    const pat: number[] = [70];
+    for (let t = 70; t < 1700;) { const off = 25 + Math.round(Math.random() * 35), on = 30 + Math.round(Math.random() * 45); pat.push(off, on); t += off + on; }
+    v(pat);
+  }, 1130);
+  setTimeout(() => v(14), 3450);
+  setTimeout(() => v(18), 3780);
+}
+
+export const APP_VERSION = '0.29.3';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -204,7 +218,7 @@ export class App {
       this.syncAmbience();
     };
     applySound();
-    view.onClip = clip => Sound.forClip(clip, view.stage?.id ?? 'adult', view.variant);
+    view.onClip = clip => { Sound.forClip(clip, view.stage?.id ?? 'adult', view.variant); if (clip === 'fire') { fireHaptics(); if (this.showingOwn) { wolfReactToFire(); fireSeasonReaction(this); } } };
     Sound.warm(['rumble', 'chuff', 'coins', 'gem']);
     let lastGold = state.data.gold;
     state.events.on('change', d => {
