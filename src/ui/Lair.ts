@@ -218,13 +218,17 @@ export function installLairTaps(app: App): void {
   if (!stage) return;
   stage.addEventListener('pointerdown', e => {
     if (editor || !app.showingOwn || !app.family.companion) return;
+    // seulement les touchers sur la scène elle-même (pas sur le loup, les boutons, les bulles…)
+    if (e.target !== app.view.canvas) return;
     const p = app.view.toCanvas(e.clientX, e.clientY);
     const hit = app.view.decor.hit(p.x, p.y, true);
     if (hit) { e.stopPropagation(); e.preventDefault(); tidy(app, hit.key); return; }
-    // outils de la grotte (gamelle, bassin, coffre, nid acheté)
+    // outils de la grotte (gamelle, bassin, coffre, nid acheté) ; un objet derrière le dragon ne lui vole pas ses caresses
     const any = app.view.decor.hit(p.x, p.y);
     const action = any ? toolAction(any.key) : null;
     if (!action || !any) return;
+    const item = app.view.decor.items.find(i => i.key === any.key);
+    if (!item?.front && app.view.hitTest(e.clientX, e.clientY)) return;
     e.stopPropagation(); e.preventDefault();
     useTool(app, action);
   }, { capture: true });

@@ -64,7 +64,7 @@ export interface FamilyContext {
   voyage?: Voyage | null;
 }
 
-export const APP_VERSION = '0.27.1';
+export const APP_VERSION = '0.27.2';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -281,6 +281,9 @@ export class App {
       // couché hier soir et personne n'a encore ouvert ses rideaux ce matin : il dort encore
       const hr = new Date().getHours();
       if (comp.data.blanketDay === nightKey() && (hr >= 20 || hr < 12) && comp.data.morningDay !== todayKey()) this.sleeping = true;
+      // réveillé à la main il y a moins d'une heure : il reste debout (même après avoir fermé et rouvert l'appli)
+      if (Date.now() - (comp.data.wokeAt ?? 0) < 60 * 60000) this.sleeping = false;
+      this.wokenAt = comp.data.wokeAt ?? 0;
       this.applyCare();
       if (this.showingOwn) void view.play(this.sleeping ? 'sleep' : this.baseLoop());
       const away = comp.greet();
@@ -536,7 +539,7 @@ export class App {
   /** Réveil (bouton, rideaux du matin, téléphone secoué). */
   wakeUp(stretch: boolean): void {
     hideDrape();
-    this.wokenAt = Date.now();
+    this.noteWoken();
     this.view.backdrop.night = isNight() ? 1 : 0;
     this.toggleSleep(false);
     void this.view.play('wake').then(() => { if (stretch) void this.view.play('stretch'); });
@@ -560,9 +563,9 @@ export class App {
     if (this.sleeping && !was && comp?.tuck()) this.say(sayFor('tuck'), null, 4000);
     void this.view.play(this.sleeping ? 'sleep' : this.baseLoop());
     if (was && !this.sleeping) setTimeout(() => this.playPendingVisit(), 2000);
-    if (was && !this.sleeping) this.autoSlept = false;
+    if (was && !this.sleeping) { this.autoSlept = false; this.noteWoken(); }
     if (was && !this.sleeping && force === undefined) {
-      this.wokenAt = Date.now();
+      this.noteWoken();
       void this.view.play('wake');
       if (isNight()) this.say(sayFor('wake'), null, 4000);
     }
@@ -577,12 +580,21 @@ export class App {
   private autoSlept = false;
   /** Réveillé à la main la nuit : on le laisse debout 30 min avant de le recoucher. */
   private wokenAt = 0;
+  /** Réveil à la main : retenu (le matin, compte comme « rideaux ouverts »), pour ne pas le recoucher aussitôt. */
+  private noteWoken(): void {
+    this.wokenAt = Date.now();
+    const c = this.family.companion;
+    if (!c) return;
+    c.data.wokeAt = this.wokenAt;
+    if (new Date().getHours() >= 5 && new Date().getHours() < 12) c.data.morningDay = todayKey();
+    c.save();
+  }
   private bedtime(): void {
     if (!this.showingOwn || this.visits.active || this.evolving) return;
     const h = new Date().getHours() + new Date().getMinutes() / 60;
     const night = h >= 21.5 || h < 7;
     const wokeThisMorning = h < 12 && this.family.companion?.data.morningDay === todayKey();
-    if (night && !this.sleeping && !wokeThisMorning && Date.now() - this.wokenAt > 30 * 60000) {
+    if (night && !this.sleeping && !wokeThisMorning && Date.now() - this.wokenAt > 60 * 60000) {
       void this.view.play('yawn');
       setTimeout(() => {
         if (this.sleeping) return;

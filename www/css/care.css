@@ -99,6 +99,9 @@
   background: linear-gradient(180deg, rgba(40,30,14,.88), rgba(20,15,8,.92)); color: var(--gold); font-weight: 700; font-size: 13px; cursor: pointer; animation: vy-pulse 2s ease-in-out infinite; }
 .sh-pending[hidden] { display: none; }
 
+/* ----- Carrousel « À découvrir » : chaque carte garde sa hauteur ----- */
+.disc { align-items: flex-start; }
+
 /* ----- Le loup ----- */
 .wolf-heart { position: absolute; z-index: 5; color: #ff7a9a; pointer-events: none; filter: drop-shadow(0 0 6px rgba(255,120,150,.6)); }
 .wolf-heart svg { fill: currentColor; }

@@ -1,6 +1,6 @@
 {
   "name": "quete-du-dragon",
-  "version": "0.27.1",
+  "version": "0.27.2",
   "private": true,
   "description": "Jeu mobile : dragon évolutif, animé et personnalisable, avec missions familiales validées par les parents sur le Wi-Fi de la maison.",
   "type": "module",

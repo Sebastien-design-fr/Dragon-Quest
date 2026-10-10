@@ -38,8 +38,7 @@ export class DragonScreen implements Screen {
     const discover = [
       eventCard(app), stepsCard(app), dailyChestCard(app), nextStageCard(app), collectionCard(app),
       book ? this.expeditionCard(comp) : null,
-      app.family.duo ? familyQuestCard(app) : null,
-      app.family.duo ? this.friendCard(comp) : null
+      app.family.duo ? familyQuestCard(app) : null
     ].filter((x): x is HTMLElement => !!x);
     put(el,
       todayStrip(app),
@@ -47,6 +46,7 @@ export class DragonScreen implements Screen {
       book ? questDeck(app) : this.careStrip(comp),
       h('div', { class: 'disc-head' }, h('h3', null, 'À découvrir'), h('span', { class: 'small muted' }, 'glisse →')),
       h('div', { class: 'disc' }, ...discover.map(c => h('div', { class: 'disc-item' }, c))),
+      app.family.duo ? this.friendCard(comp) : null,
       h('div', { class: 'ds-tools' },
         h('button', { class: 'ds-tool', onclick: () => openLair(app) }, icon(ICONS.dragon, 22), h('span', null, 'Sa grotte')),
         h('button', { class: 'ds-tool', onclick: () => appearanceSheet(app) }, icon(ICONS.drop, 22), h('span', null, 'Reflets')),

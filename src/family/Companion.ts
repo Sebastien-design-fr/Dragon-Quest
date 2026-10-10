@@ -82,6 +82,8 @@ interface Data {
   fedDay?: string;
   washedDay?: string;
   routineDay?: string;
+  /** Réveillé à la main (heure) : on le laisse debout un moment, même si l'appli est rouverte. */
+  wokeAt?: number;
 }
 
 /** Répétitions pour 1, 2 et 3 étoiles de maîtrise (au plus 2 comptées par tour et par jour). */
