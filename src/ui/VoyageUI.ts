@@ -169,7 +169,9 @@ export function accessoriesSheet(app: App): void {
         if (r === 'ok') { UI.success(); app.toast(`${a.label} : ${v.wolfName(true)} le porte tout de suite !`); if (wolf) wolf.happyUntil = performance.now() + 2500; }
         render();
       } },
-        h('span', { class: 'acc-dot', style: a.color ? { background: a.color } : {} }, icon(a.slot === 'dos' ? ICONS.inventory : a.slot === 'medaille' ? ICONS.star : ICONS.heart, 16)),
+        Assets.art('companions/acc_' + a.id)
+          ? h('img', { class: 'acc-pic', src: Assets.art('companions/acc_' + a.id)!, alt: '' })
+          : h('span', { class: 'acc-dot', style: a.color ? { background: a.color } : {} }, icon(a.slot === 'dos' ? ICONS.inventory : a.slot === 'medaille' ? ICONS.star : ICONS.heart, 16)),
         h('span', { class: 'grow' }, h('strong', null, a.label), h('span', { class: 'small muted' }, a.effect)),
         h('span', { class: 'acc-state' }, worn ? 'Porté' : owned ? 'Mettre' : h('span', null, icon(ICONS.coin, 13), ` ${a.price}`)));
     }));

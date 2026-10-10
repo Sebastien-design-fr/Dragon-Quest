@@ -169,26 +169,55 @@ const balloons = () => paint('balloons', 200, 300, g => {
   b(56, 70, '#e2463c'); b(144, 60, '#3c7de2'); b(100, 110, '#f2c14e');
 });
 
-/** Objets de l'événement posés dans la scène (avec emplacement pour l'illustration peinte). */
+/** Texte seul (les banderoles peintes n'ont pas d'inscription). */
+const caption = (text: string) => paint('caption-' + text, 640, 80, g => {
+  g.font = 'bold 50px Georgia, serif'; g.textAlign = 'center'; g.fillStyle = '#ffe3a0'; g.shadowColor = 'rgba(0,0,0,.85)'; g.shadowBlur = 10;
+  g.fillText(text, 320, 58);
+});
+const pa = (ev: string, name: string) => Assets.art(`events/${ev}/${name}`);
+
+/** Objets de l'événement posés dans la scène (illustrations peintes si présentes, sinon dessin). */
 export function decorFor(app: App, ev: EventKey): DecorItem[] {
+  void app;
   const warm = { x: 0.5, y: 0.4, r: 0.2, color: '255,200,120' };
+  const year = new Date().getMonth() === 11 ? new Date().getFullYear() + 1 : new Date().getFullYear();
+  /** Banderole : peinte (sans texte) + inscription à part, ou dessinée avec son texte. */
+  const banner = (evk: string, text: string, colors: string[]): DecorItem[] => {
+    const p = pa(evk, 'banniere');
+    if (!p) return [{ key: 'event:banner', img: bunting(text, colors), dx: 0.13, dy: -0.8, w: 0.62, anchor: 'wall', behind: true }];
+    return [
+      { key: 'event:banner', img: p, dx: evk === 'nouvelan' ? 0.27 : 0.15, dy: -0.75, w: evk === 'nouvelan' ? 0.34 : 0.42, anchor: 'wall', behind: true },
+      { key: 'event:caption', img: caption(text), dx: 0.13, dy: -0.57, w: 0.56, anchor: 'wall', behind: true }];
+  };
   switch (ev) {
     case 'noel': return [
       { key: 'event:tree', img: art('noel', 'sapin', tree), dx: 0.43, dy: -0.07, w: 0.17, anchor: 'floor', behind: true, light: { x: 0.5, y: 0.3, r: 0.22, color: '255,215,120' } },
-      { key: 'event:presents', img: art('noel', 'cadeaux', presents), dx: -0.2, dy: -0.1, w: 0.1, anchor: 'floor', behind: true },
-      { key: 'event:lights', img: art('noel', 'guirlande', () => lights(['#e2463c', '#f2c14e', '#3cc2e2', '#7be27a'])), dx: 0.13, dy: -0.8, w: 0.62, anchor: 'wall', behind: true }];
+      { key: 'event:presents', img: art('noel', 'cadeaux', presents), dx: -0.2, dy: -0.1, w: pa('noel', 'cadeaux') ? 0.09 : 0.1, anchor: 'floor', behind: true },
+      pa('noel', 'guirlande')
+        ? { key: 'event:lights', img: pa('noel', 'guirlande')!, dx: 0.15, dy: -0.74, w: 0.42, anchor: 'wall', behind: true, light: { x: 0.5, y: 0.5, r: 0.3, color: '255,220,150' } }
+        : { key: 'event:lights', img: lights(['#e2463c', '#f2c14e', '#3cc2e2', '#7be27a']), dx: 0.13, dy: -0.8, w: 0.62, anchor: 'wall', behind: true }];
     case 'nouvelan': return [
-      { key: 'event:banner', img: art('nouvelan', 'banniere', () => bunting(`Bonne année ${new Date().getMonth() === 11 ? new Date().getFullYear() + 1 : new Date().getFullYear()} !`, ['#f2c14e', '#e8e8f0', '#c9a2f2'])), dx: 0, dy: -0.8, w: 0.8, anchor: 'wall', behind: true },
-      { key: 'event:lights', img: art('nouvelan', 'guirlande', () => lights(['#f2c14e', '#ffffff'])), dx: 0, dy: -0.62, w: 0.75, anchor: 'wall', behind: true }];
+      ...banner('nouvelan', `Bonne année ${year} !`, ['#f2c14e', '#e8e8f0', '#c9a2f2']),
+      pa('nouvelan', 'guirlande')
+        ? { key: 'event:lights', img: pa('nouvelan', 'guirlande')!, dx: -0.03, dy: -0.75, w: 0.28, anchor: 'wall', behind: true, light: { x: 0.5, y: 0.6, r: 0.2, color: '255,230,160' } }
+        : { key: 'event:lights', img: lights(['#f2c14e', '#ffffff']), dx: 0, dy: -0.62, w: 0.75, anchor: 'wall', behind: true },
+      ...(pa('nouvelan', 'coupe') ? [{ key: 'event:glass', img: pa('nouvelan', 'coupe')!, dx: 0.37, dy: -0.14, w: 0.08, anchor: 'floor' as const, behind: true, light: { x: 0.5, y: 0.3, r: 0.12, color: '255,230,150' } }] : [])];
     case 'valentin': return [
-      { key: 'event:hearts', img: art('valentin', 'guirlande', heartsGarland), dx: 0, dy: -0.8, w: 0.8, anchor: 'wall', behind: true },
-      { key: 'event:roses', img: art('valentin', 'roses', roses), dx: 0.44, dy: -0.05, w: 0.1, anchor: 'floor', behind: true, light: { x: 0.5, y: 0.3, r: 0.14, color: '255,120,150' } }];
-    case 'paques': return [];   // les œufs à chercher sont ajoutés par eggItems()
+      pa('valentin', 'guirlande')
+        ? { key: 'event:hearts', img: pa('valentin', 'guirlande')!, dx: 0.15, dy: -0.75, w: 0.42, anchor: 'wall', behind: true }
+        : { key: 'event:hearts', img: heartsGarland(), dx: 0, dy: -0.8, w: 0.8, anchor: 'wall', behind: true },
+      { key: 'event:roses', img: art('valentin', 'roses', roses), dx: pa('valentin', 'roses') ? 0.37 : 0.44, dy: pa('valentin', 'roses') ? -0.14 : -0.05, w: 0.1, anchor: 'floor', behind: true, light: { x: 0.5, y: 0.3, r: 0.14, color: '255,120,150' } },
+      ...(pa('valentin', 'coeur') ? [{ key: 'event:heart', img: pa('valentin', 'coeur')!, dx: -0.3, dy: -0.42, w: 0.08, anchor: 'wall' as const, behind: true, light: { x: 0.5, y: 0.5, r: 0.14, color: '255,110,170' } }] : [])];
+    case 'paques': return pa('paques', 'panier')
+      ? [{ key: 'event:basket', img: pa('paques', 'panier')!, dx: 0.37, dy: -0.14, w: 0.13, anchor: 'floor', behind: true }]
+      : [];   // les œufs à chercher sont ajoutés par eggItems()
     case 'ete': return [
-      { key: 'event:lanterns', img: Assets.art('events/ete/lanternes') ?? 'assets/decor/lanterns.webp', dx: 0, dy: -0.85, w: 0.6, anchor: 'wall', behind: true, light: { x: 0.5, y: 0.6, r: 0.3, color: '255,200,110' } }];
+      { key: 'event:lanterns', img: pa('ete', 'lanternes') ?? 'assets/decor/lanterns.webp', dx: pa('ete', 'lanternes') ? 0.15 : 0, dy: pa('ete', 'lanternes') ? -0.76 : -0.85, w: pa('ete', 'lanternes') ? 0.36 : 0.6, anchor: 'wall', behind: true, light: { x: 0.5, y: 0.6, r: 0.3, color: '255,200,110' } },
+      ...(pa('ete', 'lucioles') ? [{ key: 'event:jar', img: pa('ete', 'lucioles')!, dx: 0.37, dy: -0.14, w: 0.075, anchor: 'floor' as const, behind: true, light: { x: 0.5, y: 0.5, r: 0.16, color: '255,220,110' } }] : []),
+      ...(pa('ete', 'coquillage') ? [{ key: 'event:shell', img: pa('ete', 'coquillage')!, dx: 0.27, dy: -0.01, w: 0.065, anchor: 'floor' as const, front: true }] : [])];
     case 'anniversaire': return [
-      { key: 'event:banner', img: art('anniversaire', 'banniere', () => bunting('Joyeux anniversaire !', ['#e2463c', '#3c7de2', '#f2c14e', '#2f9a55', '#c94ce2'])), dx: 0.13, dy: -0.8, w: 0.62, anchor: 'wall', behind: true },
-      { key: 'event:cake', img: art('anniversaire', 'gateau', cake), dx: 0.43, dy: -0.06, w: 0.11, anchor: 'floor', behind: true, light: warm },
+      ...banner('anniversaire', 'Joyeux anniversaire !', ['#e2463c', '#3c7de2', '#f2c14e', '#2f9a55', '#c94ce2']),
+      { key: 'event:cake', img: art('anniversaire', 'gateau', cake), dx: 0.37, dy: -0.14, w: 0.11, anchor: 'floor', behind: true, light: warm },
       { key: 'event:balloons', img: art('anniversaire', 'ballons', balloons), dx: -0.3, dy: -0.35, w: 0.14, anchor: 'wall', behind: true }];
   }
 }

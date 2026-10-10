@@ -9,6 +9,9 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
+  { version: '0.29.1', items: [
+    { icon: ICONS.star, title: 'Nouvelles illustrations', text: 'Les accessoires du loup, les décors des fêtes, la gamelle, la balle de feu et les gemmes ont été repeints.' }
+  ] },
   { version: '0.29.0', items: [
     { icon: ICONS.compass, title: 'Le loup compagnon', text: 'Donne-lui un nom, caresse-le, offre-lui une friandise, envoie-le en quête pour ton dragon. Il gagne des niveaux, et tu peux lui acheter un foulard, un collier, une médaille ou une grande sacoche.' },
     { icon: ICONS.heart, title: 'La journée du dragon', text: 'Sous la scène, la ligne « Aujourd’hui » montre tes soins, quêtes, pas et le loup. Fais les 5 soins du jour pour un petit bonus.' },

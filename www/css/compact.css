@@ -107,6 +107,7 @@
 .acc-item .grow { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .acc-item.worn { border-color: var(--gold); box-shadow: 0 0 10px rgba(243,193,90,.2); }
 .acc-dot { width: 32px; height: 32px; border-radius: 50%; flex: none; display: grid; place-items: center; background: #3a2f22; color: #fff3d0; }
+.acc-pic { width: 40px; height: 40px; flex: none; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
 .acc-state { font-size: 12px; font-weight: 700; color: var(--gold-soft); white-space: nowrap; }
 .wr-card { display: flex; flex-direction: column; gap: 8px; }
 .wr-bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 76px; }

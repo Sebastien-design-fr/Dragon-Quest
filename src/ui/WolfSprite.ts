@@ -12,6 +12,13 @@ const BAG = (() => {
   const im = new Image(); im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); return im;
 })();
 
+/** Accessoires peints : [centre x, centre y, largeur, rotation°] sur l'illustration du loup. */
+const PAINTED_BOX: Record<string, [number, number, number, number]> = {
+  collier_cuir: [0.775, 0.48, 0.24, -12], collier_or: [0.775, 0.48, 0.25, -12],
+  foulard_rouge: [0.775, 0.53, 0.25, -8], foulard_bleu: [0.775, 0.53, 0.25, -8],
+  medaille: [0.79, 0.61, 0.07, 0]
+};
+
 /** Courbe en cloche (0..1) centrée sur c, de demi-largeur w. */
 const bell = (x: number, c: number, w: number) => { const d = (x - c) / w; return d * d >= 1 ? 0 : (1 - d * d) * (1 - d * d); };
 const smooth = (a: number, b: number, x: number) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -50,8 +57,12 @@ export class WolfSprite {
     const X = (u: number) => u * W, Y = (v: number) => top + v * H + dy;
     const im = this.accImage(id);
     if (im) {
-      const box = id === 'medaille' ? [0.66, 0.52, 0.1, 0.14] : [0.58, 0.36, 0.26, 0.34];
-      g.drawImage(im, X(box[0]), Y(box[1]), box[2] * W, box[3] * H);
+      // centre (fractions du loup), largeur (fraction de W), rotation (degrés) : réglés sur l'illustration du loup
+      const [cx, cy, fw, rot] = PAINTED_BOX[id] ?? PAINTED_BOX.collier_cuir;
+      const bw = fw * W, bh = bw * im.naturalHeight / im.naturalWidth;
+      g.save(); g.translate(X(cx), Y(cy)); g.rotate((rot * Math.PI) / 180);
+      g.drawImage(im, -bw / 2, -bh / 2, bw, bh);
+      g.restore();
       return;
     }
     void b; void hop;
@@ -131,9 +142,15 @@ export class WolfSprite {
     // décalage vertical de la zone du cou (suit la tête et la respiration)
     const neckDy = Math.sin((t * Math.PI * 2) / breathT + 0.9) * H * 0.012 * smooth(0.62, 0.8, 0.72) + (p.sleep ? H * 0.06 * smooth(0.62, 0.8, 0.72) : 0) - hop;
     const wear = p.wear ?? [];
-    for (const id of wear) this.drawAccessory(g, id, W, H, top, neckDy, b, hop);
+    const order = (id: string) => id === 'medaille' ? 2 : id.startsWith('collier') ? 1 : 0;
+    for (const id of [...wear].sort((a, z) => order(a) - order(z))) this.drawAccessory(g, id, W, H, top, neckDy, b, hop);
     const bigBag = wear.includes('sacoche');
-    if ((p.bag || bigBag) && BAG.complete) {
+    const paintedBag = this.accImage('sacoche');
+    if ((p.bag || bigBag) && paintedBag) {
+      // sacoche peinte sur le flanc (plus grande quand c'est l'accessoire acheté)
+      const bw = W * (bigBag ? 0.17 : 0.13), bh = bw * paintedBag.naturalHeight / paintedBag.naturalWidth;
+      g.drawImage(paintedBag, W * 0.48 - bw / 2, top + H * (0.5 + 0.012 * b) - bh / 2 - hop, bw, bh);
+    } else if ((p.bag || bigBag) && BAG.complete) {
       const bw = W * (bigBag ? 0.2 : 0.16);
       g.drawImage(BAG, W * (bigBag ? 0.39 : 0.42), top + H * ((bigBag ? 0.26 : 0.3) + 0.012 * b) - hop, bw, bw * 50 / 60);
     }
