@@ -147,23 +147,31 @@ const clips = {};
   };
 }
 
-// ---------- Feu : il inspire (cou en arrière), puis crache en tendant le cou ----------
+// ---------- Feu : bond en arrière (déplacement géré par DragonView), il inspire, crache longuement, revient ----------
+// 0–0.5 s bond en arrière · 0.5–1.15 inspiration · 1.15–2.9 souffle · 3.15–3.8 retour à sa place
 {
-  const D = 2.8;
+  const D = 3.9;
   const t = {
-    body: { x: mix(D, [[0, 0], [0.6, -7], [0.85, 5], [2.1, 4], [2.8, 0]]), rot: mix(D, [[0, 0], [0.6, -2.5], [0.85, 1], [2.2, 1], [2.8, 0]]) },
-    spine: { sy: mix(D, [[0, 1], [0.6, 1.07], [0.85, 0.97], [2.1, 0.98], [2.6, 1]]) },
-    neck1: { rot: mix(D, [[0, 0], [0.6, -14], [0.85, 12], [2.1, 10], [2.7, 0]]) },
-    neck2: { rot: mix(D, [[0, 0], [0.6, -10], [0.85, 8], [2.1, 7], [2.7, 0]]) },
-    head: { rot: mix(D, [[0, 0], [0.6, -14], [0.85, -2], [2.1, -1], [2.7, 0]], t2 => (t2 > 0.85 && t2 < 2.1 ? 1.2 * Math.sin(t2 * 30) : 0), 0.05) },
-    wing1: { rot: mix(D, [[0, 0], [0.6, -6], [0.85, 2], [2.1, 2], [2.7, 0]]) },
-    wing2: { rot: mix(D, [[0, 0], [0.6, 20], [0.85, 6], [2.1, 8], [2.7, 0]]) },
-    wingFar: { rot: mix(D, [[0, 0], [0.6, 12], [0.85, 4], [2.1, 4], [2.7, 0]]) }
+    body: { x: mix(D, [[0, 0], [0.5, 0], [1.05, -7], [1.25, 5], [2.9, 4], [3.2, 0]]), rot: mix(D, [[0, 0], [0.15, -3], [0.45, 2], [0.6, 0], [1.05, -2.5], [1.25, 1], [2.9, 1], [3.2, 0], [3.35, -2], [3.75, 1.5], [3.9, 0]]) },
+    spine: { sy: mix(D, [[0, 1], [0.08, 0.95], [0.25, 1.03], [0.5, 0.94], [0.65, 1], [1.05, 1.07], [1.25, 0.97], [2.9, 0.98], [3.15, 0.95], [3.4, 1.03], [3.75, 0.95], [3.9, 1]]) },
+    neck1: { rot: mix(D, [[0, 0], [0.5, 0], [1.05, -14], [1.25, 12], [2.9, 10], [3.3, 0]]) },
+    neck2: { rot: mix(D, [[0, 0], [0.5, 0], [1.05, -10], [1.25, 8], [2.9, 7], [3.3, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.5, 0], [1.05, -14], [1.25, -2], [2.9, -1], [3.3, 0]], t2 => (t2 > 1.25 && t2 < 2.9 ? 1.2 * Math.sin(t2 * 30) : 0), 0.05) },
+    wing1: { rot: mix(D, [[0, 0], [0.2, -10], [0.5, 0], [1.05, -6], [1.25, 2], [2.9, 2], [3.3, -8], [3.75, 0]]) },
+    wing2: { rot: mix(D, [[0, 0], [0.2, 16], [0.5, 4], [1.05, 20], [1.25, 6], [2.9, 8], [3.3, 14], [3.75, 0]]) },
+    wingFar: { rot: mix(D, [[0, 0], [0.2, 10], [0.5, 2], [1.05, 12], [1.25, 4], [2.9, 4], [3.3, 8], [3.75, 0]]) }
   };
-  tailWave(t, D, 4, 0.8, (tt) => (tt > 0.6 && tt < 2.2 ? 5 : 0), 0.05);
+  tailWave(t, D, 4, 0.8, (tt) => (tt > 1.0 && tt < 3.0 ? 5 : 0), 0.05);
   clips.fire = {
     duration: D, loop: false, tracks: t,
-    events: [{ t: 0.85, type: 'emit', preset: 'fireBreath', anchor: 'mouth_anchor', value: 1.2 }, { t: 0.85, type: 'shake', value: 3 }]
+    events: [
+      { t: 1.15, type: 'emit', preset: 'fireBreath', anchor: 'mouth_anchor', value: 1.75 },
+      { t: 1.15, type: 'emit', preset: 'fireCore', anchor: 'mouth_anchor', value: 1.6 },
+      { t: 1.15, type: 'emit', preset: 'fireGlow', anchor: 'mouth_anchor', value: 1.75 },
+      { t: 1.3, type: 'emit', preset: 'fireEmbers', anchor: 'mouth_anchor', value: 1.5 },
+      { t: 1.45, type: 'emit', preset: 'fireSmoke', anchor: 'mouth_anchor', value: 1.5 },
+      { t: 1.15, type: 'shake', value: 3 }, { t: 2.0, type: 'shake', value: 2 }
+    ]
   };
 }
 

@@ -182,13 +182,16 @@ export interface ParticlePreset {
   spread: number;        // rayon de la zone d'émission (relatif à l'échelle du dragon)
   area: 'anchor' | 'body';
   fade: 'out' | 'inout';
-  shape: 'circle' | 'spark' | 'smoke' | 'heart' | 'bubble' | 'glow' | 'star';
+  shape: 'circle' | 'spark' | 'smoke' | 'heart' | 'bubble' | 'glow' | 'star' | 'flame';
   /** LOT 5 (facultatifs) : rotation (degrés/s, aléatoire ±), taille en fin de vie (facteur), freinage (par seconde). */
   spin?: number;
   grow?: number;
   drag?: number;
   /** LOT 6 : particules qui convergent vers la source depuis un cercle (valeur = tourbillon, 0 = en ligne droite). */
   converge?: number;
+  /** Flammes : turbulence (ondulation latérale, unités/s) et étirement le long de la vitesse. */
+  turb?: number;
+  stretch?: number;
 }
 
 export interface QualityPreset {

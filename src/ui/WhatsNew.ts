@@ -9,6 +9,9 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
+  { version: '0.29.2', items: [
+    { icon: ICONS.flame, title: 'Un vrai souffle de feu', text: 'Ton dragon recule d’un bond pour prendre son élan, crache de vraies flammes (avec braises et fumée), puis revient à sa place.' }
+  ] },
   { version: '0.29.1', items: [
     { icon: ICONS.star, title: 'Nouvelles illustrations', text: 'Les accessoires du loup, les décors des fêtes, la gamelle, la balle de feu et les gemmes ont été repeints.' }
   ] },

@@ -208,6 +208,8 @@ export class DragonView {
   private flapRate = 1;
   /** Caméra (LOT 5) : micro-zoom centré sur le dragon. */
   private camFx = { amp: 0, t: 0, dur: 1 };
+  /** Souffle de feu : bond en arrière puis retour à sa place (temps écoulé, -1 = inactif). */
+  private leap = { t: -1, back: 0, hop: 0, landed: 0 };
   /** Appelé à chaque animation lancée (sons). */
   onClip: ((clip: string) => void) | null = null;
   /** Appelé quand un clip demande le changement de stade (animation EVOLUTION). */
@@ -422,6 +424,7 @@ export class DragonView {
     if (id.startsWith('sleep') && this.flight) { this.mirrored = this.flight.baseMirror; this.flight.resolve?.(); this.flight = null; this.airborne = false; this.placement.x = this.placeTarget.x; }
     const clip = this.deps.library.get(this.clipFor(id));
     if (clip && !clip.loop) this.onClip?.(id.split('@')[0]);
+    if (id.split('@')[0] === 'fire' && !this.flight && !this.evo) this.leap = { t: 0, back: 0, hop: 0, landed: 0 };
     return this.animator.play(this.clipFor(id));
   }
 
@@ -785,13 +788,14 @@ export class DragonView {
       else zoom = 1 + this.camFx.amp * (u < 0.25 ? Math.sin((u / 0.25) * Math.PI / 2) : 0.5 + 0.5 * Math.cos(((u - 0.25) / 0.75) * Math.PI));
     }
     if (this.evo) zoom *= 1 + this.evo.c.zoom * this.evo.f.zoom;
-    const s = s0 * this.placement.scale * zoom;
+    this.leapTick(dt);
+    const s = s0 * this.placement.scale * zoom * (1 - 0.1 * this.leap.back);
     // demi-tour en vol : le dragon pivote (largeur qui passe par zéro) au lieu de se retourner d'un coup
     const want = this.mirrored ? -1 : 1;
     this.facing = this.flight ? damp(this.facing, want, 9, dt) : want;
     const sx = s * this.facing;
     this.camM.a = sx; this.camM.b = 0; this.camM.c = 0; this.camM.d = s;
-    this.camM.e = W / 2 - (this.cam.x + this.cam.w / 2) * sx + this.placement.x * W + shakeX;
+    this.camM.e = W / 2 - (this.cam.x + this.cam.w / 2) * sx + (this.placement.x - want * 0.12 * this.leap.back) * W + shakeX;
     // le sol (y = 0) reste à la même hauteur quelle que soit la taille
     this.camM.f = H / 2 - (this.cam.y + this.cam.h / 2) * s0 + shakeY;
     this.flightTick(dt);
@@ -811,7 +815,7 @@ export class DragonView {
     if (this.fx.shadows && !(evo && evo.f.sil > 0.85)) this.drawShadows(ctx);
 
     // En vol : tout le dragon monte (le décor et l'ombre restent au sol)
-    this.camM.f -= this.lift * H;
+    this.camM.f -= (this.lift + this.leap.hop) * H;
 
     if (evo) {
       const m = this.tmp3;
@@ -947,6 +951,34 @@ export class DragonView {
   }
 
   /** Micro-zoom sur le dragon (passage de niveau, objet rare…). */
+  /** Bond en arrière (0–0.5 s) avant le souffle, retour en deux petits bonds (3.15–3.8 s). */
+  private leapTick(dt: number): void {
+    const L = this.leap;
+    if (L.t < 0) return;
+    if (this.flight || this.animator.actionId?.split('@')[0] !== 'fire' && L.t > 0.2) {
+      // interrompu : retour en douceur
+      L.back = damp(L.back, 0, 6, dt); L.hop = damp(L.hop, 0, 10, dt);
+      if (L.back < 0.01) { L.t = -1; L.back = 0; L.hop = 0; }
+      return;
+    }
+    L.t += dt;
+    const t = L.t, ease = (x: number) => x * x * (3 - 2 * x);
+    if (t < 0.5) { L.back = ease(t / 0.5); L.hop = 0.06 * Math.sin((t / 0.5) * Math.PI); }
+    else if (t < 3.15) { L.back = 1; L.hop = 0; }
+    else if (t < 3.8) {
+      const u = (t - 3.15) / 0.65;
+      L.back = 1 - ease(u);
+      L.hop = 0.035 * Math.abs(Math.sin(u * Math.PI * 2));
+    } else { L.t = -1; L.back = 0; L.hop = 0; }
+    // poussière à chaque réception
+    const land = t >= 0.5 ? (t >= 3.8 ? 3 : t >= 3.475 ? 2 : 1) : 0;
+    if (land > L.landed) {
+      L.landed = land;
+      this.emit('dustLand', 'front_leg_anchor'); this.emit('dustLand', 'rear_leg_anchor');
+      if (land === 1) this.shake = Math.max(this.shake, 2);
+    }
+  }
+
   cameraPulse(amp: number, dur = 1.6): void { this.camFx = { amp, t: 0, dur }; }
 
   /** Effet continu pendant quelques secondes (particules ascendantes…). */
