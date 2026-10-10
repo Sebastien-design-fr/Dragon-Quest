@@ -16,7 +16,7 @@ import { floatReward } from './Reactions.js';
 import { unlocked } from './Unlocks.js';
 
 /** Place du loup dans la scène (unités de scène, voir DecorLayer) : à gauche du dragon, sur le sol. */
-const SPOT = { dx: -0.355, dy: 0.008, h: 0.135 };
+const SPOT = { dx: -0.34, dy: 0.008, h: 0.17 };
 
 let wolf: { el: HTMLCanvasElement; sprite: WolfSprite; badge: HTMLButtonElement; raf: number; mode: 'home' | 'leaving' | 'away' | 'back' | 'arriving' | 'play'; t0: number; happyUntil: number; nextPlay: number; x: number; y: number; w: number } | null = null;
 
