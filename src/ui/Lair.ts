@@ -97,6 +97,45 @@ function parcel(): string {
   parcelUrl = c.toDataURL('image/png');
   return parcelUrl;
 }
+/** Gamelle dessinée (outil de la grotte : nourrir). */
+let bowlUrl: string | null = null;
+function bowl(): string {
+  if (bowlUrl) return bowlUrl;
+  const c = document.createElement('canvas'); c.width = 220; c.height = 130;
+  const g = c.getContext('2d')!;
+  // viande qui dépasse
+  g.fillStyle = '#a8452c'; g.beginPath(); g.ellipse(80, 52, 34, 22, -0.3, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#c9683f'; g.beginPath(); g.ellipse(130, 48, 30, 20, 0.4, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = '#f3e6cf'; g.lineWidth = 9; g.lineCap = 'round'; g.beginPath(); g.moveTo(150, 40); g.lineTo(178, 18); g.stroke();
+  g.fillStyle = '#f3e6cf'; g.beginPath(); g.arc(182, 15, 7, 0, Math.PI * 2); g.fill();
+  // bol en bois
+  const wood = g.createLinearGradient(0, 55, 0, 125); wood.addColorStop(0, '#8a5a32'); wood.addColorStop(1, '#4a2e17');
+  g.fillStyle = wood; g.beginPath(); g.moveTo(14, 62); g.quadraticCurveTo(110, 150, 206, 62); g.closePath(); g.fill();
+  g.fillStyle = '#9c6b3c'; g.beginPath(); g.ellipse(110, 62, 96, 16, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#5a3b22'; g.beginPath(); g.ellipse(110, 62, 84, 11, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#b8573a'; g.beginPath(); g.ellipse(100, 60, 40, 8, 0, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 3; g.beginPath(); g.moveTo(40, 90); g.quadraticCurveTo(110, 125, 180, 90); g.stroke();
+  bowlUrl = c.toDataURL('image/png');
+  return bowlUrl;
+}
+
+/**
+ * Outils de la grotte : on touche l'objet pour s'occuper du dragon (la grotte sert de menu).
+ * Posés d'office ; si l'objet du même nom a été acheté et placé, c'est lui qui sert.
+ */
+interface Tool { id: string; decor?: string; img: () => string; dx: number; dy: number; w: number; behind?: boolean; action: 'feed' | 'wash' | 'shop' | 'sleep'; label: string }
+const TOOLS: Tool[] = [
+  // la gamelle est toujours là, devant, à droite ; bassin, nid et coffre servent dès qu'ils sont achetés pour la grotte
+  { id: 'bowl', img: bowl, dx: 0.4, dy: 0.012, w: 0.12, action: 'feed', label: 'la gamelle' }
+];
+const TOOL_OF: Record<string, Tool['action']> = { basin: 'wash', chest: 'shop', nest: 'sleep' };
+
+/** Action d'un objet touché (outil posé d'office ou objet acheté qui sert d'outil). */
+export function toolAction(key: string): Tool['action'] | null {
+  if (key.startsWith('tool:')) return TOOLS.find(t => t.id === key.slice(5))?.action ?? null;
+  return TOOL_OF[key] ?? null;
+}
+
 /** Places des cadeaux cachés : derrière un objet, dans un coin… */
 const HIDE_SPOTS: Array<[number, number]> = [[-0.4, -0.08], [0.42, -0.07], [-0.3, -0.12], [0.32, -0.1], [-0.46, -0.14], [0.46, -0.13]];
 
@@ -115,6 +154,19 @@ export function syncDecor(app: App): void {
       items.push({ key: p.key, img: `assets/decor/${d.img}.webp`, dx: pos.dx, dy: pos.dy, w: d.w * pos.s, anchor: d.anchor, flip: pos.flip, behind: d.behind, light: d.light });
     }
   }
+  // outils (gamelle, bassin, coffre) : ils brillent quand le dragon en a besoin
+  const d = comp.data;
+  const need: Record<Tool['action'], boolean> = { feed: d.hunger < 60, wash: d.clean < 70, shop: false, sleep: (new Date().getHours() >= 20 || new Date().getHours() < 6) && !d.tucked };
+  const glow = (on: boolean, color: string) => on ? { x: 0.5, y: 0.45, r: 0.16, color } : undefined;
+  const f = app.view.decor.frame;
+  const maxDx = f.u > 1 ? Math.max(0.2, (f.ox - 34) / f.u) : 1;
+  for (const t of TOOLS) {
+    if (t.decor && owned.has(t.decor) && pieces(DECOR.find(x => x.id === t.decor)!).some(p => !placement(app, p.key).hidden)) continue;
+    const dx = Math.sign(t.dx) * Math.min(Math.abs(t.dx), maxDx);
+    items.push({ key: `tool:${t.id}`, img: t.img(), dx, dy: t.dy, w: t.w, anchor: 'floor', behind: t.behind, front: !t.behind, light: glow(need[t.action], t.action === 'feed' ? '255,190,110' : '140,200,255') });
+  }
+  // objets achetés qui servent d'outils : ils brillent aussi quand il faut
+  for (const it of items) { const a = TOOL_OF[it.key.split('#')[0]]; if (a && need[a] && !it.light) it.light = glow(true, '255,210,140'); }
   for (const s of debrisSlots(app)) items.push(debrisItem(s));
   for (const g of app.family.duo?.hiddenGifts() ?? []) {
     const [dx, dy] = HIDE_SPOTS[g.slot % HIDE_SPOTS.length];
@@ -168,10 +220,24 @@ export function installLairTaps(app: App): void {
     if (editor || !app.showingOwn || !app.family.companion) return;
     const p = app.view.toCanvas(e.clientX, e.clientY);
     const hit = app.view.decor.hit(p.x, p.y, true);
-    if (!hit) return;
+    if (hit) { e.stopPropagation(); e.preventDefault(); tidy(app, hit.key); return; }
+    // outils de la grotte (gamelle, bassin, coffre, nid acheté)
+    const any = app.view.decor.hit(p.x, p.y);
+    const action = any ? toolAction(any.key) : null;
+    if (!action || !any) return;
     e.stopPropagation(); e.preventDefault();
-    tidy(app, hit.key);
+    useTool(app, action);
   }, { capture: true });
+}
+
+/** Utiliser un outil de la grotte. */
+function useTool(app: App, action: Tool['action']): void {
+  UI.tick();
+  if (action === 'shop') { app.openChest('shop'); return; }
+  if (app.sleeping && action !== 'sleep') { app.say('Chut… il dort.', null, 2500); return; }
+  if (action === 'feed') app.stageHud.openTray();
+  else if (action === 'wash') app.stageHud.action('wash');
+  else app.sleepButton();
 }
 
 // ---------------- Mode aménagement ----------------

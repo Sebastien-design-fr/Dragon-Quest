@@ -2,6 +2,7 @@
 import type { App } from './App.js';
 import { ICONS, h, icon } from './dom.js';
 import { UI } from './Motion.js';
+import { floatReward } from './Reactions.js';
 
 const fmt = (n: number) => n.toLocaleString('fr-FR');
 
@@ -13,6 +14,7 @@ export function installActivity(app: App): void {
     const who = app.family.companion?.name ?? (app.isParent ? 'Ta dragonne' : 'Ton dragon');
     setTimeout(() => {
       app.toast(`${fmt(t.at)} pas ! +${t.xp} XP, +${t.gold} or`);
+      floatReward(app, t.xp, t.gold, 200);
       if (app.showingOwn && !app.sleeping) { void app.act('happy'); app.say(`${fmt(t.at)} pas aujourd’hui ! ${who} a vu du pays avec toi.`, null, 5000); }
     }, 800);
   });
@@ -74,6 +76,7 @@ export function potionCard(app: App): HTMLElement | null {
           if (r === 'limit') { app.toast('Plus de potion aujourd’hui : reviens demain'); return; }
           UI.success();
           app.toast(`Potion bue : +${p.xp} XP`);
+          floatReward(app, p.xp, 0);
           if (app.showingOwn) { void app.act('happy'); app.view.emit('happySparkle', 'head_anchor'); }
           app.refresh();
         } }, icon(ICONS.coin, 14), ` ${p.price}`)));

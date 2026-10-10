@@ -52,7 +52,7 @@ function ring(segments: Array<[number, string]>, size: number, label: Node | str
 const levelColor = (v: number) => v < 25 ? 'var(--danger)' : v < 50 ? '#e3b04b' : '#4fbf8a';
 
 export class ValidationsScreen implements Screen {
-  id = 'validations'; label = 'Accueil'; icon = ICONS.shield;
+  id = 'validations'; label = 'Suivi'; icon = ICONS.shield;
   private el: HTMLElement | null = null;
   private giftAmount = 25;
   private giftMessage = '';

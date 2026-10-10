@@ -9,6 +9,9 @@ import type { Training } from '../family/Training.js';
 import type { Activity } from '../family/Activity.js';
 import type { Voyage } from '../family/Voyage.js';
 import { installVoyage } from './VoyageUI.js';
+import { checkRoutine } from './Today.js';
+import { installUnlocks } from './Unlocks.js';
+import { installTips } from './Tips.js';
 import { de } from './Lair.js';
 import { installActivity } from './ActivityUI.js';
 import { VisitScene } from './VisitScene.js';
@@ -61,7 +64,7 @@ export interface FamilyContext {
   voyage?: Voyage | null;
 }
 
-export const APP_VERSION = '0.26.0';
+export const APP_VERSION = '0.27.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -186,7 +189,7 @@ export class App {
 
     this.chest = new ChestScreen(this);
     this.screens = this.isParent
-      ? [new ValidationsScreen(this), new ParentMissionsScreen(this), new DragonScreen(this), this.chest, new FamilyScreen(this)]
+      ? [new DragonScreen(this), new ValidationsScreen(this), new ParentMissionsScreen(this), this.chest, new FamilyScreen(this)]   // la dragonne d'abord
       : [new DragonScreen(this), new MissionsScreen(this), this.chest, new ProfileScreen(this)];
     this.buildTabs();
 
@@ -251,7 +254,7 @@ export class App {
 
     if (this.isParent) {
       this.selectedChild = hub?.childIds()[0] ?? null;
-      this.showChildDragon();
+      // pas de showChildDragon ici : l'appli s'ouvre sur la dragonne (le dragon de l'enfant s'affiche sur ses écrans à lui)
     }
     // Gestes sur le dragon : la tête suit le doigt ; frotter = caresser ou laver.
     this.bubble = h('button', { class: 'bubble', onclick: () => this.bubbleTap() });
@@ -266,7 +269,7 @@ export class App {
 
     const comp = family.companion;
     if (comp) {
-      comp.events.on('change', () => { this.applyCare(); this.refresh(); this.queueReminders(); });
+      comp.events.on('change', () => { this.applyCare(); this.refresh(); this.queueReminders(); checkRoutine(this); });
       comp.events.on('toast', t => this.toast(t));
       comp.events.on('react', r => {
         if (!this.showingOwn) return;
@@ -306,6 +309,9 @@ export class App {
 
     installActivity(this);
     installVoyage(this);
+    installUnlocks(this);
+    installTips(this);
+    this.family.voyage?.events.on('change', () => checkRoutine(this));
     // Sortie en famille : rencontres en Bluetooth
     const checkMeets = async () => {
       const duo = this.family.duo;

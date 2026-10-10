@@ -25,6 +25,7 @@ export class StageHud {
   private root: HTMLElement;
   private status: HTMLElement;
   private bar: HTMLElement;
+  private pending: HTMLElement;
   private tray: HTMLElement | null = null;
   private radial: HTMLElement | null = null;
   private visible = false;
@@ -33,7 +34,9 @@ export class StageHud {
     this.root = h('div', { class: 'sh' });
     this.status = h('button', { class: 'sh-status', 'aria-label': 'État du dragon', onclick: () => statusSheet(app) });
     this.bar = h('div', { class: 'sh-bar', role: 'toolbar', 'aria-label': 'Actions' });
-    this.root.append(this.status, this.bar);
+    // Parent : demandes de l'enfant à valider, visibles sur la scène de la dragonne
+    this.pending = h('button', { class: 'sh-pending', onclick: () => app.show('validations') });
+    this.root.append(this.status, this.pending, this.bar);
     app.root.querySelector('.stage-view')?.append(this.root);
     this.root.hidden = true;
   }
@@ -61,6 +64,9 @@ export class StageHud {
       h('span', { class: 'sh-name' }, h('strong', null, comp.name), h('em', null, comp.mood().label)),
       h('span', { class: 'sh-rings' },
         ring(d.hunger, ICONS.meat, 'Faim'), ring(d.clean, ICONS.drop, 'Propreté'), ring(d.mood, ICONS.heart, 'Humeur')));
+    const n = app.family.hub?.pendingList().length ?? 0;
+    this.pending.hidden = !n;
+    if (n) this.pending.replaceChildren(icon(ICONS.shield, 15), h('span', null, `${n} à valider`));
     this.renderBar();
   }
 

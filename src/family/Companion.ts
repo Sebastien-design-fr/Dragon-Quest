@@ -78,6 +78,10 @@ interface Data {
   /** Tours : nombre de répétitions (maîtrise) et répétitions comptées aujourd'hui. */
   practice: Record<string, number>;
   practiceToday: Record<string, number>;
+  /** Routine du jour : soins faits aujourd'hui (nourri, lavé) et routine complète récompensée. */
+  fedDay?: string;
+  washedDay?: string;
+  routineDay?: string;
 }
 
 /** Répétitions pour 1, 2 et 3 étoiles de maîtrise (au plus 2 comptées par tour et par jour). */
@@ -227,6 +231,7 @@ export class Companion {
     if ((d.food[id] ?? 0) <= 0) return 'none';
     if (d.hunger >= 95) { this.events.emit('react', { say: 'full' }); return 'full'; }
     d.food[id]--;
+    d.fedDay = todayKey();
     const wasHungry = d.hunger < 60;
     const fav = id === d.fav;
     d.hunger = clamp(d.hunger + f.hunger);
@@ -255,10 +260,11 @@ export class Companion {
   /** Frotter les écailles : amount = distance frottée (0..1 par geste). Retourne vrai quand il est tout propre. */
   scrub(amount: number): boolean {
     const d = this.data;
-    if (d.clean >= 100) return true;
+    if (d.clean >= 100) { if (d.washedDay !== todayKey()) { d.washedDay = todayKey(); this.save(); } return true; }
     const before = d.clean;
     d.clean = clamp(d.clean + amount * 9);
     if (before < 100 && d.clean >= 100) {
+      d.washedDay = todayKey();
       if (before < 60) { this.addBond(2); this.careXp(20); }
       d.mood = clamp(d.mood + 8);
       this.events.emit('react', { anim: 'shake', say: 'clean' });
@@ -356,6 +362,19 @@ export class Companion {
     }
     this.save();
     return { stars: after, gained: after > before, counted: true };
+  }
+
+  /** Routine complète : petite récompense (une fois par jour). Parent : XP et or ; enfant : or et amitié (pas d'XP). */
+  claimRoutine(): { xp: number; gold: number } | null {
+    if (this.data.routineDay === todayKey()) return null;
+    this.data.routineDay = todayKey();
+    const r = this.mode === 'parent' ? { xp: 20, gold: 10 } : { xp: 0, gold: 8 };
+    if (r.xp) this.state.addXp(r.xp);
+    if (r.gold) this.state.addGold(r.gold);
+    this.addBond(2);
+    this.data.mood = clamp(this.data.mood + 10);
+    this.save();
+    return r;
   }
 
   tricks(): Array<TrickDef & { unlocked: boolean }> {

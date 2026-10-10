@@ -50,13 +50,20 @@ export const DESTINATIONS: Destination[] = [
 export interface Trip { dest: string; start: number; end: number; stepsDay: string; steps0: number }
 export interface Loot { dest: string; gold: number; food: Partial<Record<FoodId, number>>; story: string; first: boolean; back: number }
 
-interface Data { day: string; count: number; trip: Trip | null; back: Loot | null; visited: string[]; wolfName?: string }
+interface Data {
+  day: string; count: number; trip: Trip | null; back: Loot | null; visited: string[]; wolfName?: string;
+  /** Expérience du loup (quêtes, caresses, friandises) et compteurs du jour. */
+  wolfXp?: number; wolfDay?: string; wolfPets?: number; wolfTreats?: number;
+}
+
+/** Niveaux du loup : à chaque niveau, quêtes 5 % plus courtes, or +10 %, fruit de feu un peu plus fréquent. */
+export const WOLF_LEVELS = [0, 30, 80, 160, 300, 500];
 
 const KEY = 'quete-du-dragon:voyage';
 const H = 3600 * 1000;
 
 export class Voyage {
-  readonly events = new EventBus<{ change: void; back: Loot }>();
+  readonly events = new EventBus<{ change: void; back: Loot; wolfLevel: number }>();
   data: Data;
 
   constructor(private state: GameState, private companion: Companion, private activity: Activity | null, readonly role: 'child' | 'parent') {
@@ -94,7 +101,7 @@ export class Voyage {
     if (this.data.trip || this.data.back) return 'busy';
     if (this.left() <= 0) return 'limit';
     const d = this.dest(id), now = Date.now();
-    this.data.trip = { dest: d.id, start: now, end: now + d.hours * H, stepsDay: this.activity?.data.day ?? todayKey(), steps0: this.activity?.data.steps ?? 0 };
+    this.data.trip = { dest: d.id, start: now, end: now + d.hours * H * (1 - 0.05 * (this.wolfLevel().level - 1)), stepsDay: this.activity?.data.day ?? todayKey(), steps0: this.activity?.data.steps ?? 0 };
     this.data.count++;
     this.save();
     return 'ok';
@@ -109,10 +116,11 @@ export class Voyage {
     if (!t || this.remaining(now) > 0) return null;
     const d = this.dest(t.dest);
     const [lo, hi] = this.cfg.gold[this.role];
-    const gold = Math.round((lo + Math.random() * (hi - lo)) * Math.pow(d.hours, 0.6));
+    const lv = this.wolfLevel().level;
+    const gold = Math.round((lo + Math.random() * (hi - lo)) * Math.pow(d.hours, 0.6) * (1 + 0.1 * (lv - 1)));
     const food: Partial<Record<FoodId, number>> = {};
     for (const f of d.foods) if (Math.random() < 0.75) food[f] = (food[f] ?? 0) + 1;
-    if (Math.random() < d.fruit) food.fireFruit = 1;
+    if (Math.random() < Math.min(0.95, d.fruit + 0.05 * (lv - 1))) food.fireFruit = 1;
     if (!Object.keys(food).length) food[d.foods[0]] = 1;
     const story = this.fill(d.stories[Math.floor(Math.random() * d.stories.length)]);
     const first = !this.data.visited.includes(d.id);
@@ -132,6 +140,7 @@ export class Voyage {
     const c = this.companion;
     for (const [f, n] of Object.entries(l.food)) c.data.food[f as FoodId] = (c.data.food[f as FoodId] ?? 0) + (n ?? 0);
     c.data.mood = Math.min(100, c.data.mood + 15);
+    this.addWolfXp(Math.round(this.dest(l.dest).hours * 10));
     if (l.first) {
       this.data.visited.push(l.dest);
       c.remember('voyage-' + l.dest, `${this.wolfName(true)} : ${this.dest(l.dest).name}`, l.story);
@@ -139,6 +148,45 @@ export class Voyage {
     c.save();
     this.save();
     return l;
+  }
+
+  // ---------------- Le loup lui-même ----------------
+  wolfLevel(): { level: number; xp: number; next: number | null; progress: number } {
+    const xp = this.data.wolfXp ?? 0;
+    let i = 0;
+    while (i + 1 < WOLF_LEVELS.length && xp >= WOLF_LEVELS[i + 1]) i++;
+    const next = WOLF_LEVELS[i + 1] ?? null;
+    return { level: i + 1, xp, next, progress: next === null ? 1 : (xp - WOLF_LEVELS[i]) / (next - WOLF_LEVELS[i]) };
+  }
+  private addWolfXp(n: number): void {
+    const before = this.wolfLevel().level;
+    this.data.wolfXp = (this.data.wolfXp ?? 0) + n;
+    const after = this.wolfLevel().level;
+    if (after > before) {
+      this.companion.remember('wolf-level-' + after, `${this.wolfName(true)} : niveau ${after}`, `Plus rapide et meilleur chercheur de trésors.`);
+      this.companion.save();
+      this.events.emit('wolfLevel', after);
+    }
+  }
+  private wolfToday(): void { if (this.data.wolfDay !== todayKey()) { this.data.wolfDay = todayKey(); this.data.wolfPets = 0; this.data.wolfTreats = 0; } }
+
+  /** Caresse : il est content ; les 5 premières de la journée le font progresser. */
+  petWolf(): void {
+    this.wolfToday();
+    if ((this.data.wolfPets ?? 0) < 5) { this.data.wolfPets = (this.data.wolfPets ?? 0) + 1; this.addWolfXp(1); }
+    this.save();
+  }
+  /** Friandise (une ration du garde-manger), 2 par jour. */
+  treatWolf(): 'ok' | 'none' | 'full' {
+    this.wolfToday();
+    if ((this.data.wolfTreats ?? 0) >= 2) return 'full';
+    if ((this.companion.data.food.ration ?? 0) <= 0) return 'none';
+    this.companion.data.food.ration--;
+    this.companion.save();
+    this.data.wolfTreats = (this.data.wolfTreats ?? 0) + 1;
+    this.addWolfXp(3);
+    this.save();
+    return 'ok';
   }
 
   /** Nom du loup (« le petit loup » tant qu'on ne lui en a pas donné). */

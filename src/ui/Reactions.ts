@@ -55,6 +55,13 @@ function floatLabel(app: App, text: string, kind: 'xp' | 'gold', delay: number):
   }, delay);
 }
 
+/** Gain hors quête (pas, potion, routine, sacoche du loup) : chiffres qui jaillissent, l'or file vers le compteur. */
+export function floatReward(app: App, xp: number, gold: number, delay = 0): void {
+  if (!canReact(app)) return;
+  if (xp) floatLabel(app, `+${xp} XP`, 'xp', delay);
+  if (gold) floatLabel(app, `+${gold}`, 'gold', delay + 150);
+}
+
 /** Quête validée : il se ramasse, bondit de joie, étincelles, XP et or qui jaillissent, retour au repos (≈1,5 s). */
 export function missionReaction(app: App, xp: number, gold: number): void {
   if (!canReact(app)) return;

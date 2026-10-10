@@ -413,7 +413,7 @@ export function dailyChestCard(app: App): HTMLElement {
   return card;
 }
 
-function openChestOverlay(app: App, done: () => void): void {
+export function openChestOverlay(app: App, done: () => void): void {
   const s = surprisesFor(app);
   const parent = app.isParent;
   const streak = s.dailyChest().streak;

@@ -15,6 +15,8 @@ import { questDeck, questDeckBusy } from '../QuestDeck.js';
 import { appearanceSheet, collectionCard } from '../Appearance.js';
 import { eventCard } from '../Seasonal.js';
 import { stepsCard } from '../ActivityUI.js';
+import { todayStrip } from '../Today.js';
+import { unlocked, UNLOCK_LEVEL } from '../Unlocks.js';
 
 export class DragonScreen implements Screen {
   id = 'dragon'; label = 'Dragon'; icon = ICONS.dragon;
@@ -34,15 +36,15 @@ export class DragonScreen implements Screen {
     if (!comp) return;
     // Refonte UX : la prochaine quête d'abord (un seul geste), puis « À découvrir » en carrousel horizontal.
     const discover = [
-      eventCard(app), book ? stepsCard(app) : null, dailyChestCard(app), nextStageCard(app), collectionCard(app),
+      eventCard(app), stepsCard(app), dailyChestCard(app), nextStageCard(app), collectionCard(app),
       book ? this.expeditionCard(comp) : null,
       app.family.duo ? familyQuestCard(app) : null,
       app.family.duo ? this.friendCard(comp) : null
     ].filter((x): x is HTMLElement => !!x);
     put(el,
+      todayStrip(app),
       this.nameCard(comp),
       book ? questDeck(app) : this.careStrip(comp),
-      book ? null : stepsCard(app),
       h('div', { class: 'disc-head' }, h('h3', null, 'À découvrir'), h('span', { class: 'small muted' }, 'glisse →')),
       h('div', { class: 'disc' }, ...discover.map(c => h('div', { class: 'disc-item' }, c))),
       h('div', { class: 'ds-tools' },
@@ -52,9 +54,7 @@ export class DragonScreen implements Screen {
         h('button', { class: 'ds-tool', onclick: () => void shareCard(app) }, icon(ICONS.gift, 22), h('span', null, 'Partager')),
         h('button', { class: 'ds-tool', onclick: () => this.albumSheet(comp) }, icon(ICONS.album, 22), h('span', null, 'Album')),
         app.isParent ? h('button', { class: 'ds-tool', onclick: () => app.openChest('owned') }, icon(ICONS.inventory, 22), h('span', null, 'Équipements')) : null),
-      h('p', { class: 'small muted ds-hint' }, app.careMode === 'wash'
-        ? 'Mode lavage : frotte ses écailles avec ton doigt jusqu’à ce qu’il brille.'
-        : 'Gratte-lui la tête, chatouille son ventre, touche sa queue… Appui long sur lui : toutes les actions. Glisse vers le haut : il s’envole !')
+      app.careMode === 'wash' ? h('p', { class: 'small muted ds-hint' }, 'Mode lavage : frotte ses écailles avec ton doigt jusqu’à ce qu’il brille.') : null
     );
   }
 
@@ -122,7 +122,7 @@ export class DragonScreen implements Screen {
       h('div', { class: 'row' },
         h('button', { class: 'btn primary grow', onclick: () => this.visitSheet(comp) }, `Rendre visite à ${f.name}`),
         h('span', { class: 'small muted' }, `${duo.visitsLeft()} / 3 aujourd’hui`)),
-      h('div', { class: 'row fr-more' },
+      !unlocked(app, 'gifts') ? h('p', { class: 'small muted' }, `Câlins et cadeaux cachés : au niveau ${UNLOCK_LEVEL.gifts}.`) : h('div', { class: 'row fr-more' },
         h('button', { class: 'btn grow', disabled: !duo.hugsLeft(), onclick: async () => {
           const r = await duo.sendHug();
           if (r === 'limit') { app.toast('Déjà 3 câlins aujourd’hui'); return; }
