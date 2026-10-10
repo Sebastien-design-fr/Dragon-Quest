@@ -17,10 +17,10 @@ export function commands(app: App): Command[] {
   const list: Command[] = [];
   const friend: Record<string, string[]> = {
     ring: ['anneau', 'cercle de feu', 'couronne'],
-    fire: ['crache', 'feu', 'flamme', 'souffle', 'brule'],
+    fire: ['crache', 'feu', 'du feu', 'flamme', 'flammes', 'souffle', 'brule'],
     attack: ['griffe', 'attaque', 'coup de patte', 'griffes'],
     bow: ['reverence', 'salue', 'salut', 'incline'],
-    hover: ['vole', 'envole', 'decolle', 'vol', 'voler'],
+    hover: ['vole', 'envole', 'decolle', 'vol', 'voler', 'tes ailes', 'ailes'],
     dance: ['danse', 'danser'],
     roar: ['rugis', 'rugissement', 'rugir', 'grogne', 'crie']
   };
@@ -37,6 +37,9 @@ export function commands(app: App): Command[] {
     list.push({ id: t.id, label: t.label, words: friend[t.id] ?? [], unlocked: t.unlocked, need: `Amitié ${t.level}`,
       run: () => { void app.act(t.anim); if (comp.stars(t.id) >= 3) app.view.emit('happySparkle', 'head_anchor'); comp.practise(t.id, t.label); } });
   }
+  // « fais un tour » : un tour connu, au hasard
+  const known = list.filter(c => c.unlocked);
+  if (known.length) list.push({ id: 'random', label: 'Un tour', words: ['un tour', 'un truc', 'le fou', 'fais quelque chose', 'ce que tu sais faire', 'montre moi un tour', 'fais nous un tour', 'fais un spectacle'], unlocked: true, need: '', run: () => known[Math.floor(Math.random() * known.length)].run() });
   // gestes toujours permis
   list.push({ id: 'hello', label: 'Bonjour', words: ['bonjour', 'coucou', 'salut toi', 'hello'], unlocked: true, need: '', run: () => void app.act('happy') });
   list.push({ id: 'praise', label: 'Bravo', words: ['bravo', 'gentil', 'bon dragon', 'bonne dragonne', 'je t aime', 'trop beau', 'trop belle', 'magnifique'], unlocked: true, need: '',

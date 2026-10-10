@@ -11,6 +11,7 @@ import { isBirthday } from './Events.js';
 import { activeEvent } from './Seasonal.js';
 import { commands, matchCommand } from './VoiceUI.js';
 import { currentWeather } from './Weather.js';
+import { voyageSheet } from './VoyageUI.js';
 
 let dialogue: Dialogue | null = null;
 let panel: HTMLElement | null = null;
@@ -65,6 +66,8 @@ function talkCtx(app: App): TalkCtx {
     tasksLeft: today ? today.filter(t => t.status === 'todo' || t.status === 'refused').map(t => t.mission.title) : null,
     tasksDone: today ? today.filter(t => t.status === 'done' || t.status === 'pending').length : 0,
     birthdayIn: daysToBirthday(app, now),
+    gold: app.state.data.gold,
+    tricks: [...comp.tricks().filter(t => t.unlocked).map(t => t.label.toLowerCase()), ...(app.family.training?.tricks().filter(t => t.unlocked).map(t => t.label.toLowerCase()) ?? [])],
     now
   };
 }
@@ -78,7 +81,7 @@ function asCommand(app: App, heard: string[]) {
     const nn = norm(comp.name).trim();
     if (nn) p = p.split(' ' + nn + ' ').join(' ');
     p = ' ' + p.replace(/^ (allez|vas y|aller|hop|dis|eh|hey|s il te plait) /, ' ').trim() + ' ';
-    const imperative = /^ (fais|fait|montre|tu peux|peux tu|tu sais|refais|encore|crache|lance|danse|vole|rugis|salue|griffe|attaque|envole|tourne|souffle|fait nous|fais nous|fais moi|montre moi)/.test(p);
+    const imperative = /^ (fais|fait|montre|tu peux|peux tu|tu sais|refais|encore|crache|lance|danse|vole|rugis|grogne|salue|griffe|attaque|envole|tourne|souffle|un tour|fait nous|fais nous|fais moi|montre moi)/.test(p);
     if (!imperative) continue;
     const c = matchCommand(list, [p]);
     if (c) return c;
@@ -86,11 +89,35 @@ function asCommand(app: App, heard: string[]) {
   return null;
 }
 
+function getDialogue(app: App): Dialogue {
+  if (!dialogue) dialogue = new Dialogue(app.isParent ? 'quete-du-dragon:talk:parent' : 'quete-du-dragon:talk');
+  return dialogue;
+}
+
+/** Réglages : les phrases que le dragon n'a pas comprises (sur ce téléphone seulement), pour les lui apprendre. */
+export function talkLogCard(app: App): HTMLElement | null {
+  const comp = app.family.companion;
+  if (!comp) return null;
+  const d = getDialogue(app);
+  const list = d.unknown();
+  const box = h('section', { class: 'card' },
+    h('h3', null, `Ce que ${comp.name} n’a pas compris`),
+    h('p', { class: 'small muted' }, 'Gardé uniquement sur ce téléphone. Copie la liste et envoie-la pour qu’on lui apprenne ces phrases.'));
+  if (!list.length) { box.append(h('p', { class: 'small' }, 'Rien pour l’instant : il a tout compris !')); return box; }
+  box.append(h('ul', { class: 'tk-unknown' }, ...list.slice(0, 15).map(u => h('li', null, `« ${u.t} »`))));
+  box.append(h('div', { class: 'row' },
+    h('button', { class: 'btn small-btn', onclick: async () => {
+      const text = list.map(u => u.t).join('\n');
+      try { await navigator.clipboard.writeText(text); app.toast('Liste copiée'); } catch { app.toast('Copie impossible sur ce téléphone'); }
+    } }, 'Copier la liste'),
+    h('button', { class: 'btn ghost small-btn', onclick: () => { d.clearUnknown(); app.toast('Liste effacée'); app.refresh(); } }, 'Effacer')));
+  return box;
+}
+
 export function openTalk(app: App): void {
   const comp = app.family.companion;
   if (!comp || panel) return;
-  if (!dialogue) dialogue = new Dialogue(app.isParent ? 'quete-du-dragon:talk:parent' : 'quete-du-dragon:talk');
-  const d = dialogue;
+  const d = getDialogue(app);
   const link = app.family.link;
   const log = h('div', { class: 'tk-log' });
   const status = h('div', { class: 'tk-status small muted' }, 'Appuie sur le micro et parle-lui');
@@ -156,6 +183,8 @@ export function openTalk(app: App): void {
     if (closed) return;
     if (r.then === 'end') { setTimeout(close, voiceOn() ? 400 : 2200); return; }
     if (r.then === 'games') { setTimeout(() => { close(); gamesSheet(app); }, 900); return; }
+    if (r.then === 'sleep') { setTimeout(() => { close(); if (!app.sleeping) app.sleepButton(); }, 1200); return; }
+    if (r.then === 'voyage') { setTimeout(() => { close(); voyageSheet(app); }, 900); return; }
     if (r.then === 'feed' || r.then === 'wash') { const a = r.then; setTimeout(() => { close(); app.focusAction(a); }, 1200); return; }
     // conversation continue : il réécoute tout seul quelques tours après une réponse à la voix
     if (byVoice && turns < 8) { turns++; setTimeout(() => void listen(true), 350); }

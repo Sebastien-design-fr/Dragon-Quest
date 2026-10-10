@@ -6,6 +6,7 @@ import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon } from '../dom.js';
 import { openSheet } from './common.js';
 import { deviceSetupCard, membersCard } from './family.js';
+import { talkLogCard } from '../TalkUI.js';
 import { comfortCard, devToolsCard, qualityCard, soundCard, versionLine } from './SettingsScreen.js';
 
 const STAT_ICONS: Record<GameStat, string> = { agilite: ICONS.wing, vitesse: ICONS.spark, feu: ICONS.flame, sagesse: ICONS.album };
@@ -166,6 +167,7 @@ export class ProfileScreen implements Screen {
       deviceSetupCard(app, rerender),
       membersCard(app),
       comfortCard(app),
+      talkLogCard(app),
       soundCard(app),
       qualityCard(app),
       app.devMode ? devToolsCard(app) : null,

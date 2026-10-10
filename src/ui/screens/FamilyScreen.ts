@@ -1,6 +1,7 @@
 import type { App, Screen } from '../App.js';
 import { ICONS, clear } from '../dom.js';
 import { deviceSetupCard, membersCard, pairingCard } from './family.js';
+import { talkLogCard } from '../TalkUI.js';
 import { comfortCard, devToolsCard, qualityCard, versionLine } from './SettingsScreen.js';
 
 export class FamilyScreen implements Screen {
@@ -25,8 +26,10 @@ export class FamilyScreen implements Screen {
       pairingCard(this.app, rerender),
       membersCard(this.app),
       deviceSetupCard(this.app, rerender),
-      comfortCard(this.app),
-      qualityCard(this.app));
+      comfortCard(this.app));
+    const tl = talkLogCard(this.app);
+    if (tl) el.append(tl);
+    el.append(qualityCard(this.app));
     if (this.app.devMode) el.append(devToolsCard(this.app));
     el.append(versionLine(this.app, rerender));
   }

@@ -9,6 +9,9 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
+  { version: '0.32.0', items: [
+    { icon: ICONS.mic, title: 'Il comprend beaucoup mieux', text: 'Deux fois plus de sujets et près de 850 répliques. Il comprend les questions comme « tu veux faire quoi ? », « tu aimes… ? », « tu préfères… ou… ? », et retient ce que tu aimes. Les phrases qu’il ne comprend pas sont listées dans les réglages, pour lui apprendre la suite.' }
+  ] },
   { version: '0.31.0', items: [
     { icon: ICONS.mic, title: 'Discute avec ton dragon', text: 'Touche « Parler » sous la carte de ton dragon et parle-lui librement : ta journée, tes amis, une histoire, une blague, une devinette, la météo, le loup… Il te répond, à voix haute s’il le peut, et réécoute tout seul. Tu peux aussi lui écrire.' }
   ] },
