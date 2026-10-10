@@ -9,6 +9,11 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
+  { version: '0.30.0', items: [
+    { icon: ICONS.mic, title: 'Parle à ton dragon', text: 'Dans « Tours », appuie sur « Donne-lui un ordre » et dis : « Crache du feu ! », « La révérence ! », « Danse ! »… Il obéit s’il connaît le tour.' },
+    { icon: ICONS.fish, title: 'Pêche au lac', text: 'Nouveau jeu avec le loup : attends que le flotteur plonge, puis touche vite. Les poissons vont au garde-manger.' },
+    { icon: ICONS.cloud, title: 'La vraie météo', text: 'Pluie, neige, brouillard ou orage : la grotte suit le temps qu’il fait à Rozay, et ton dragon le commente. Réglable dans le profil.' }
+  ] },
   { version: '0.29.4', items: [
     { icon: ICONS.flame, title: 'Le feu se sent', text: 'Les flammes éclairent la grotte, le loup se tapit puis se secoue, le son suit tout le tour. Pendant les fêtes, le souffle a sa petite surprise.' }
   ] },

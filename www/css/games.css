@@ -48,3 +48,6 @@
 .rune-pop { position: absolute; left: 50%; top: 10%; transform: translateX(-50%); font: bold 22px system-ui, sans-serif; color: #ffd76a; text-shadow: 0 2px 6px rgba(0,0,0,.8); pointer-events: none; animation: rune-pop .9s ease-out forwards; z-index: 3; }
 @keyframes rune-pop { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, -40px); } }
 .rune-tile.unsolved .rune-front { opacity: .4; filter: grayscale(.6); transition: opacity .4s; }
+/* Pêche au lac */
+.fish-hint { position: absolute; left: 50%; top: calc(64px + env(safe-area-inset-top)); transform: translate(-50%, -6px); z-index: 3; padding: 6px 14px; border-radius: 999px; background: rgba(15,14,22,.75); color: #fff3c4; font-family: var(--display); font-size: 17px; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; white-space: nowrap; }
+.fish-hint.show { opacity: 1; transform: translate(-50%, 0); }

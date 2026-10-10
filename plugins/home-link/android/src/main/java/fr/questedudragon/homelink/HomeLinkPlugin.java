@@ -99,6 +99,43 @@ public class HomeLinkPlugin extends Plugin {
         call.resolve(res);
     }
 
+    // ---------- Ordres à la voix ----------
+    @PluginMethod
+    public void listen(final PluginCall call) {
+        final android.app.Activity a = getActivity();
+        if (a == null) { call.resolve(new JSObject().put("error", "unavailable")); return; }
+        if (androidx.core.content.ContextCompat.checkSelfPermission(ctx(), android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            try { androidx.core.app.ActivityCompat.requestPermissions(a, new String[] { android.Manifest.permission.RECORD_AUDIO }, 7304); } catch (Exception ignored) { }
+            call.resolve(new JSObject().put("error", "permission"));
+            return;
+        }
+        if (!VoiceCommand.available(a)) { call.resolve(new JSObject().put("error", "unavailable")); return; }
+        String lang = call.getString("lang", "fr-FR");
+        Integer maxMs = call.getInt("maxMs", 6000);
+        VoiceCommand.listen(a, lang, maxMs == null ? 6000 : maxMs, new VoiceCommand.Callback() {
+            @Override public void state(String state, String text, float level) {
+                JSObject e = new JSObject().put("state", state);
+                if (text != null) e.put("text", text);
+                if ("level".equals(state)) e.put("level", level);
+                notifyListeners("speech", e);
+            }
+            @Override public void done(java.util.ArrayList<String> matches, String error) {
+                JSObject res = new JSObject();
+                JSArray arr = new JSArray();
+                if (matches != null) for (String m : matches) arr.put(m);
+                res.put("matches", arr);
+                if (error != null) res.put("error", error);
+                call.resolve(res);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void stopListening(PluginCall call) {
+        VoiceCommand.stop(getActivity());
+        call.resolve();
+    }
+
     // ---------- Pas du jour ----------
     @PluginMethod
     public void getSteps(PluginCall call) {

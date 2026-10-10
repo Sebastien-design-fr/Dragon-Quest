@@ -64,7 +64,14 @@ export interface Transport {
   /** Rencontres en sortie pas encore jouées (identifiants des téléphones croisés). */
   takeMeets(): Promise<Array<{ peer: string; at: number }>>;
   onNearby(cb: (peer: string) => void): void;
+  /** Ordres à la voix : une écoute courte (reconnaissance vocale du téléphone). */
+  listen(maxMs?: number): Promise<SpeechResult>;
+  stopListening(): Promise<void>;
+  onSpeech(cb: (e: SpeechEvent) => void): void;
 }
+
+export interface SpeechResult { matches: string[]; error?: 'permission' | 'unavailable' | 'nomatch' | 'network' | 'busy' | string }
+export interface SpeechEvent { state: 'ready' | 'speaking' | 'level' | 'partial' | 'thinking'; text?: string; level?: number }
 
 export interface NearbyState { permission: boolean; outing: boolean; until: number; running: boolean; connected: string[] }
 const NO_NEARBY: NearbyState = { permission: false, outing: false, until: 0, running: false, connected: [] };
@@ -116,6 +123,9 @@ interface HomeLinkPlugin {
   requestNearbyPermission(): Promise<void>;
   takeMeets(): Promise<{ meets: Array<{ peer: string; at: number }> }>;
   addListener(event: 'nearby', cb: (e: { type: string; peer: string }) => void): Promise<unknown>;
+  listen(o: { lang: string; maxMs: number }): Promise<{ matches?: string[]; error?: string }>;
+  stopListening(): Promise<void>;
+  addListener(event: 'speech', cb: (e: SpeechEvent) => void): Promise<unknown>;
 }
 
 export class NativeTransport implements Transport {
@@ -153,6 +163,11 @@ export class NativeTransport implements Transport {
   async requestNearbyPermission() { try { await this.p.requestNearbyPermission(); } catch { /* ancienne version native */ } }
   async takeMeets() { try { return (await this.p.takeMeets()).meets || []; } catch { return []; } }
   onNearby(cb: (peer: string) => void) { void this.p.addListener('nearby', e => { if (e?.peer) cb(e.peer); }).catch(() => undefined); }
+  async listen(maxMs = 6000): Promise<SpeechResult> {
+    try { const r = await this.p.listen({ lang: 'fr-FR', maxMs }); return { matches: r.matches ?? [], error: r.error }; } catch { return { matches: [], error: 'unavailable' }; }
+  }
+  async stopListening() { try { await this.p.stopListening(); } catch { /* ancienne version native */ } }
+  onSpeech(cb: (e: SpeechEvent) => void) { void this.p.addListener('speech', cb).catch(() => undefined); }
 }
 
 function parse(v: unknown): any {
@@ -285,6 +300,40 @@ export class SimTransport implements Transport {
     return { available: true, permission: perm, today: perm ? this.read<number>(this.key('steps'), 0) : 0 };
   }
   async requestStepsPermission() { this.write(this.key('stepsPerm'), true); }
+  /** Navigateur : la phrase « entendue » se règle dans sim:<appareil>:speech (sinon reconnaissance du navigateur si elle existe). */
+  private speechCbs: Array<(e: SpeechEvent) => void> = [];
+  async listen(maxMs = 6000): Promise<SpeechResult> {
+    const said = this.read<string | null>(this.key('speech'), null);
+    const emit = (e: SpeechEvent) => this.speechCbs.forEach(cb => cb(e));
+    if (said !== null) {
+      emit({ state: 'ready' });
+      await new Promise(r => setTimeout(r, 500)); emit({ state: 'speaking' }); emit({ state: 'partial', text: said });
+      await new Promise(r => setTimeout(r, 600)); emit({ state: 'thinking' });
+      return said ? { matches: [said] } : { matches: [], error: 'nomatch' };
+    }
+    const W = window as unknown as { SpeechRecognition?: new () => any; webkitSpeechRecognition?: new () => any };
+    const Ctor = W.SpeechRecognition ?? W.webkitSpeechRecognition;
+    if (!Ctor) return { matches: [], error: 'unavailable' };
+    return new Promise(resolve => {
+      const rec = new Ctor(); rec.lang = 'fr-FR'; rec.interimResults = true; rec.maxAlternatives = 5;
+      let done = false;
+      const fin = (r: SpeechResult) => { if (!done) { done = true; resolve(r); } };
+      rec.onstart = () => emit({ state: 'ready' });
+      rec.onresult = (ev: any) => {
+        const res = ev.results[ev.results.length - 1];
+        if (!res.isFinal) { emit({ state: 'partial', text: res[0].transcript }); return; }
+        fin({ matches: Array.from({ length: res.length }, (_, i) => res[i].transcript as string) });
+      };
+      rec.onerror = (ev: any) => fin({ matches: [], error: ev.error === 'not-allowed' ? 'permission' : 'nomatch' });
+      rec.onend = () => fin({ matches: [], error: 'nomatch' });
+      this.recognizer = rec;
+      try { rec.start(); } catch { fin({ matches: [], error: 'unavailable' }); }
+      setTimeout(() => { try { rec.stop(); } catch { /* */ } }, maxMs);
+    });
+  }
+  private recognizer: any = null;
+  async stopListening() { try { this.recognizer?.stop(); } catch { /* */ } }
+  onSpeech(cb: (e: SpeechEvent) => void) { this.speechCbs.push(cb); }
   private launchCbs: Array<(a: string) => void> = [];
   async takeLaunchAction() { const a = this.read<string | null>(this.key('launch'), null); localStorage.removeItem(this.key('launch')); return a; }
   onLaunchAction(cb: (action: string) => void) { this.launchCbs.push(cb); }

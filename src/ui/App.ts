@@ -22,6 +22,7 @@ import { applyTint } from './Appearance.js';
 import { hatchCeremony, needsHatch } from './Hatch.js';
 import { installLairTaps, syncDecor } from './Lair.js';
 import { fireSeasonReaction, installSeasonal, syncSeasonal } from './Seasonal.js';
+import { installWeather } from './Weather.js';
 import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
@@ -71,7 +72,7 @@ function fireHaptics(): void {
   setTimeout(() => { try { navigator.vibrate?.(18); } catch { /* pas de vibreur */ } }, 1130);
 }
 
-export const APP_VERSION = '0.29.4';
+export const APP_VERSION = '0.30.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -305,7 +306,7 @@ export class App {
     }
 
     if (comp) {
-      installSeasonal(this);
+      installSeasonal(this); installWeather(this);
       this.surprises = installSurprises(this);
       installShake(this);
       family.training?.events.on('levelUp', ({ stat, level, tricks }) => {

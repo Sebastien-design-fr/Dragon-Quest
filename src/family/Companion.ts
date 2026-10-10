@@ -250,6 +250,18 @@ export class Companion {
     return 'ok';
   }
 
+  /** Pêche au lac : les poissons attrapés vont au garde-manger (3 par jour au plus). Retourne le nombre rangé. */
+  catchFish(n: number): number {
+    const d = this.data as typeof this.data & { fishDay?: string; fishToday?: number };
+    if (d.fishDay !== todayKey()) { d.fishDay = todayKey(); d.fishToday = 0; }
+    const add = Math.max(0, Math.min(n, 3 - (d.fishToday ?? 0)));
+    if (!add) return 0;
+    d.fishToday = (d.fishToday ?? 0) + add;
+    d.food.fish = (d.food.fish ?? 0) + add;
+    this.save();
+    return add;
+  }
+
   buy(id: FoodId): boolean {
     const f = FOODS.find(x => x.id === id);
     if (!f?.price || this.state.data.gold < f.price) return false;

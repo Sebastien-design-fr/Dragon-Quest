@@ -60,7 +60,8 @@ export function comfortCard(app: App): HTMLElement {
     birthdayPicker(app),
     h('span', { class: 'small' }, 'Taille du texte'),
     size,
-    toggle('Douceur du soir (lumière tamisée après 21 h)', s.nightSoft !== false, v => app.state.setComfort({ nightSoft: v })));
+    toggle('Douceur du soir (lumière tamisée après 21 h)', s.nightSoft !== false, v => app.state.setComfort({ nightSoft: v })),
+    toggle('Météo réelle dans la grotte (Rozay-en-Brie)', s.weather !== false, v => app.state.setComfort({ weather: v })));
 }
 
 /** Version de l'appli : 7 appuis activent les outils de test. */

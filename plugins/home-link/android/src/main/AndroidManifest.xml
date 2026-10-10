@@ -27,6 +27,13 @@
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
 
+    <!-- Ordres à la voix : le service de reconnaissance vocale du téléphone doit être visible (Android 11+) -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
     <application>
         <service
             android:name="fr.questedudragon.homelink.HomeLinkService"
