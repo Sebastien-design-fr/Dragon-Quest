@@ -1,9 +1,9 @@
-// Déblocage progressif (enfant) : on ne découvre pas tout le premier jour. Le loup arrive au niveau 3,
-// les câlins et cadeaux cachés entre dragons au niveau 4. Annoncés par le dragon. Un parent a tout d'emblée.
+// Déblocage progressif (enfant) : on ne découvre pas tout le premier jour.
+// les câlins et cadeaux cachés entre dragons au niveau 4 (le loup est là dès le début). Annoncés par le dragon. Un parent a tout d'emblée.
 import type { App } from './App.js';
 
 export type Feature = 'wolf' | 'gifts';
-export const UNLOCK_LEVEL: Record<Feature, number> = { wolf: 3, gifts: 4 };
+export const UNLOCK_LEVEL: Record<Feature, number> = { wolf: 1, gifts: 4 };
 const ANNOUNCE: Record<Feature, string> = {
   wolf: 'Regarde ! Un petit loup est arrivé dans la grotte. Il veut devenir mon compagnon : va le voir !',
   gifts: 'Nouveau : tu peux envoyer des câlins et cacher des cadeaux dans la grotte de l’autre dragon !'
