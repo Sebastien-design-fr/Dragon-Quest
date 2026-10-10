@@ -30,6 +30,8 @@ public class HomeLinkPlugin extends Plugin {
         current = this;
         if (LinkStore.isPaired(getContext())) HomeLinkService.start(getContext());
         try { capture(getActivity().getIntent(), false); } catch (Exception ignored) { }
+        // Taille du texte fixe : sinon la police agrandie du téléphone fait déborder et se chevaucher les textes de l'appli.
+        try { getBridge().getWebView().getSettings().setTextZoom(100); } catch (Exception ignored) { }
         NearbyLink.update(getContext());
     }
 

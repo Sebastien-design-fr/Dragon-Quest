@@ -1,0 +1,67 @@
+/* Octobre 2026 : tuiles « À découvrir » plus compactes (police et marges réduites), sans chevauchement. Chargé en dernier. */
+.disc-item { flex-basis: 78%; }
+.disc-item > .card, .disc-item > section, .disc-item > button.card { padding: 10px 12px !important; font-size: 13px; line-height: 1.3; }
+.disc-item h3 { font-size: 15px !important; line-height: 1.25; }
+.disc-item p, .disc-item .small { font-size: 12px !important; line-height: 1.3; margin: 2px 0; }
+.disc-item .item-name { font-size: 14px; line-height: 1.25; }
+.disc-item .btn { padding: 6px 12px; font-size: 13px; min-height: 0; }
+.disc-item .bar, .disc-item .st-track { margin-top: 4px; }
+/* événement */
+.disc-item .ev-candies i { width: 18px; height: 18px; }
+/* pas */
+.disc-item .st-ico, .disc-item .pt-ico { width: 30px; height: 30px; }
+.st-legend { position: relative; display: block; height: 14px; margin: 2px 6px 0; padding: 0; }
+.st-legend span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.st-legend span:last-child { transform: translateX(-80%); }
+/* coffre du jour */
+.disc-item .sp-chest-mini { width: 48px; height: 42px; }
+.disc-item .sp-title { font-size: 15px; }
+.disc-item .sp-preview { font-size: 12px; }
+/* prochaine évolution */
+.disc-item .sp-next-card svg, .disc-item .sp-next-card img { max-height: 70px; }
+/* collection : boutons en petites pastilles */
+.disc-item .coll-card .row .btn { padding: 4px 10px; font-size: 12px; border-radius: 999px; }
+.disc-item .coll-row { padding: 2px 0; }
+.disc-item .coll-ic { width: 26px; height: 26px; }
+/* quête de famille : illustration réduite */
+.disc-item .pq-quest-art { max-height: 54px; }
+.disc-item .pq-ring { width: 58px; height: 58px; }
+.disc-item .pq-ring-text strong { font-size: 13px; }
+.disc-item .pq-ring-text span { font-size: 8px; }
+.disc-item .pq-eyebrow { font-size: 10px; }
+/* expédition */
+.disc-item .expedition .small { margin: 0; }
+
+/* outils (Grotte, Reflets…) au-dessus des tuiles : une ligne de pastilles */
+.ds-tools { grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); gap: 6px; margin: 2px 0 4px; }
+.ds-tool { padding: 7px 2px !important; gap: 3px; font-size: 11px; border-radius: 12px; }
+.ds-tool svg { width: 19px; height: 19px; }
+
+/* carte d'amitié plus compacte : visite, câlin et cadeau sur une ligne */
+.friend-card { padding: 12px !important; }
+.friend-card .btn { padding: 8px 10px; font-size: 13px; line-height: 1.2; }
+.friend-card .fr-more .btn { white-space: nowrap; }
+.fr-outing { padding: 8px 10px; }
+.fr-outing .small { font-size: 12px; line-height: 1.3; }
+
+/* colonne de gauche de la scène (état + demandes à valider) */
+.sh-left { position: absolute; left: 10px; top: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; pointer-events: none; }
+.sh-left > * { pointer-events: auto; }
+.sh-left .sh-status { position: static; }
+.sh-left .sh-pending { position: static; }
+.fr-head { display: flex; align-items: flex-start; gap: 10px; }
+.fr-head .grow { min-width: 0; }
+.fr-head .bond { flex: 0 0 42%; min-width: 0; }
+.fr-head .bond .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fr-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.fr-actions .btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; line-height: 1.15; }
+.fr-actions .btn small { font-size: 11px; opacity: .75; font-weight: 600; }
+/* tuiles les plus hautes : quête de famille (sans grande illustration) et collection (lignes serrées) */
+.disc-item .pq-quest-art { display: none; }
+.disc-item .pq-quest-body { gap: 8px; margin-top: 6px; }
+.disc-item .pq-quest-note { margin-top: 6px; text-align: left; }
+.disc-item .pq-qbar-label { font-size: 12px; }
+.disc-item .coll-row { gap: 8px; margin: 0; }
+.disc-item .coll-label { font-size: 13px; }
+.disc-item .coll-card .row { margin-top: 6px; }
+.disc-item .sp-next-card .sp-title, .disc-item .sp-next-card strong { font-size: 13px; }

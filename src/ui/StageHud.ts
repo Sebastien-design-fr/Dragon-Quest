@@ -36,7 +36,8 @@ export class StageHud {
     this.bar = h('div', { class: 'sh-bar', role: 'toolbar', 'aria-label': 'Actions' });
     // Parent : demandes de l'enfant à valider, visibles sur la scène de la dragonne
     this.pending = h('button', { class: 'sh-pending', onclick: () => app.show('validations') });
-    this.root.append(this.status, this.pending, this.bar);
+    // colonne de gauche : état du dragon, puis (parent) les demandes à valider juste en dessous, sans chevauchement
+    this.root.append(h('div', { class: 'sh-left' }, this.status, this.pending), this.bar);
     app.root.querySelector('.stage-view')?.append(this.root);
     this.root.hidden = true;
   }

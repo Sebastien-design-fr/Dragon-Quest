@@ -44,9 +44,6 @@ export class DragonScreen implements Screen {
       todayStrip(app),
       this.nameCard(comp),
       book ? questDeck(app) : this.careStrip(comp),
-      h('div', { class: 'disc-head' }, h('h3', null, 'À découvrir'), h('span', { class: 'small muted' }, 'glisse →')),
-      h('div', { class: 'disc' }, ...discover.map(c => h('div', { class: 'disc-item' }, c))),
-      app.family.duo ? this.friendCard(comp) : null,
       h('div', { class: 'ds-tools' },
         h('button', { class: 'ds-tool', onclick: () => openLair(app) }, icon(ICONS.dragon, 22), h('span', null, 'Sa grotte')),
         h('button', { class: 'ds-tool', onclick: () => appearanceSheet(app) }, icon(ICONS.drop, 22), h('span', null, 'Reflets')),
@@ -54,6 +51,9 @@ export class DragonScreen implements Screen {
         h('button', { class: 'ds-tool', onclick: () => void shareCard(app) }, icon(ICONS.gift, 22), h('span', null, 'Partager')),
         h('button', { class: 'ds-tool', onclick: () => this.albumSheet(comp) }, icon(ICONS.album, 22), h('span', null, 'Album')),
         app.isParent ? h('button', { class: 'ds-tool', onclick: () => app.openChest('owned') }, icon(ICONS.inventory, 22), h('span', null, 'Équipements')) : null),
+      h('div', { class: 'disc-head' }, h('h3', null, 'À découvrir'), h('span', { class: 'small muted' }, 'glisse →')),
+      h('div', { class: 'disc' }, ...discover.map(c => h('div', { class: 'disc-item' }, c))),
+      app.family.duo ? this.friendCard(comp) : null,
       app.careMode === 'wash' ? h('p', { class: 'small muted ds-hint' }, 'Mode lavage : frotte ses écailles avec ton doigt jusqu’à ce qu’il brille.') : null
     );
   }
@@ -113,26 +113,25 @@ export class DragonScreen implements Screen {
     if (!f) return h('section', { class: 'card friend-card' },
       h('h3', null, app.isParent ? 'Le dragon de votre enfant' : 'La dragonne de tes parents'),
       h('p', { class: 'small muted' }, 'Les deux dragons se rencontreront dès que vos deux téléphones auront ouvert l’appli à la maison (même Wi-Fi).'));
+    const hug = async () => {
+      const r = await duo.sendHug();
+      if (r === 'limit') { app.toast('Déjà 3 câlins aujourd’hui'); return; }
+      if (r !== 'ok') return;
+      app.view.emit('hearts', 'head_anchor');
+      void app.act('happy');
+      app.say(`Je transmets ton câlin à ${f.name} !`, null, 4000);
+      this.refresh();
+    };
+    const gifts = unlocked(app, 'gifts');
     return h('section', { class: 'card friend-card' },
-      h('div', { class: 'row' },
+      h('div', { class: 'fr-head' },
         h('div', { class: 'grow' }, h('div', { class: 'small muted' }, `${f.variant === 'dragonne' ? 'La dragonne' : 'Le dragon'} de ${f.owner}`), h('div', { class: 'item-name' }, `${f.name} · niveau ${f.level}`)),
-        h('div', { class: 'bond' }, h('div', { class: 'small' }, `${comp.name} & ${f.name} : ${lv.label}`),
+        h('div', { class: 'bond' }, h('div', { class: 'small' }, `Amitié : ${lv.label}`),
           h('div', { class: 'bar bond-bar' }, h('div', { class: 'fill', style: { width: `${Math.round(lv.progress * 100)}%` } })))),
-      h('p', { class: 'small muted' }, 'Chaque visite, câlin ou cadeau les rapproche, et débloque des tours à deux.'),
-      h('div', { class: 'row' },
-        h('button', { class: 'btn primary grow', onclick: () => this.visitSheet(comp) }, `Rendre visite à ${f.name}`),
-        h('span', { class: 'small muted' }, `${duo.visitsLeft()} / 3 aujourd’hui`)),
-      !unlocked(app, 'gifts') ? h('p', { class: 'small muted' }, `Câlins et cadeaux cachés : au niveau ${UNLOCK_LEVEL.gifts}.`) : h('div', { class: 'row fr-more' },
-        h('button', { class: 'btn grow', disabled: !duo.hugsLeft(), onclick: async () => {
-          const r = await duo.sendHug();
-          if (r === 'limit') { app.toast('Déjà 3 câlins aujourd’hui'); return; }
-          if (r !== 'ok') return;
-          app.view.emit('hearts', 'head_anchor');
-          void app.act('happy');
-          app.say(`Je transmets ton câlin à ${f.name} !`, null, 4000);
-          this.refresh();
-        } }, icon(ICONS.heart, 16), ` Câlin (${duo.hugsLeft()})`),
-        h('button', { class: 'btn grow', disabled: !duo.hidesLeft(), onclick: () => this.giftSheet(comp, 'hide') }, icon(ICONS.gift, 16), ' Cadeau caché')),
+      h('div', { class: 'fr-actions' },
+        h('button', { class: 'btn primary', disabled: !duo.visitsLeft(), onclick: () => this.visitSheet(comp) }, icon(ICONS.wing, 16), h('span', null, 'Visite'), h('small', null, `${duo.visitsLeft()}/3`)),
+        h('button', { class: 'btn', disabled: !gifts || !duo.hugsLeft(), onclick: () => void hug() }, icon(ICONS.heart, 16), h('span', null, 'Câlin'), h('small', null, gifts ? `${duo.hugsLeft()}/3` : `niv. ${UNLOCK_LEVEL.gifts}`)),
+        h('button', { class: 'btn', disabled: !gifts || !duo.hidesLeft(), onclick: () => this.giftSheet(comp, 'hide') }, icon(ICONS.gift, 16), h('span', null, 'Cadeau'), h('small', null, gifts ? `${duo.hidesLeft()}/2` : `niv. ${UNLOCK_LEVEL.gifts}`))),
       this.outingRow());
   }
 

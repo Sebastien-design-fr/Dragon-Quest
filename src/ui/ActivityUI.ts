@@ -48,7 +48,7 @@ export function stepsCard(app: App): HTMLElement | null {
       h('div', { class: 'st-fill', style: { width: `${Math.min(100, (d.steps / top) * 100)}%` } }),
       ...tiers.map(t => h('span', { class: `st-mark${t.reached ? ' on' : ''}`, style: { left: `${(t.at / top) * 100}%` }, title: `${fmt(t.at)} pas : +${t.xp} XP, +${t.gold} or` },
         t.reached ? icon(ICONS.check, 11) : null))),
-    h('div', { class: 'st-legend' }, ...tiers.map(t => h('span', { class: t.reached ? 'on' : '' }, `${t.at / 1000} k`))),
+    h('div', { class: 'st-legend' }, ...tiers.map(t => h('span', { class: t.reached ? 'on' : '', style: { left: `${(t.at / top) * 100}%` } }, `${t.at / 1000} k`))),
     h('p', { class: 'small muted' }, next
       ? `Prochain palier : ${fmt(next.at)} pas (+${next.xp} XP, +${next.gold} or). Encore ${fmt(next.at - d.steps)}.`
       : 'Tous les paliers du jour sont atteints. Bravo !'));
