@@ -126,6 +126,7 @@ public class HomeLinkService extends Service {
     public void onDestroy() {
         instance = null;
         StepCounter.stop(this);
+        NearbyLink.stop(this);
         try { if (server != null) server.close(); } catch (Exception ignored) {}
         stopNsd();
         if (networkCallback != null) {
@@ -201,17 +202,24 @@ public class HomeLinkService extends Service {
         JSONObject m;
         try { m = new JSONObject(line); } catch (Exception e) { return "ERR"; }
         if (m.has("pair")) return Pairing.handle(this, m.optJSONObject("pair"), remote).toString();
-        if (!LinkProtocol.verify(this, m)) return "ERR";
+        return receive(this, m, remote);
+    }
 
+    /**
+     * Message reçu d'un autre téléphone de la famille (Wi-Fi de la maison ou Bluetooth en sortie) :
+     * vérifié, rangé dans la boîte de réception, notification affichée. remote = adresse IP (null en Bluetooth).
+     */
+    static String receive(Context c, JSONObject m, String remote) {
+        if (!LinkProtocol.verify(c, m)) return "ERR";
         String from = m.optString("from");
-        LinkStore.upsertPeer(this, from, m.optString("fromName"), m.optString("role"), remote, m.optInt("port"));
-        if (LinkStore.addInbox(this, m)) {
-            if ("family.members".equals(m.optString("type"))) applyMembers(m.optString("payload"));
+        LinkStore.upsertPeer(c, from, m.optString("fromName"), m.optString("role"), remote, remote == null ? 0 : m.optInt("port"));
+        if (LinkStore.addInbox(c, m)) {
+            if ("family.members".equals(m.optString("type"))) applyMembers(c, m.optString("payload"));
             String dismiss = m.optString("dismiss");
-            if (!dismiss.isEmpty()) LinkNotifications.cancel(this, dismiss);
+            if (!dismiss.isEmpty()) LinkNotifications.cancel(c, dismiss);
             String notif = m.optString("notif");
             if (!notif.isEmpty()) {
-                try { LinkNotifications.show(this, new JSONObject(notif), from); } catch (Exception ignored) {}
+                try { LinkNotifications.show(c, new JSONObject(notif), from); } catch (Exception ignored) {}
             }
             HomeLinkPlugin.notifyInbox();
         }
@@ -219,14 +227,14 @@ public class HomeLinkService extends Service {
     }
 
     /** Liste des membres diffusée par le parent qui a accueilli un nouvel appareil. */
-    void applyMembers(String payload) {
+    static void applyMembers(Context c, String payload) {
         try {
             JSONArray members = new JSONObject(payload).optJSONArray("members");
             if (members == null) return;
             for (int i = 0; i < members.length(); i++) {
                 JSONObject p = members.optJSONObject(i);
                 if (p == null) continue;
-                LinkStore.upsertPeer(this, p.optString("id"), p.optString("name"), p.optString("role"), p.optString("host"), p.optInt("port"));
+                LinkStore.upsertPeer(c, p.optString("id"), p.optString("name"), p.optString("role"), p.optString("host"), p.optInt("port"));
             }
         } catch (Exception ignored) {}
     }

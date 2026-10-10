@@ -60,3 +60,11 @@
 .vy-names { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .vy-names .chip-mini { cursor: pointer; background: none; padding: 5px 12px; font-size: 13px; }
 .sheet input[aria-label='Nom du loup'] { width: 100%; }
+
+/* ----- Sortie en famille ----- */
+.fr-outing { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel-2); cursor: pointer; }
+.fr-outing .grow { display: flex; flex-direction: column; gap: 2px; }
+.fr-outing input { width: 22px; height: 22px; accent-color: var(--gold); flex: none; }
+.fr-outing svg { color: var(--muted); flex: none; }
+.fr-outing.on { border-color: var(--gold); box-shadow: 0 0 12px rgba(243,193,90,.25); }
+.fr-outing.on svg { color: var(--gold); animation: vy-pulse 1.8s ease-in-out infinite; }

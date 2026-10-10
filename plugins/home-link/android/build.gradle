@@ -40,4 +40,6 @@ dependencies {
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     // Tuile Galaxy Watch : envoi du résumé à la montre (couche de données Wear OS)
     implementation "com.google.android.gms:play-services-wearable:19.0.0"
+    // Sortie en famille : liaison Bluetooth entre les téléphones hors de la maison (sans internet)
+    implementation "com.google.android.gms:play-services-nearby:19.3.0"
 }

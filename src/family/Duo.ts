@@ -65,6 +65,8 @@ export interface HiddenGift { id: string; gift: VisitGift; fromDragon: string; o
 export interface Hug { id: string; fromDragon: string; owner: string; at: number }
 
 interface Data {
+  /** Dernière rencontre en sortie par téléphone (une par sortie). */
+  meets?: Record<string, number>;
   hugDay?: string;
   hugsToday?: number;
   hideDay?: string;
@@ -311,6 +313,29 @@ export class Duo {
     this.companion.save();
     this.save();
     return g;
+  }
+
+  /**
+   * Rencontre en sortie (les deux téléphones se sont trouvés en Bluetooth pendant une « Sortie en famille ») :
+   * l'autre dragon apparaît dans la scène, l'amitié grandit, un souvenir est ajouté. Une fois toutes les 3 heures au plus.
+   */
+  meet(peer: string, at = Date.now()): boolean {
+    const f = this.data.friends[peer] ?? this.friend();
+    if (!f) return false;
+    const last = this.data.meets?.[peer] ?? 0;
+    if (at - last < 3 * 3600000) return false;
+    this.data.meets = { ...(this.data.meets ?? {}), [peer]: at };
+    this.gain(3);
+    const day = new Date(at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    this.companion.remember('duo-meet-' + at, `Nous deux : rencontre en balade`, `${this.companion.name} et ${f.name} se sont croisés en sortie le ${day}.`);
+    this.companion.data.mood = Math.min(100, this.companion.data.mood + 10);
+    this.companion.save();
+    const visit: Visit = { id: 'meet-' + at, from: f, message: 'On se croise en balade ! Quelle chance !', fp: this.data.friendship, at };
+    this.data.pending = [...this.data.pending, visit].slice(-5);
+    this.save();
+    this.events.emit('toast', `Rencontre en sortie : ${this.companion.name} et ${f.name} se retrouvent !`);
+    this.events.emit('visit', visit);
+    return true;
   }
 
   /** Câlins reçus pas encore joués. */

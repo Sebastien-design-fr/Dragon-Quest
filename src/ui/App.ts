@@ -29,7 +29,7 @@ import type { ParentHub } from '../family/ParentHub.js';
 import type { Reminders } from '../family/Reminders.js';
 import type { Catalog } from '../game/Catalog.js';
 import type { GameState } from '../game/GameState.js';
-import { SimTransport, type LinkState, type Transport, type WidgetData } from '../link/Transport.js';
+import { SimTransport, type LinkState, type NearbyState, type Transport, type WidgetData } from '../link/Transport.js';
 import { Assets } from '../engine/AssetManager.js';
 import { ICONS, clear, h, icon, put } from './dom.js';
 import { DragonScreen } from './screens/DragonScreen.js';
@@ -61,7 +61,7 @@ export interface FamilyContext {
   voyage?: Voyage | null;
 }
 
-export const APP_VERSION = '0.25.0';
+export const APP_VERSION = '0.26.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -306,6 +306,17 @@ export class App {
 
     installActivity(this);
     installVoyage(this);
+    // Sortie en famille : rencontres en Bluetooth
+    const checkMeets = async () => {
+      const duo = this.family.duo;
+      if (!duo) return;
+      for (const m of await family.link.takeMeets()) duo.meet(m.peer, m.at);
+      this.nearby = await family.link.nearbyState();
+      this.current?.refresh?.();
+    };
+    family.link.onNearby(() => void checkMeets());
+    setTimeout(() => void checkMeets(), 2000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) void checkMeets(); });
     // Widget d'écran d'accueil : ouvrir les quêtes, caresser le dragon, voir les demandes à valider
     family.link.onLaunchAction(a => this.launchAction(a));
     setTimeout(() => void family.link.takeLaunchAction().then(a => { if (a) this.launchAction(a); }), 700);
@@ -329,6 +340,26 @@ export class App {
     const v = this.family.duo?.data.pending[0];
     if (!v || !this.showingOwn || this.sleeping || this.visits.active || this.evolving) return;
     void this.visits.start(v);
+  }
+
+  /** Sortie en famille (Bluetooth) : dernier état connu. */
+  nearby: NearbyState = { permission: false, outing: false, until: 0, running: false, connected: [] };
+
+  /** Active ou arrête la sortie en famille (avec la demande d'autorisation la première fois). */
+  async toggleOuting(): Promise<void> {
+    const link = this.family.link;
+    let st = await link.nearbyState();
+    if (!st.outing && !st.permission) {
+      await link.requestNearbyPermission();
+      await new Promise(r => setTimeout(r, 1500));
+      st = await link.nearbyState();
+      if (!st.permission) { this.toast('Autorise « Appareils à proximité » pour la sortie en famille'); this.nearby = st; this.current?.refresh?.(); return; }
+    }
+    this.nearby = await link.setOuting(!st.outing);
+    this.toast(this.nearby.outing ? 'Sortie en famille : les téléphones se cherchent pendant 3 h au plus' : 'Sortie terminée : plus aucune recherche Bluetooth');
+    const meets = await link.takeMeets();
+    for (const m of meets) this.family.duo?.meet(m.peer, m.at);
+    this.current?.refresh?.();
   }
 
   /** Action demandée depuis le widget. */

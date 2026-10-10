@@ -132,7 +132,24 @@ export class DragonScreen implements Screen {
           app.say(`Je transmets ton câlin à ${f.name} !`, null, 4000);
           this.refresh();
         } }, icon(ICONS.heart, 16), ` Câlin (${duo.hugsLeft()})`),
-        h('button', { class: 'btn grow', disabled: !duo.hidesLeft(), onclick: () => this.giftSheet(comp, 'hide') }, icon(ICONS.gift, 16), ' Cacher un cadeau')));
+        h('button', { class: 'btn grow', disabled: !duo.hidesLeft(), onclick: () => this.giftSheet(comp, 'hide') }, icon(ICONS.gift, 16), ' Cadeau caché')),
+      this.outingRow());
+  }
+
+  /** Sortie en famille : case à cocher (Bluetooth seulement pendant la sortie, 3 h au plus). */
+  private outingRow(): HTMLElement {
+    const { app } = this;
+    const st = app.nearby;
+    const left = Math.max(0, st.until - Date.now());
+    const total = Math.ceil(left / 60000), hh = Math.floor(total / 60), mm = total % 60;
+    return h('label', { class: `fr-outing${st.outing ? ' on' : ''}` },
+      h('input', { type: 'checkbox', checked: st.outing, onchange: () => void app.toggleOuting() }),
+      h('span', { class: 'grow' },
+        h('strong', null, 'Sortie en famille'),
+        h('span', { class: 'small muted' }, st.outing
+          ? `Les téléphones se cherchent en Bluetooth (encore ${hh ? hh + ' h ' : ''}${String(mm).padStart(hh ? 2 : 1, '0')} min). Décoche pour arrêter.`
+          : 'Dehors ensemble ? Coche : vos dragons se retrouveront et les messages passeront sans Wi-Fi.')),
+      icon(ICONS.wifi, 18));
   }
 
   private giftSheet(comp: Companion, mode: 'hide'): void {

@@ -30,6 +30,44 @@ public class HomeLinkPlugin extends Plugin {
         current = this;
         if (LinkStore.isPaired(getContext())) HomeLinkService.start(getContext());
         try { capture(getActivity().getIntent(), false); } catch (Exception ignored) { }
+        NearbyLink.update(getContext());
+    }
+
+    // ---------- Sortie en famille (Bluetooth) ----------
+    @PluginMethod
+    public void nearbyState(PluginCall call) {
+        Context c = ctx();
+        JSObject res = new JSObject();
+        res.put("permission", NearbyLink.permitted(c));
+        res.put("outing", NearbyLink.outing(c));
+        res.put("until", NearbyLink.outingUntil(c));
+        res.put("running", NearbyLink.running());
+        JSArray peers = new JSArray();
+        for (String p : NearbyLink.connectedPeers()) peers.put(p);
+        res.put("connected", peers);
+        call.resolve(res);
+    }
+
+    @PluginMethod
+    public void setOuting(PluginCall call) {
+        NearbyLink.setOuting(ctx(), Boolean.TRUE.equals(call.getBoolean("on", false)));
+        nearbyState(call);
+    }
+
+    @PluginMethod
+    public void requestNearbyPermission(PluginCall call) {
+        try {
+            if (!NearbyLink.permitted(ctx()) && getActivity() != null)
+                androidx.core.app.ActivityCompat.requestPermissions(getActivity(), NearbyLink.permissions(), 7303);
+        } catch (Exception ignored) { }
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void takeMeets(PluginCall call) {
+        JSObject res = new JSObject();
+        res.put("meets", NearbyLink.takeMeets(ctx()));
+        call.resolve(res);
     }
 
     // ---------- Actions lancées depuis le widget (ouvrir les quêtes, caresser, valider…) ----------
@@ -81,6 +119,12 @@ public class HomeLinkPlugin extends Plugin {
             }
         } catch (Exception ignored) { }
         call.resolve();
+    }
+
+    /** Rencontre en sortie (Bluetooth) : prévient l'appli ouverte. */
+    static void notifyNearby(String peer) {
+        HomeLinkPlugin p = current;
+        if (p != null) p.notifyListeners("nearby", new JSObject().put("type", "meet").put("peer", peer));
     }
 
     /** Prévient l'appli ouverte qu'il y a du nouveau dans la boîte de réception. */
@@ -187,6 +231,8 @@ public class HomeLinkPlugin extends Plugin {
             JSONArray ids = LinkProtocol.enqueue(c, call.getString("to", "parents"), call.getString("type", ""),
                 payload.toString(), notif == null ? "" : notif.toString(), call.getString("dismiss", ""), null);
             HomeLinkService.requestFlush(c);
+            NearbyLink.flushConnected(c);   // déjà connectés en Bluetooth : livré tout de suite
+            NearbyLink.onDemand(c);         // sinon, courte recherche Bluetooth si le Wi-Fi n'a pas suffi
             JSObject res = new JSObject();
             JSArray idList = new JSArray();
             for (int i = 0; i < ids.length(); i++) idList.put(ids.optString(i));

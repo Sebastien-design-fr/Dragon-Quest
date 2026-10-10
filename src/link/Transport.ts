@@ -57,7 +57,17 @@ export interface Transport {
   /** Action demandée depuis le widget (« missions », « pet », « validations »…), une seule fois. */
   takeLaunchAction(): Promise<string | null>;
   onLaunchAction(cb: (action: string) => void): void;
+  /** Sortie en famille (Bluetooth hors de la maison). */
+  nearbyState(): Promise<NearbyState>;
+  setOuting(on: boolean): Promise<NearbyState>;
+  requestNearbyPermission(): Promise<void>;
+  /** Rencontres en sortie pas encore jouées (identifiants des téléphones croisés). */
+  takeMeets(): Promise<Array<{ peer: string; at: number }>>;
+  onNearby(cb: (peer: string) => void): void;
 }
+
+export interface NearbyState { permission: boolean; outing: boolean; until: number; running: boolean; connected: string[] }
+const NO_NEARBY: NearbyState = { permission: false, outing: false, until: 0, running: false, connected: [] };
 
 export interface StepsInfo { available: boolean; permission: boolean; today: number }
 
@@ -101,6 +111,11 @@ interface HomeLinkPlugin {
   getSteps(): Promise<StepsInfo>;
   requestStepsPermission(): Promise<void>;
   takeLaunchAction(): Promise<{ action?: string }>;
+  nearbyState(): Promise<NearbyState>;
+  setOuting(o: { on: boolean }): Promise<NearbyState>;
+  requestNearbyPermission(): Promise<void>;
+  takeMeets(): Promise<{ meets: Array<{ peer: string; at: number }> }>;
+  addListener(event: 'nearby', cb: (e: { type: string; peer: string }) => void): Promise<unknown>;
 }
 
 export class NativeTransport implements Transport {
@@ -133,6 +148,11 @@ export class NativeTransport implements Transport {
   async requestStepsPermission() { try { await this.p.requestStepsPermission(); } catch { /* ancienne version native */ } }
   async takeLaunchAction() { try { return (await this.p.takeLaunchAction()).action || null; } catch { return null; } }
   onLaunchAction(cb: (action: string) => void) { void this.p.addListener('launchAction', e => { if (e?.action) cb(e.action); }).catch(() => undefined); }
+  async nearbyState() { try { return await this.p.nearbyState(); } catch { return NO_NEARBY; } }
+  async setOuting(on: boolean) { try { return await this.p.setOuting({ on }); } catch { return NO_NEARBY; } }
+  async requestNearbyPermission() { try { await this.p.requestNearbyPermission(); } catch { /* ancienne version native */ } }
+  async takeMeets() { try { return (await this.p.takeMeets()).meets || []; } catch { return []; } }
+  onNearby(cb: (peer: string) => void) { void this.p.addListener('nearby', e => { if (e?.peer) cb(e.peer); }).catch(() => undefined); }
 }
 
 function parse(v: unknown): any {
@@ -161,6 +181,7 @@ export class SimTransport implements Transport {
       if (d.to && d.to !== this.device) return;
       if (d.kind === 'inbox') this.listeners.forEach(l => l());
       if (d.kind === 'notifs') this.onNotifs();
+      if (d.kind === 'nearby') this.nearbyCbs.forEach(cb => cb((d as { peer?: string }).peer ?? ''));
     });
   }
 
@@ -267,6 +288,33 @@ export class SimTransport implements Transport {
   private launchCbs: Array<(a: string) => void> = [];
   async takeLaunchAction() { const a = this.read<string | null>(this.key('launch'), null); localStorage.removeItem(this.key('launch')); return a; }
   onLaunchAction(cb: (action: string) => void) { this.launchCbs.push(cb); }
+  // Sortie en famille simulée : deux onglets en sortie en même temps « se croisent ».
+  private nearbyCbs: Array<(peer: string) => void> = [];
+  async nearbyState(): Promise<NearbyState> {
+    const until = this.read<number>(this.key('outing'), 0);
+    return { permission: this.read<boolean>(this.key('nearbyPerm'), true), outing: until > Date.now(), until, running: until > Date.now(), connected: [] };
+  }
+  async setOuting(on: boolean) {
+    this.write(this.key('outing'), on ? Date.now() + 3 * 3600000 : 0);
+    if (on) {
+      const c = this.cfg();
+      for (const m of Object.values(this.family(c.familyId))) {
+        if (m.id === c.deviceId || this.read<number>(this.key('outing', m.id), 0) < Date.now()) continue;
+        for (const [a, b] of [[c.deviceId, m.id], [m.id, c.deviceId]]) {
+          const list = this.read<Array<{ peer: string; at: number }>>(this.key('meets', a), []);
+          list.push({ peer: b, at: Date.now() });
+          this.write(this.key('meets', a), list);
+          this.bc?.postMessage({ to: a, kind: 'nearby', peer: b });
+        }
+        this.nearbyCbs.forEach(cb => cb(m.id));
+      }
+    }
+    return this.nearbyState();
+  }
+  async requestNearbyPermission() { this.write(this.key('nearbyPerm'), true); }
+  async takeMeets() { const l = this.read<Array<{ peer: string; at: number }>>(this.key('meets'), []); this.write(this.key('meets'), []); return l; }
+  onNearby(cb: (peer: string) => void) { this.nearbyCbs.push(cb); }
+
   /** Tests : simule un appui sur le widget. */
   launch(action: string) { this.launchCbs.forEach(c => c(action)); }
 
