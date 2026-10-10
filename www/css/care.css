@@ -165,3 +165,4 @@
 .tk-type { flex: 1; display: flex; gap: 6px; min-width: 0; }
 .tk-type input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.06); color: #fff; font-size: 15px; }
 .tk-panel.listening .tk-type { display: none; }
+.sh-left .talk-fab { position: static; padding: 6px 12px 6px 9px; }

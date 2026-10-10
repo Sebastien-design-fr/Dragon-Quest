@@ -73,7 +73,7 @@ function fireHaptics(): void {
   setTimeout(() => { try { navigator.vibrate?.(18); } catch { /* pas de vibreur */ } }, 1130);
 }
 
-export const APP_VERSION = '0.31.0';
+export const APP_VERSION = '0.31.1';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -270,8 +270,8 @@ export class App {
     // Gestes sur le dragon : la tête suit le doigt ; frotter = caresser ou laver.
     this.bubble = h('button', { class: 'bubble', onclick: () => this.bubbleTap() });
     root.querySelector('.stage-view')?.append(this.bubble);
-    installTalk(this);
     this.stageHud = new StageHud(this);
+    installTalk(this);
     const cv = view.canvas;
     cv.addEventListener('pointerdown', e => this.pointer(e, 'down'));
     cv.addEventListener('pointermove', e => this.pointer(e, 'move'));

@@ -10,7 +10,7 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
   { version: '0.31.0', items: [
-    { icon: ICONS.mic, title: 'Discute avec ton dragon', text: 'Touche « Parler » en haut de la scène et parle-lui librement : ta journée, tes amis, une histoire, une blague, une devinette, la météo, le loup… Il te répond, à voix haute s’il le peut, et réécoute tout seul. Tu peux aussi lui écrire.' }
+    { icon: ICONS.mic, title: 'Discute avec ton dragon', text: 'Touche « Parler » sous la carte de ton dragon et parle-lui librement : ta journée, tes amis, une histoire, une blague, une devinette, la météo, le loup… Il te répond, à voix haute s’il le peut, et réécoute tout seul. Tu peux aussi lui écrire.' }
   ] },
   { version: '0.30.0', items: [
     { icon: ICONS.mic, title: 'Parle à ton dragon', text: 'Dans « Tours », appuie sur « Donne-lui un ordre » et dis : « Crache du feu ! », « La révérence ! », « Danse ! »… Il obéit s’il connaît le tour.' },

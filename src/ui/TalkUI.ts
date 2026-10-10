@@ -231,7 +231,9 @@ function rewardOnce(app: App): void {
 /** Bouton micro posé sur la scène (seulement sur son propre dragon). */
 export function installTalk(app: App): void {
   const fab = h('button', { class: 'talk-fab', 'aria-label': 'Parler avec ton dragon', onclick: () => openTalk(app) }, icon(ICONS.mic, 22), h('span', null, 'Parler'));
-  app.root.querySelector('.stage-view')?.append(fab);
+  // sous la carte d'état (colonne de gauche) : le coin droit est pris par le badge du loup en quête
+  const col = app.root.querySelector('.sh-left');
+  if (col) col.append(fab); else app.root.querySelector('.stage-view')?.append(fab);
   const sync = () => { fab.hidden = !app.family.companion || !app.showingOwn || app.currentId !== 'dragon' || !!panel || app.root.classList.contains('lair-edit'); };
   sync();
   window.setInterval(sync, 800);
