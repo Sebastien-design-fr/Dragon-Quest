@@ -30,7 +30,15 @@ const TEMPLATES: Array<Omit<Mission, 'id'>> = [
   { title: 'Douche', days: ALL, time: '20:00', xp: 5, gold: 3, validation: 'trust' },
   { title: 'Lire 20 minutes', days: ALL, time: '20:45', xp: 15, gold: 8, validation: 'trust' },
   { title: 'Sortir les poubelles', days: [1, 4], time: '19:00', xp: 10, gold: 6, validation: 'parent' },
-  { title: 'Aider en cuisine', days: [0, 6], time: '11:30', xp: 20, gold: 10, validation: 'parent' }
+  { title: 'Aider en cuisine', days: [0, 6], time: '11:30', xp: 20, gold: 10, validation: 'parent' },
+  { title: 'Faire la vaisselle', days: [2, 5], time: '20:00', xp: 15, gold: 8, validation: 'parent' },
+  { title: 'Passer l’aspirateur', days: [6], time: '10:30', xp: 20, gold: 10, validation: 'parent' },
+  { title: 'Promener le chien', days: ALL, time: '17:30', xp: 15, gold: 8, validation: 'trust' },
+  { title: 'Arroser les plantes', days: [1, 4], time: '18:00', xp: 5, gold: 3, validation: 'trust' },
+  { title: 'Ranger son linge', days: [3, 0], time: '18:30', xp: 10, gold: 6, validation: 'parent' },
+  { title: 'Réviser un contrôle', days: SCHOOL, time: '17:30', xp: 20, gold: 10, validation: 'parent' },
+  { title: 'Musique 15 minutes', days: [1, 3, 5], time: '18:00', xp: 15, gold: 8, validation: 'trust' },
+  { title: 'Débarrasser la table', days: ALL, time: '20:15', xp: 5, gold: 3, validation: 'trust' }
 ];
 
 const STATUS_LABEL: Partial<Record<MissionStatus, string>> = { done: 'Faite', pending: 'À valider', refused: 'À refaire' };

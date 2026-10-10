@@ -173,4 +173,6 @@ export class GameState {
   setTint(id: string): void { this.data.tint = id; this.commit(); }
   /** Ambiance sonore du décor et sons d'interface (refonte UX). */
   setSoundOptions(o: { ambience?: boolean; uiSounds?: boolean }): void { Object.assign(this.data.settings, o); this.commit(); }
+  /** Réglages de confort (anniversaire, taille du texte, douceur du soir). */
+  setComfort(o: { birthday?: string; birthdayAsked?: boolean; textSize?: 'n' | 'l' | 'xl'; nightSoft?: boolean }): void { Object.assign(this.data.settings, o); this.commit(); }
 }

@@ -12,6 +12,7 @@ import { installVoyage } from './VoyageUI.js';
 import { checkRoutine } from './Today.js';
 import { installUnlocks } from './Unlocks.js';
 import { installTips } from './Tips.js';
+import { installWhatsNew } from './WhatsNew.js';
 import { de } from './Lair.js';
 import { installActivity } from './ActivityUI.js';
 import { VisitScene } from './VisitScene.js';
@@ -64,7 +65,7 @@ export interface FamilyContext {
   voyage?: Voyage | null;
 }
 
-export const APP_VERSION = '0.28.0';
+export const APP_VERSION = '0.29.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -196,6 +197,8 @@ export class App {
     // Sons : réglages, animations, or et gemmes gagnés.
     const applySound = () => {
       const st = state.data.settings;
+      document.documentElement.dataset.text = st.textSize ?? 'n';
+      this.applyNightSoft();
       Sound.muted = st.sound === false; Sound.volume = st.volume ?? 0.7;
       Sound.ambienceOn = st.ambience !== false; Sound.uiSounds = st.uiSounds !== false;
       this.syncAmbience();
@@ -215,7 +218,7 @@ export class App {
       if (g > lastGems) void Sound.play('gem', { user: true });
       lastGems = g;
     });
-    const nightTint = () => { view.backdrop.night = isNight() ? 1 : 0; };
+    const nightTint = () => { view.backdrop.night = isNight() ? 1 : 0; this.applyNightSoft(); };
     nightTint();
     window.setInterval(() => { nightTint(); this.bedtime(); }, 60000);
     setTimeout(() => this.bedtime(), 5000);
@@ -314,7 +317,19 @@ export class App {
     installVoyage(this);
     installUnlocks(this);
     installTips(this);
+    installWhatsNew(this);
     this.family.voyage?.events.on('change', () => checkRoutine(this));
+    // Parent : notification du bilan de la semaine, le dimanche à 19 h
+    if (this.isParent && this.family.companion && this.family.hub) {
+      const hub = this.family.hub;
+      this.family.companion.extraNotifs.push(() => {
+        const cid = hub.childIds()[0], snap = cid ? hub.child(cid)?.snapshot : null;
+        if (!snap?.week) return null;
+        const at = new Date(); at.setDate(at.getDate() + ((7 - at.getDay()) % 7)); at.setHours(19, 0, 0, 0);
+        const done = snap.week.reduce((a, x) => a + x.done, 0), total = snap.week.reduce((a, x) => a + x.total, 0);
+        return { key: 'recap-parent-' + todayKey(at), at, body: `La semaine de ${snap.name} : ${done} quêtes sur ${total}. Le bilan complet vous attend dans « Suivi ».` };
+      });
+    }
     // Sortie en famille : rencontres en Bluetooth
     const checkMeets = async () => {
       const duo = this.family.duo;
@@ -369,6 +384,13 @@ export class App {
     const meets = await link.takeMeets();
     for (const m of meets) this.family.duo?.meet(m.peer, m.at);
     this.current?.refresh?.();
+  }
+
+  /** Douceur du soir : lumière de l'appli tamisée de 21 h à 7 h (réglable). */
+  applyNightSoft(): void {
+    const hr = new Date().getHours();
+    const on = this.state.data.settings.nightSoft !== false && (hr >= 21 || hr < 7);
+    document.documentElement.toggleAttribute('data-night-soft', on);
   }
 
   /** Action demandée depuis le widget. */

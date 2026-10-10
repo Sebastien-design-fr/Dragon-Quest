@@ -1,7 +1,7 @@
 // Le loup compagnon : il vit dans la grotte à côté du dragon et part en quête pour lui. On le touche pour l'envoyer
 // explorer (et, la première fois, lui donner un nom) ; il part en courant, un médaillon indique son retour, puis il
 // revient avec sa sacoche pleine. Le dragon reste là pendant tout le voyage : on continue à s'en occuper.
-import { DESTINATIONS, duration, fromPlace, type Loot } from '../family/Voyage.js';
+import { DESTINATIONS, WOLF_ACCESSORIES, duration, fromPlace, type Loot } from '../family/Voyage.js';
 import { FOOD_ART } from './StageHud.js';
 import type { App } from './App.js';
 import { ICONS, h, icon } from './dom.js';
@@ -84,7 +84,7 @@ export function installVoyage(app: App): void {
     el.hidden = !show || !visible || !f.u;
     if (!el.hidden) {
       const wid = hgt * w.sprite.aspect;
-      w.sprite.draw(wid, hgt, now / 1000, { run: running, mirror, bag, happy: w.mode === 'back' || now < w.happyUntil, sleep: app.sleeping && !running });
+      w.sprite.draw(wid, hgt, now / 1000, { run: running, mirror, bag, happy: w.mode === 'back' || now < w.happyUntil, sleep: app.sleeping && !running, wear: Object.values(app.family.voyage?.data.wolfWear ?? {}) as string[] });
       el.style.transform = `translate(${x - wid / 2}px, ${groundY - hgt * 1.12}px)`;
       w.x = x; w.y = groundY - hgt; w.w = wid;
       el.classList.toggle('glow', w.mode === 'back');
@@ -149,8 +149,34 @@ export function wolfSheet(app: App): void {
         app.say(`${v.wolfName(true)} croque sa friandise. Il remue la queue !`, null, 3500);
       } }, icon(ICONS.meat, 18), ' Friandise'),
       h('button', { class: 'btn', onclick: () => { close(); setTimeout(() => voyageSheet(app), 250); } }, icon(ICONS.compass, 18), v.away() ? ' Sa quête' : ' En quête !')),
-    h('div', { class: 'row end' }, h('button', { class: 'btn ghost small-btn', onclick: () => { close(); nameSheet(app); } }, 'Renommer'))
+    h('div', { class: 'row end' },
+      h('button', { class: 'btn small-btn', onclick: () => { close(); setTimeout(() => accessoriesSheet(app), 250); } }, icon(ICONS.star, 14), ' Accessoires'),
+      h('button', { class: 'btn ghost small-btn', onclick: () => { close(); nameSheet(app); } }, 'Renommer'))
   ]);
+}
+
+/** Accessoires du loup : acheter, mettre, retirer. */
+export function accessoriesSheet(app: App): void {
+  const v = app.family.voyage;
+  if (!v) return;
+  openSheet(`Les accessoires de ${v.wolfName()}`, close => {
+    const list = h('div', { class: 'acc-list' });
+    const render = () => list.replaceChildren(...WOLF_ACCESSORIES.map(a => {
+      const owned = v.owns(a.id), worn = v.wearing(a.id);
+      return h('button', { class: `acc-item${worn ? ' worn' : ''}`, onclick: () => {
+        const r = v.buyAccessory(a.id);
+        if (r === 'gold') { app.toast(`Il faut ${a.price} or`); return; }
+        if (r === 'ok') { UI.success(); app.toast(`${a.label} : ${v.wolfName(true)} le porte tout de suite !`); if (wolf) wolf.happyUntil = performance.now() + 2500; }
+        render();
+      } },
+        h('span', { class: 'acc-dot', style: a.color ? { background: a.color } : {} }, icon(a.slot === 'dos' ? ICONS.inventory : a.slot === 'medaille' ? ICONS.star : ICONS.heart, 16)),
+        h('span', { class: 'grow' }, h('strong', null, a.label), h('span', { class: 'small muted' }, a.effect)),
+        h('span', { class: 'acc-state' }, worn ? 'Porté' : owned ? 'Mettre' : h('span', null, icon(ICONS.coin, 13), ` ${a.price}`)));
+    }));
+    render();
+    return [h('p', { class: 'small muted' }, `Un accessoire par place (cou, médaille, dos). Touche un accessoire acheté pour le mettre ou l’enlever. Ton or : ${app.state.data.gold}.`), list,
+      h('div', { class: 'row end' }, h('button', { class: 'btn primary', onclick: close }, 'Terminé'))];
+  });
 }
 
 /** Médaillon (en haut à droite de la scène) : temps restant, ou sacoche à ouvrir. */
@@ -191,7 +217,9 @@ export function voyageSheet(app: App): void {
     h('div', { class: 'vy-intro' }, h('img', { src: Assets.art('companions/wolf') ?? wolfImage('sit', true), alt: '' }),
       h('p', { class: 'small muted' }, `Le compagnon de ${comp.name} part en quête pour lui et revient avec des trouvailles (or, nourriture, parfois un fruit de feu) et une histoire. ${comp.name} reste avec toi pendant ce temps.`
         + (steps && act?.data.permission ? ` Tes pas raccourcissent le voyage : ${steps.shortcutMinutes} min de moins tous les ${steps.stepsPerShortcut.toLocaleString('fr-FR')} pas.` : ''))),
-    ...DESTINATIONS.map(d => h('button', { class: 'vy-dest', style: { '--c1': d.colors[0], '--c2': d.colors[1] }, disabled: !v.left(), onclick: () => {
+    ...DESTINATIONS.map(d => (d.minLevel ?? 1) > v.wolfLevel().level ? h('div', { class: 'vy-dest locked', style: { '--c1': d.colors[0], '--c2': d.colors[1] } },
+      h('span', { class: 'vy-time' }, icon(ICONS.lock, 14), ` ${d.hours} h`),
+      h('span', { class: 'grow' }, h('strong', null, d.name), h('span', { class: 'small' }, `Au niveau ${d.minLevel} de ${v.wolfName()}`))) : h('button', { class: 'vy-dest', style: { '--c1': d.colors[0], '--c2': d.colors[1] }, disabled: !v.left(), onclick: () => {
       const r = v.start(d.id);
       if (r === 'limit') { app.toast('Assez de voyages pour aujourd’hui : reviens demain'); return; }
       if (r !== 'ok') return;

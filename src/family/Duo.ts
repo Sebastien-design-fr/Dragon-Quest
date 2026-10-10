@@ -15,6 +15,8 @@ export interface DragonProfile {
   id: string; owner: string; name: string; variant: 'dragon' | 'dragonne'; stage: string; level: number; equipped: string[]; owned: string[];
   /** Quête de famille : contribution de cet appareil cette semaine (et son objectif). */
   quest?: { week: string; mine: number; goal?: number };
+  /** Anniversaire du propriétaire (« MM-JJ ») : l'autre dragon le lui souhaite. */
+  birthday?: string;
 }
 
 /** Quête de famille de la semaine : l'enfant fait des missions, le parent des soins, ensemble ils réussissent. */
@@ -194,7 +196,8 @@ export class Duo {
     return {
       id: this.selfId, owner: this.ownerName, name: this.companion.name, variant: this.role === 'child' ? 'dragon' : 'dragonne',
       stage: d.stage, level: d.level, equipped: Object.values(d.equipped), owned: d.owned,
-      quest: { week: this.questState().week, mine: this.data.quest.mine, goal: this.questGoals[this.role] }
+      quest: { week: this.questState().week, mine: this.data.quest.mine, goal: this.questGoals[this.role] },
+      birthday: this.state.data.settings.birthday
     };
   }
 

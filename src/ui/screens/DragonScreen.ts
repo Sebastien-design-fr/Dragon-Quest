@@ -13,7 +13,8 @@ import { familyQuestCard } from '../FamilyQuestCard.js';
 import { openPhotoMode } from '../PhotoMode.js';
 import { questDeck, questDeckBusy } from '../QuestDeck.js';
 import { appearanceSheet, collectionCard } from '../Appearance.js';
-import { eventCard } from '../Seasonal.js';
+import { birthdayAskCard, eventCard } from '../Seasonal.js';
+import { friendBirthdayCard } from '../Events.js';
 import { stepsCard } from '../ActivityUI.js';
 import { todayStrip } from '../Today.js';
 import { unlocked, UNLOCK_LEVEL } from '../Unlocks.js';
@@ -36,13 +37,14 @@ export class DragonScreen implements Screen {
     if (!comp) return;
     // Refonte UX : la prochaine quête d'abord (un seul geste), puis « À découvrir » en carrousel horizontal.
     const discover = [
-      eventCard(app), stepsCard(app), dailyChestCard(app), nextStageCard(app), collectionCard(app),
+      friendBirthdayCard(app), eventCard(app), stepsCard(app), dailyChestCard(app), nextStageCard(app), collectionCard(app),
       book ? this.expeditionCard(comp) : null,
       app.family.duo ? familyQuestCard(app) : null
     ].filter((x): x is HTMLElement => !!x);
     put(el,
       todayStrip(app),
       this.nameCard(comp),
+      birthdayAskCard(app),
       book ? questDeck(app) : this.careStrip(comp),
       h('div', { class: 'ds-tools' },
         h('button', { class: 'ds-tool', onclick: () => openLair(app) }, icon(ICONS.dragon, 22), h('span', null, 'Sa grotte')),

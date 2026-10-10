@@ -6,6 +6,7 @@ import { Sound } from '../../engine/Sound.js';
 import { APP_VERSION, type App, type Screen } from '../App.js';
 import { ICONS, clear, h } from '../dom.js';
 import { deviceSetupCard, membersCard } from './family.js';
+import { birthdayPicker } from '../Events.js';
 
 const QUALITY_LABELS: Record<QualityLevel, string> = { LOW: 'Basse', MEDIUM: 'Moyenne', HIGH: 'Haute' };
 const LAYER_LABELS: Record<string, string> = {
@@ -45,6 +46,21 @@ export function soundCard(app: App): HTMLElement {
     toggle('Ambiance sonore du décor', s.ambience !== false, v => app.state.setSoundOptions({ ambience: v })),
     toggle('Sons des boutons', s.uiSounds !== false, v => { app.state.setSoundOptions({ uiSounds: v }); if (v) Sound.ui('tap'); }),
     h('p', { class: 'small muted' }, 'Le dragon reste silencieux la nuit (22 h – 7 h), sauf quand tu le touches.'));
+}
+
+/** Confort : anniversaire, taille du texte, douceur du soir. */
+export function comfortCard(app: App): HTMLElement {
+  const s = app.state.data.settings;
+  const size = h('div', { class: 'segmented', role: 'radiogroup' },
+    ...([['n', 'Normale'], ['l', 'Grande'], ['xl', 'Très grande']] as const).map(([v, l]) =>
+      h('button', { class: (s.textSize ?? 'n') === v ? 'active' : '', role: 'radio', onclick: () => app.state.setComfort({ textSize: v }) }, l)));
+  return h('section', { class: 'card' },
+    h('h3', null, 'Confort'),
+    h('span', { class: 'small' }, app.isParent ? 'Ton anniversaire (ta dragonne le fêtera)' : 'Ton anniversaire (ton dragon le fêtera)'),
+    birthdayPicker(app),
+    h('span', { class: 'small' }, 'Taille du texte'),
+    size,
+    toggle('Douceur du soir (lumière tamisée après 21 h)', s.nightSoft !== false, v => app.state.setComfort({ nightSoft: v })));
 }
 
 /** Version de l'appli : 7 appuis activent les outils de test. */

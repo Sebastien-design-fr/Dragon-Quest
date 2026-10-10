@@ -1,3 +1,4 @@
+import { gemIcon } from './MissionsScreen.js';
 import type { EquipmentDef } from '../../core/types.js';
 import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon } from '../dom.js';
@@ -19,7 +20,7 @@ export class ShopScreen implements Screen {
     const { app } = this;
     const book = app.family.book!;
     el.append(h('section', { class: 'card gems-card' },
-      h('div', { class: 'row' }, h('span', { class: 'gem' }, '◆'), h('strong', { class: 'grow' }, `${book.data.gems} gemme${book.data.gems > 1 ? 's' : ''}`)),
+      h('div', { class: 'row' }, h('span', { class: 'gem' }, gemIcon(16)), h('strong', { class: 'grow' }, `${book.data.gems} gemme${book.data.gems > 1 ? 's' : ''}`)),
       h('p', { class: 'small muted' }, '1 gemme par mission, 2 par quête bonus ou journée parfaite, 5 dans le coffre de l’expédition. Échange-les contre de vraies récompenses choisies par tes parents.')));
     const pending = book.pendingRequests().filter(r => r.kind === 'reward');
     for (const r of pending) el.append(h('div', { class: 'list-row' }, h('span', { class: 'grow' }, r.title), h('span', { class: 'pill pending' }, 'Demandée')));

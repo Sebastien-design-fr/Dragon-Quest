@@ -11,8 +11,9 @@ import type { DecorItem } from '../engine/DecorLayer.js';
 import type { App } from './App.js';
 import { ICONS, h, icon } from './dom.js';
 import { UI } from './Motion.js';
+import { EVENTS, birthdayPicker, cardFor, datedEvent, decorFor, eggItems, isBirthday, lineFor, setFx, type EventKey } from './Events.js';
 
-export type EventId = 'halloween';
+export type EventId = 'halloween' | EventKey;
 const FORCE_KEY = 'quete-du-dragon:event-force';
 const CANDY_GOAL = 7;
 
@@ -27,9 +28,15 @@ export function halloweenWeek(d = new Date()): { from: Date; to: Date } {
 
 /** Événement en cours (ou forcé depuis le panneau développeur). */
 export function currentEvent(now = new Date()): EventId | null {
-  try { const f = localStorage.getItem(FORCE_KEY); if (f === 'halloween') return 'halloween'; if (f === 'off') return null; } catch { /* */ }
+  try { const f = localStorage.getItem(FORCE_KEY); if (f === 'off') return null; if (f && (f === 'halloween' || f in EVENTS)) return f as EventId; } catch { /* */ }
   const w = halloweenWeek(now);
-  return now >= w.from && now <= w.to ? 'halloween' : null;
+  if (now >= w.from && now <= w.to) return 'halloween';
+  return datedEvent(now);
+}
+/** Événement affiché sur ce téléphone : l'anniversaire de son propriétaire passe avant tout. */
+export function activeEvent(app: App): EventId | null {
+  try { if (localStorage.getItem(FORCE_KEY) === 'anniversaire') return 'anniversaire'; } catch { /* */ }
+  return isBirthday(app) ? 'anniversaire' : currentEvent();
 }
 export function forceEvent(v: EventId | 'off' | null): void {
   try { if (v) localStorage.setItem(FORCE_KEY, v); else localStorage.removeItem(FORCE_KEY); } catch { /* */ }
@@ -108,7 +115,10 @@ function cobweb(): string {
 
 /** Objets de l'événement posés dans la scène (en plus de la grotte). */
 export function eventDecor(app: App): DecorItem[] {
-  if (currentEvent() !== 'halloween' || !app.showingOwn) return [];
+  if (!app.showingOwn) return [];
+  const ev = activeEvent(app);
+  if (ev && ev !== 'halloween') return [...decorFor(app, ev), ...(ev === 'paques' ? eggItems() : [])];
+  if (ev !== 'halloween') return [];
   const glow = { x: 0.5, y: 0.55, r: 0.16, color: '255,150,40' };
   return [
     { key: 'event:pk1', img: pumpkin(false), dx: -0.2, dy: 0.035, w: 0.15, anchor: 'floor', light: glow },
@@ -130,9 +140,10 @@ const LINES = [
 /** Thème, chauves-souris, bonbons à chaque quête validée, petite phrase de bienvenue. */
 export function installSeasonal(app: App): void {
   const apply = () => {
-    const ev = currentEvent();
+    const ev = activeEvent(app);
     if (ev) document.documentElement.dataset.event = ev; else delete document.documentElement.dataset.event;
     app.view.decor.bats = ev === 'halloween' && app.showingOwn;
+    setFx(app, ev && ev !== 'halloween' && app.showingOwn && app.currentId === 'dragon' ? EVENTS[ev].fx : null);
   };
   apply();
   setInterval(apply, 60000);
@@ -144,14 +155,18 @@ export function installSeasonal(app: App): void {
     saveCandies(c);
     setTimeout(() => app.toast(c.candies >= CANDY_GOAL ? 'Le chaudron est plein ! Viens l’ouvrir.' : `+1 bonbon d’Halloween (${c.candies}/${CANDY_GOAL})`), 1400);
   });
-  if (currentEvent() === 'halloween') setTimeout(() => app.say(LINES[Math.floor(Math.random() * LINES.length)], null, 6000), 7000);
+  const ev0 = activeEvent(app);
+  if (ev0 === 'halloween') setTimeout(() => app.say(LINES[Math.floor(Math.random() * LINES.length)], null, 6000), 7000);
+  else if (ev0) setTimeout(() => app.say(lineFor(ev0), null, 7000), 7000);
   syncSeasonal = apply;
 }
 export let syncSeasonal: () => void = () => undefined;
 
 /** Carte « Semaine d'Halloween » en tête du carrousel « À découvrir ». */
 export function eventCard(app: App): HTMLElement | null {
-  if (currentEvent() !== 'halloween') return null;
+  const ev = activeEvent(app);
+  if (ev && ev !== 'halloween') return cardFor(app, ev);
+  if (ev !== 'halloween') return null;
   const w = halloweenWeek();
   const days = Math.max(0, Math.ceil((w.to.getTime() - Date.now()) / 86400000));
   const preview = Date.now() < w.from.getTime() || Date.now() > w.to.getTime();   // forcé depuis le panneau développeur
@@ -177,4 +192,16 @@ export function eventCard(app: App): HTMLElement | null {
       : h('p', { class: 'small' }, 'Citrouilles, toiles et chauves-souris : la grotte se met à l’heure d’Halloween.'),
     book && !c.claimed ? jars : null,
     book && !c.claimed && c.candies >= CANDY_GOAL ? h('button', { class: 'btn primary', onclick: claim }, icon(ICONS.gift, 18), ' Ouvrir le chaudron') : null);
+}
+
+/** Première fois : demander la date d'anniversaire (le dragon veut la fêter). */
+export function birthdayAskCard(app: App): HTMLElement | null {
+  const st = app.state.data.settings;
+  if (st.birthday || st.birthdayAsked || !app.family.companion) return null;
+  const card = h('section', { class: 'card bd-card' },
+    h('h3', null, 'Quand est ton anniversaire ?'),
+    h('p', { class: 'small muted' }, `${app.family.companion.name} veut le fêter avec toi : décor, gâteau et cadeau le jour venu.`),
+    birthdayPicker(app, () => app.refresh()),
+    h('button', { class: 'btn ghost small-btn', onclick: () => { app.state.setComfort({ birthdayAsked: true }); app.refresh(); } }, 'Plus tard'));
+  return card;
 }

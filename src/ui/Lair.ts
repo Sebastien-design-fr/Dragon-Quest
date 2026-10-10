@@ -1,3 +1,4 @@
+import { Assets } from '../engine/AssetManager.js';
 // La grotte du dragon (refonte UX) : les objets achetés avec l'or des missions sont posés DANS la scène du dragon,
 // et l'onglet « Sa grotte » sert à les placer, déplacer, agrandir, retourner ou ranger, directement sur la scène.
 // Des débris s'accumulent au fil des jours : on les ramasse en les touchant (dans la scène, à tout moment).
@@ -6,6 +7,8 @@ import type { App } from './App.js';
 import { ICONS, h, icon } from './dom.js';
 import { UI } from './Motion.js';
 import { eventDecor } from './Seasonal.js';
+import { pickEgg } from './Events.js';
+import { gamesSheet } from './CareSheets.js';
 
 export interface DecorDef {
   id: string; label: string; price: number; hint: string;
@@ -15,6 +18,8 @@ export interface DecorDef {
   behind?: boolean;
   /** Posé en double, en miroir (torches). */
   twin?: boolean;
+  /** Image dessinée (objet sans illustration peinte dans assets/decor). */
+  src?: () => string;
   light?: { x: number; y: number; r: number; color: string };
 }
 export const DECOR: DecorDef[] = [
@@ -29,8 +34,26 @@ export const DECOR: DecorDef[] = [
   { id: 'basin', label: 'Bassin enchanté', price: 150, hint: 'Une eau qui scintille', img: 'basin', dx: -0.24, dy: 0, w: 0.13, anchor: 'floor', light: { x: 0.45, y: 0.3, r: 0.2, color: '120,180,255' } },
   { id: 'chest', label: 'Coffre au trésor', price: 160, hint: 'Tout dragon a besoin d’un trésor', img: 'chest', dx: -0.28, dy: 0.09, w: 0.15, anchor: 'floor' },
   { id: 'statue', label: 'Statue de dragon', price: 180, hint: 'Un ancêtre veille', img: 'statue', dx: 0.28, dy: -0.02, w: 0.1, anchor: 'floor' },
-  { id: 'gold', label: 'Montagne d’or', price: 250, hint: 'Le rêve de tout dragon', img: 'gold', dx: 0.24, dy: 0.1, w: 0.16, anchor: 'floor' }
+  { id: 'gold', label: 'Montagne d’or', price: 250, hint: 'Le rêve de tout dragon', img: 'gold', dx: 0.24, dy: 0.1, w: 0.16, anchor: 'floor' },
+  { id: 'toy', label: 'Balle de feu', price: 60, hint: 'Touche-la pour jouer avec lui', img: 'balle', dx: -0.18, dy: 0.0, w: 0.06, anchor: 'floor', src: () => toyBall() }
 ];
+
+/** Balle de jeu dessinée (remplacée par assets/decor/balle.webp si elle existe). */
+let toyUrl: string | null = null;
+function toyBall(): string {
+  const painted = Assets.art('decor/balle');
+  if (painted) return painted;
+  if (toyUrl) return toyUrl;
+  const c = document.createElement('canvas'); c.width = 120; c.height = 120;
+  const g = c.getContext('2d')!;
+  const gr = g.createRadialGradient(46, 42, 6, 60, 60, 56); gr.addColorStop(0, '#ffe7a0'); gr.addColorStop(0.5, '#ff8a2a'); gr.addColorStop(1, '#8a2410');
+  g.fillStyle = gr; g.beginPath(); g.arc(60, 60, 54, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = 'rgba(90,20,0,.55)'; g.lineWidth = 6; g.beginPath(); g.arc(60, 60, 54, 0.3, 2.6); g.stroke();
+  g.beginPath(); g.moveTo(14, 50); g.quadraticCurveTo(60, 80, 106, 50); g.stroke();
+  toyUrl = c.toDataURL('image/png');
+  return toyUrl;
+}
+const decorImg = (d: DecorDef) => d.src ? d.src() : `assets/decor/${d.img}.webp`;
 const DEBRIS_IMG = ['bone', 'bones', 'rocks', 'scales', 'pot', 'straw', 'eggshell', 'rag'];
 
 /** Placement choisi par l'utilisateur (absent = place par défaut). */
@@ -100,6 +123,8 @@ function parcel(): string {
 /** Gamelle dessinée (outil de la grotte : nourrir). */
 let bowlUrl: string | null = null;
 function bowl(): string {
+  const painted = Assets.art('decor/gamelle');
+  if (painted) return painted;
   if (bowlUrl) return bowlUrl;
   const c = document.createElement('canvas'); c.width = 220; c.height = 130;
   const g = c.getContext('2d')!;
@@ -123,12 +148,12 @@ function bowl(): string {
  * Outils de la grotte : on touche l'objet pour s'occuper du dragon (la grotte sert de menu).
  * Posés d'office ; si l'objet du même nom a été acheté et placé, c'est lui qui sert.
  */
-interface Tool { id: string; decor?: string; img: () => string; dx: number; dy: number; w: number; behind?: boolean; action: 'feed' | 'wash' | 'shop' | 'sleep'; label: string }
+interface Tool { id: string; decor?: string; img: () => string; dx: number; dy: number; w: number; behind?: boolean; action: 'feed' | 'wash' | 'shop' | 'sleep' | 'play'; label: string }
 const TOOLS: Tool[] = [
   // la gamelle est toujours là, devant, à droite ; bassin, nid et coffre servent dès qu'ils sont achetés pour la grotte
   { id: 'bowl', img: bowl, dx: 0.4, dy: 0.012, w: 0.12, action: 'feed', label: 'la gamelle' }
 ];
-const TOOL_OF: Record<string, Tool['action']> = { basin: 'wash', chest: 'shop', nest: 'sleep' };
+const TOOL_OF: Record<string, Tool['action']> = { basin: 'wash', chest: 'shop', nest: 'sleep', toy: 'play' };
 
 /** Action d'un objet touché (outil posé d'office ou objet acheté qui sert d'outil). */
 export function toolAction(key: string): Tool['action'] | null {
@@ -151,12 +176,12 @@ export function syncDecor(app: App): void {
     for (const p of pieces(d)) {
       const pos = placement(app, p.key);
       if (pos.hidden) continue;
-      items.push({ key: p.key, img: `assets/decor/${d.img}.webp`, dx: pos.dx, dy: pos.dy, w: d.w * pos.s, anchor: d.anchor, flip: pos.flip, behind: d.behind, light: d.light });
+      items.push({ key: p.key, img: decorImg(d), dx: pos.dx, dy: pos.dy, w: d.w * pos.s, anchor: d.anchor, flip: pos.flip, behind: d.behind, light: d.light });
     }
   }
   // outils (gamelle, bassin, coffre) : ils brillent quand le dragon en a besoin
   const d = comp.data;
-  const need: Record<Tool['action'], boolean> = { feed: d.hunger < 60, wash: d.clean < 70, shop: false, sleep: (new Date().getHours() >= 20 || new Date().getHours() < 6) && !d.tucked };
+  const need: Record<Tool['action'], boolean> = { feed: d.hunger < 60, wash: d.clean < 70, shop: false, play: !d.played, sleep: (new Date().getHours() >= 20 || new Date().getHours() < 6) && !d.tucked };
   const glow = (on: boolean, color: string) => on ? { x: 0.5, y: 0.45, r: 0.16, color } : undefined;
   const f = app.view.decor.frame;
   const maxDx = f.u > 1 ? Math.max(0.2, (f.ox - 34) / f.u) : 1;
@@ -197,6 +222,7 @@ function openHidden(app: App, key: string): void {
 /** Ramasser un débris : la pièce s'efface, le dragon est content. */
 function tidy(app: App, key: string): void {
   if (key.startsWith('gift:')) { openHidden(app, key); return; }
+  if (key.startsWith('egg:')) { const it = app.view.decor.items.find(i => i.key === key); if (it) it.gone = 0.001; pickEgg(app, key); return; }
   const comp = app.family.companion!;
   const slot = Number(key.split(':')[1]);
   const it = app.view.decor.items.find(i => i.key === key);
@@ -241,6 +267,7 @@ function useTool(app: App, action: Tool['action']): void {
   if (app.sleeping && action !== 'sleep') { app.say('Chut… il dort.', null, 2500); return; }
   if (action === 'feed') app.stageHud.openTray();
   else if (action === 'wash') app.stageHud.action('wash');
+  else if (action === 'play') gamesSheet(app);
   else app.sleepButton();
 }
 
@@ -313,7 +340,7 @@ export function openLair(app: App): void {
           select(d.id);
         }
       },
-        h('img', { src: `assets/decor/${d.img}.webp`, alt: '', draggable: 'false' }),
+        h('img', { src: decorImg(d), alt: '', draggable: 'false' }),
         h('span', { class: 'lx-name' }, d.label),
         h('span', { class: 'lx-state' }, !has ? h('span', null, icon(ICONS.coin, 12), ` ${d.price}`) : placed ? 'Dans la grotte' : 'Rangé · le poser'));
     }));

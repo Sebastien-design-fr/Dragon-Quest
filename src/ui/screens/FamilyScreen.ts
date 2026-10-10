@@ -1,7 +1,7 @@
 import type { App, Screen } from '../App.js';
 import { ICONS, clear } from '../dom.js';
 import { deviceSetupCard, membersCard, pairingCard } from './family.js';
-import { devToolsCard, qualityCard, versionLine } from './SettingsScreen.js';
+import { comfortCard, devToolsCard, qualityCard, versionLine } from './SettingsScreen.js';
 
 export class FamilyScreen implements Screen {
   id = 'family'; label = 'Famille'; icon = ICONS.family;
@@ -25,6 +25,7 @@ export class FamilyScreen implements Screen {
       pairingCard(this.app, rerender),
       membersCard(this.app),
       deviceSetupCard(this.app, rerender),
+      comfortCard(this.app),
       qualityCard(this.app));
     if (this.app.devMode) el.append(devToolsCard(this.app));
     el.append(versionLine(this.app, rerender));

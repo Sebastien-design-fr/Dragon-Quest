@@ -352,8 +352,11 @@ export function art(svg: string, cls: string): HTMLElement {
   return box;
 }
 
-export function gemIcon(): SVGSVGElement {
-  return icon('M7 4h10l4 5-9 11L3 9z M3 9h18 M9 4l3 16 3-16', 13);
+/** Gemme : illustration peinte (assets/ui/gemme.webp) si elle existe, sinon le pictogramme. */
+export function gemIcon(size = 13): Element {
+  const painted = Assets.art('ui/gemme');
+  if (painted) return h('img', { src: painted, alt: '', class: 'gem-img', style: { width: `${size + 3}px`, height: `${size + 3}px` } });
+  return icon('M7 4h10l4 5-9 11L3 9z M3 9h18 M9 4l3 16 3-16', size);
 }
 export function cameraIcon(): SVGSVGElement {
   return icon('M4 8h3l2-3h6l2 3h3v11H4z M12 10a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z', 18);

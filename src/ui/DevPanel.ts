@@ -90,7 +90,10 @@ export function toggleDevPanel(app: App): void {
     h('div', { class: 'dv-label' }, 'Performances (LOT 7)'),
     check('Résolution adaptative', view.adaptive, v => { view.adaptive = v; }),
     h('div', { class: 'dv-label' }, 'Événements'),
-    check('Forcer le mode Halloween', currentEvent() === 'halloween', v => { forceEvent(v ? 'halloween' : null); app.refresh(); }),
+    h('label', { class: 'field-col' }, h('span', { class: 'small' }, `Événement (actuel : ${currentEvent() ?? 'aucun'})`),
+      h('select', { onchange: (e: Event) => { const v = (e.target as HTMLSelectElement).value; forceEvent(v ? v as never : null); app.refresh(); } },
+        ...[['', 'Selon la date'], ['off', 'Aucun'], ['halloween', 'Halloween'], ['noel', 'Noël'], ['nouvelan', 'Nouvel An'], ['valentin', 'Saint-Valentin'], ['paques', 'Pâques'], ['ete', 'Été'], ['anniversaire', 'Anniversaire']]
+          .map(([v, l]) => h('option', { value: v }, l)))),
     stats);
   document.body.append(panel);
 

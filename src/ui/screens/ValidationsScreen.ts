@@ -118,6 +118,9 @@ export class ValidationsScreen implements Screen {
 
     // ---- La journée de l'enfant ----
     root.append(this.daySummary(c));
+    // ---- Bilan de la semaine (du samedi soir au lundi) ----
+    const recap = weekRecap(c.snapshot?.week, c.name);
+    if (recap) root.append(recap);
 
     // ---- Actions ----
     const pet = c.snapshot?.companion?.name;
@@ -445,4 +448,25 @@ export class ValidationsScreen implements Screen {
       return out;
     });
   }
+}
+
+/** Bilan de la semaine de l'enfant : quêtes faites, journées parfaites, meilleur jour (affiché du samedi soir au lundi). */
+export function weekRecap(week: Array<{ date: string; done: number; total: number }> | undefined, name: string, always = false): HTMLElement | null {
+  const now = new Date(), d = now.getDay();
+  if (!always && !(d === 0 || d === 1 || (d === 6 && now.getHours() >= 18))) return null;
+  if (!week?.length) return null;
+  const done = week.reduce((a, x) => a + x.done, 0), total = week.reduce((a, x) => a + x.total, 0);
+  const perfect = week.filter(x => x.total > 0 && x.done >= x.total).length;
+  const best = [...week].sort((a, b) => b.done - a.done)[0];
+  const dayName = (k: string) => { const [y, m, dd] = k.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString('fr-FR', { weekday: 'long' }); };
+  const max = Math.max(1, ...week.map(x => x.total));
+  const pctv = total ? Math.round((done / total) * 100) : 0;
+  const msg = pctv >= 90 ? 'Une semaine exemplaire. Pensez à le lui dire !' : pctv >= 60 ? 'Une belle semaine, avec quelques oublis.' : 'Une semaine difficile : un petit encouragement l’aidera.';
+  return h('section', { class: 'card wr-card' },
+    h('div', { class: 'section-head' }, h('h3', null, `La semaine de ${name}`), h('span', { class: 'count' }, `${pctv} %`)),
+    h('div', { class: 'wr-bars' }, ...week.map(x => h('div', { class: 'wr-col' },
+      h('div', { class: 'wr-bar' }, h('div', { class: `wr-fill${x.total && x.done >= x.total ? ' ok' : ''}`, style: { height: `${Math.round((x.done / max) * 100)}%` } })),
+      h('span', null, dayName(x.date).slice(0, 1).toUpperCase())))),
+    h('p', { class: 'small' }, `${done} quête${done > 1 ? 's' : ''} sur ${total} · ${perfect} journée${perfect > 1 ? 's' : ''} parfaite${perfect > 1 ? 's' : ''}${best && best.done ? ` · meilleur jour : ${dayName(best.date)}` : ''}.`),
+    h('p', { class: 'small muted' }, msg));
 }

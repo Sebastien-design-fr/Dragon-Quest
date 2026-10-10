@@ -10,6 +10,8 @@ import { todayKey } from './model.js';
 
 export interface Destination {
   id: string; name: string; hours: number; colors: [string, string]; teaser: string;
+  /** Niveau du loup nécessaire (destinations lointaines). */
+  minLevel?: number;
   /** Histoires du retour : {n} = nom du dragon. */
   stories: string[];
   /** Trouvailles possibles (nourriture) et chance de fruit de feu. */
@@ -44,14 +46,41 @@ export const DESTINATIONS: Destination[] = [
       '{L} a traversé la mer sur un radeau de branches jusqu’à l’île aux cristaux. La nuit, toute l’île chante doucement.',
       'Sur l’île, {l} a trouvé une grotte entière de cristaux. Il a rempli sa sacoche à ras bord !',
       '{L} a dormi sous les aurores de l’île et rêvé de {n}. Il est rentré dès le réveil, en courant.'
+    ] },
+  { id: 'givre', name: 'La forêt de givre', hours: 3, minLevel: 3, colors: ['#bfe3ff', '#16202e'], teaser: 'Des sapins couverts de glace et des aurores.',
+    foods: ['fish', 'meat'], fruit: 0.3,
+    stories: [
+      '{L} a glissé sur un lac gelé… et a fini la descente sur le dos. Il en rit encore.',
+      'Dans la forêt de givre, {l} a suivi les traces d’un renard des neiges jusqu’à une grotte de glace bleue.',
+      'Les aurores dansaient au-dessus des sapins. {L} les a regardées longtemps avant de rentrer vers {n}.'
+    ] },
+  { id: 'temple', name: 'Le temple englouti', hours: 6, minLevel: 5, colors: ['#5ad6c8', '#0f1e22'], teaser: 'Un temple sous les eaux, gardé par d’anciens dragons de pierre.',
+    foods: ['fish', 'fish', 'meat'], fruit: 0.6,
+    stories: [
+      'Au fond du temple englouti, {l} a trouvé une statue de dragon qui ressemblait à {n}. Il lui a rapporté une écaille dorée.',
+      '{L} a retenu son souffle et plongé jusqu’à la porte du temple. Derrière : des pièces d’or partout !',
+      'Des poissons lumineux ont guidé {l} dans les couloirs du temple. Il connaît maintenant le chemin.'
     ] }
 ];
 
 export interface Trip { dest: string; start: number; end: number; stepsDay: string; steps0: number }
 export interface Loot { dest: string; gold: number; food: Partial<Record<FoodId, number>>; story: string; first: boolean; back: number }
 
+/** Accessoires du loup : un par emplacement (cou, médaille, dos). */
+export interface WolfAccessory { id: string; slot: 'cou' | 'medaille' | 'dos'; label: string; price: number; effect: string; color?: string }
+export const WOLF_ACCESSORIES: WolfAccessory[] = [
+  { id: 'foulard_rouge', slot: 'cou', label: 'Foulard rouge', price: 60, effect: 'Il est fier comme tout', color: '#c8323a' },
+  { id: 'foulard_bleu', slot: 'cou', label: 'Foulard bleu nuit', price: 60, effect: 'Il est fier comme tout', color: '#2c4f9e' },
+  { id: 'collier_cuir', slot: 'cou', label: 'Collier de cuir', price: 90, effect: 'Quêtes 5 % plus courtes' },
+  { id: 'collier_or', slot: 'cou', label: 'Collier d’or', price: 180, effect: 'Or des quêtes +10 %' },
+  { id: 'medaille', slot: 'medaille', label: 'Médaille gravée', price: 120, effect: 'Il progresse 20 % plus vite' },
+  { id: 'sacoche', slot: 'dos', label: 'Grande sacoche', price: 200, effect: 'Une trouvaille de plus par quête' }
+];
+
 interface Data {
   day: string; count: number; trip: Trip | null; back: Loot | null; visited: string[]; wolfName?: string;
+  /** Accessoires achetés et portés (emplacement → accessoire). */
+  wolfOwned?: string[]; wolfWear?: Partial<Record<WolfAccessory['slot'], string>>;
   /** Expérience du loup (quêtes, caresses, friandises) et compteurs du jour. */
   wolfXp?: number; wolfDay?: string; wolfPets?: number; wolfTreats?: number;
 }
@@ -101,7 +130,9 @@ export class Voyage {
     if (this.data.trip || this.data.back) return 'busy';
     if (this.left() <= 0) return 'limit';
     const d = this.dest(id), now = Date.now();
-    this.data.trip = { dest: d.id, start: now, end: now + d.hours * H * (1 - 0.05 * (this.wolfLevel().level - 1)), stepsDay: this.activity?.data.day ?? todayKey(), steps0: this.activity?.data.steps ?? 0 };
+    if ((d.minLevel ?? 1) > this.wolfLevel().level) return 'busy';
+    const speed = (1 - 0.05 * (this.wolfLevel().level - 1)) * (this.wearing('collier_cuir') ? 0.95 : 1);
+    this.data.trip = { dest: d.id, start: now, end: now + d.hours * H * speed, stepsDay: this.activity?.data.day ?? todayKey(), steps0: this.activity?.data.steps ?? 0 };
     this.data.count++;
     this.save();
     return 'ok';
@@ -117,11 +148,12 @@ export class Voyage {
     const d = this.dest(t.dest);
     const [lo, hi] = this.cfg.gold[this.role];
     const lv = this.wolfLevel().level;
-    const gold = Math.round((lo + Math.random() * (hi - lo)) * Math.pow(d.hours, 0.6) * (1 + 0.1 * (lv - 1)));
+    const gold = Math.round((lo + Math.random() * (hi - lo)) * Math.pow(d.hours, 0.6) * (1 + 0.1 * (lv - 1)) * (this.wearing('collier_or') ? 1.1 : 1));
     const food: Partial<Record<FoodId, number>> = {};
     for (const f of d.foods) if (Math.random() < 0.75) food[f] = (food[f] ?? 0) + 1;
     if (Math.random() < Math.min(0.95, d.fruit + 0.05 * (lv - 1))) food.fireFruit = 1;
     if (!Object.keys(food).length) food[d.foods[0]] = 1;
+    if (this.wearing('sacoche')) { const f = d.foods[Math.floor(Math.random() * d.foods.length)]; food[f] = (food[f] ?? 0) + 1; }
     const story = this.fill(d.stories[Math.floor(Math.random() * d.stories.length)]);
     const first = !this.data.visited.includes(d.id);
     this.data.back = { dest: d.id, gold, food, story, first, back: Math.min(now, t.end) };
@@ -160,7 +192,7 @@ export class Voyage {
   }
   private addWolfXp(n: number): void {
     const before = this.wolfLevel().level;
-    this.data.wolfXp = (this.data.wolfXp ?? 0) + n;
+    this.data.wolfXp = (this.data.wolfXp ?? 0) + Math.round(n * (this.wearing('medaille') ? 1.2 : 1));
     const after = this.wolfLevel().level;
     if (after > before) {
       this.companion.remember('wolf-level-' + after, `${this.wolfName(true)} : niveau ${after}`, `Plus rapide et meilleur chercheur de trésors.`);
@@ -169,6 +201,32 @@ export class Voyage {
     }
   }
   private wolfToday(): void { if (this.data.wolfDay !== todayKey()) { this.data.wolfDay = todayKey(); this.data.wolfPets = 0; this.data.wolfTreats = 0; } }
+
+  // ---------------- Accessoires ----------------
+  wearing(id: string): boolean { return Object.values(this.data.wolfWear ?? {}).includes(id); }
+  owns(id: string): boolean { return (this.data.wolfOwned ?? []).includes(id); }
+  /** Achat (or) puis il le porte tout de suite. */
+  buyAccessory(id: string): 'ok' | 'gold' | 'owned' {
+    const a = WOLF_ACCESSORIES.find(x => x.id === id);
+    if (!a) return 'owned';
+    if (this.owns(id)) { this.toggleAccessory(id); return 'owned'; }
+    if (this.state.data.gold < a.price) return 'gold';
+    this.state.addGold(-a.price);
+    this.data.wolfOwned = [...(this.data.wolfOwned ?? []), id];
+    this.data.wolfWear = { ...(this.data.wolfWear ?? {}), [a.slot]: id };
+    if ((this.data.wolfOwned ?? []).length === 1) { this.companion.remember('wolf-acc', `${this.wolfName(true)} est tout beau`, `Son premier accessoire : ${a.label.toLowerCase()}.`); this.companion.save(); }
+    this.save();
+    return 'ok';
+  }
+  /** Mettre ou retirer un accessoire déjà acheté. */
+  toggleAccessory(id: string): void {
+    const a = WOLF_ACCESSORIES.find(x => x.id === id);
+    if (!a || !this.owns(id)) return;
+    const wear = { ...(this.data.wolfWear ?? {}) };
+    if (wear[a.slot] === id) delete wear[a.slot]; else wear[a.slot] = id;
+    this.data.wolfWear = wear;
+    this.save();
+  }
 
   /** Caresse : il est content ; les 5 premières de la journée le font progresser. */
   petWolf(): void {

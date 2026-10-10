@@ -209,7 +209,11 @@ export interface SaveData {
   gold: number;
   owned: string[];
   equipped: Record<CategoryId, string>;
-  settings: { quality: QualityLevel; effects: boolean; sound?: boolean; volume?: number; ambience?: boolean; uiSounds?: boolean };
+  settings: { quality: QualityLevel; effects: boolean; sound?: boolean; volume?: number; ambience?: boolean; uiSounds?: boolean;
+    /** Anniversaire du propriétaire du téléphone (« MM-JJ »), fêté par son dragon. */
+    birthday?: string; birthdayAsked?: boolean;
+    /** Taille du texte de l'appli (n = normale, l = grande, xl = très grande) et douceur du soir (lumière tamisée la nuit). */
+    textSize?: 'n' | 'l' | 'xl'; nightSoft?: boolean };
   /** Reflets d'écailles choisis (refonte UX, point 6). */
   tint?: string;
 }

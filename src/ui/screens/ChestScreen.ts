@@ -1,3 +1,4 @@
+import { gemIcon } from './MissionsScreen.js';
 // « Coffre » : boutique, armoire (objets possédés) et vraies récompenses réunies sur un seul écran.
 import type { EquipmentDef } from '../../core/types.js';
 import type { App, Screen } from '../App.js';
@@ -212,7 +213,7 @@ export class ChestScreen implements Screen {
   private rewards(el: HTMLElement): void {
     const book = this.app.family.book!;
     el.append(h('section', { class: 'card gems-card' },
-      h('div', { class: 'row' }, h('span', { class: 'gem' }, '◆'), h('strong', { class: 'grow' }, `${book.data.gems} gemme${book.data.gems > 1 ? 's' : ''}`)),
+      h('div', { class: 'row' }, h('span', { class: 'gem' }, gemIcon(16)), h('strong', { class: 'grow' }, `${book.data.gems} gemme${book.data.gems > 1 ? 's' : ''}`)),
       h('p', { class: 'small muted' }, '1 gemme par mission, 2 par quête bonus ou journée parfaite, 5 dans le coffre de l’expédition. Échange-les contre de vraies récompenses choisies par tes parents.')));
     const pending = book.pendingRequests().filter(r => r.kind === 'reward');
     for (const r of pending) el.append(h('div', { class: 'list-row' }, h('span', { class: 'grow' }, r.title), h('span', { class: 'pill pending' }, 'Demandée')));

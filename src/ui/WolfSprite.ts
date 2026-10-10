@@ -4,7 +4,7 @@
 import { Assets } from '../engine/AssetManager.js';
 import { wolfImage } from './WolfArt.js';
 
-export interface WolfPose { run: boolean; mirror: boolean; bag: boolean; happy: boolean; sleep: boolean }
+export interface WolfPose { run: boolean; mirror: boolean; bag: boolean; happy: boolean; sleep: boolean; wear?: string[] }
 
 const BAG = (() => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 50"><path d="M14 10 C20 0 40 0 46 10" stroke="#5a341a" stroke-width="4" fill="none"/>
@@ -30,6 +30,57 @@ export class WolfSprite {
     this.img.decoding = 'async';
     this.img.onload = () => { this.ready = true; this.aspect = this.img.naturalWidth / this.img.naturalHeight; };
     this.img.src = painted ?? wolfImage('run2', false);
+  }
+
+  private painted = new Map<string, HTMLImageElement | null>();
+  /** Illustration peinte d'un accessoire (assets/companions/acc_<id>.webp), sinon null. */
+  private accImage(id: string): HTMLImageElement | null {
+    if (!this.painted.has(id)) {
+      const src = Assets.art('companions/acc_' + id);
+      if (!src) this.painted.set(id, null);
+      else { const im = new Image(); im.src = src; this.painted.set(id, im); }
+    }
+    const im = this.painted.get(id);
+    return im && im.complete && im.naturalWidth ? im : null;
+  }
+
+  /** Accessoire posé sur le loup (cou, médaille) ; la sacoche est dessinée à part. */
+  private drawAccessory(g: CanvasRenderingContext2D, id: string, W: number, H: number, top: number, dy: number, b: number, hop: number): void {
+    if (id === 'sacoche') return;
+    const X = (u: number) => u * W, Y = (v: number) => top + v * H + dy;
+    const im = this.accImage(id);
+    if (im) {
+      const box = id === 'medaille' ? [0.66, 0.52, 0.1, 0.14] : [0.58, 0.36, 0.26, 0.34];
+      g.drawImage(im, X(box[0]), Y(box[1]), box[2] * W, box[3] * H);
+      return;
+    }
+    void b; void hop;
+    if (id.startsWith('foulard')) {
+      const col = id === 'foulard_bleu' ? '#2c4f9e' : '#c8323a';
+      g.fillStyle = col; g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = Math.max(1, W * 0.004);
+      g.beginPath(); g.moveTo(X(0.61), Y(0.44)); g.quadraticCurveTo(X(0.71), Y(0.52), X(0.81), Y(0.46)); g.lineTo(X(0.72), Y(0.68)); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.moveTo(X(0.66), Y(0.5)); g.lineTo(X(0.72), Y(0.66)); g.lineTo(X(0.7), Y(0.5)); g.fill();
+      g.fillStyle = col; g.beginPath(); g.arc(X(0.63), Y(0.46), W * 0.018, 0, Math.PI * 2); g.fill(); g.stroke();
+      return;
+    }
+    if (id.startsWith('collier')) {
+      const gold = id === 'collier_or';
+      g.strokeStyle = gold ? '#e3b23c' : '#6b3f1e'; g.lineWidth = H * 0.035; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(X(0.62), Y(0.43)); g.quadraticCurveTo(X(0.71), Y(0.56), X(0.8), Y(0.47)); g.stroke();
+      g.strokeStyle = gold ? '#fff0b0' : '#9c6b3c'; g.lineWidth = H * 0.008;
+      g.beginPath(); g.moveTo(X(0.63), Y(0.425)); g.quadraticCurveTo(X(0.71), Y(0.54), X(0.79), Y(0.46)); g.stroke();
+      if (gold) for (const u of [0.66, 0.71, 0.76]) { g.fillStyle = '#3cc2e2'; g.beginPath(); g.arc(X(u), Y(u === 0.71 ? 0.505 : 0.49), H * 0.012, 0, Math.PI * 2); g.fill(); }
+      else { g.strokeStyle = '#c9c9d4'; g.lineWidth = H * 0.008; g.beginPath(); g.arc(X(0.71), Y(0.52), H * 0.018, 0, Math.PI * 2); g.stroke(); }
+      return;
+    }
+    if (id === 'medaille') {
+      g.strokeStyle = '#8a6a2a'; g.lineWidth = H * 0.006; g.beginPath(); g.moveTo(X(0.71), Y(0.5)); g.lineTo(X(0.71), Y(0.565)); g.stroke();
+      const r = H * 0.04, cx = X(0.71), cy = Y(0.6);
+      const gr = g.createRadialGradient(cx - r * 0.3, cy - r * 0.3, 1, cx, cy, r);
+      gr.addColorStop(0, '#fff3c0'); gr.addColorStop(0.5, '#e3b23c'); gr.addColorStop(1, '#8a5a12');
+      g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = 'rgba(90,50,10,.7)'; g.lineWidth = H * 0.005; g.beginPath(); g.arc(cx, cy, r * 0.62, 0, Math.PI * 2); g.stroke();
+    }
   }
 
   /** Dessine le loup (taille en pixels CSS) au temps t (secondes). */
@@ -77,9 +128,14 @@ export class WolfSprite {
       const dh = H * sy;
       g.drawImage(this.img, i * sw, 0, sw + 0.6, ih, i * dw, top + (H - dh) + dy - hop, dw + 0.6, dh);
     }
-    if (p.bag && BAG.complete) {
-      const bw = W * 0.16;
-      g.drawImage(BAG, W * 0.42, top + H * (0.3 + 0.012 * b) - hop, bw, bw * 50 / 60);
+    // décalage vertical de la zone du cou (suit la tête et la respiration)
+    const neckDy = Math.sin((t * Math.PI * 2) / breathT + 0.9) * H * 0.012 * smooth(0.62, 0.8, 0.72) + (p.sleep ? H * 0.06 * smooth(0.62, 0.8, 0.72) : 0) - hop;
+    const wear = p.wear ?? [];
+    for (const id of wear) this.drawAccessory(g, id, W, H, top, neckDy, b, hop);
+    const bigBag = wear.includes('sacoche');
+    if ((p.bag || bigBag) && BAG.complete) {
+      const bw = W * (bigBag ? 0.2 : 0.16);
+      g.drawImage(BAG, W * (bigBag ? 0.39 : 0.42), top + H * ((bigBag ? 0.26 : 0.3) + 0.012 * b) - hop, bw, bw * 50 / 60);
     }
   }
 }
