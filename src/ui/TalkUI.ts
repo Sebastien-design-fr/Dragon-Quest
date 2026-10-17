@@ -115,7 +115,14 @@ export function talkLogCard(app: App): HTMLElement | null {
   return box;
 }
 
-export function openTalk(app: App): void {
+/** Ce dont le dragon se souvient maintenant (pour sa bulle de pensée sur la scène), ou null. */
+export function memoryThought(app: App): string | null {
+  if (app.isParent || !app.family.companion) return null;
+  return getDialogue(app).memoryLine(talkCtx(app));
+}
+
+/** prompt : sa dernière phrase (bulle touchée) à reprendre en tête de conversation. */
+export function openTalk(app: App, prompt?: string): void {
   const comp = app.family.companion;
   if (!comp || panel) return;
   const d = getDialogue(app);
@@ -257,7 +264,7 @@ export function openTalk(app: App): void {
   send.addEventListener('click', e => { e.preventDefault(); submitText(); });
 
   // il ouvre la conversation, puis écoute tout de suite
-  const hello = d.waiting ? null : d.opener(talkCtx(app));
+  const hello = prompt ?? (d.waiting ? null : d.opener(talkCtx(app)));
   if (hello) addLine('him', hello);
   showSuggestions(null);
   setTimeout(() => void listen(), 250);

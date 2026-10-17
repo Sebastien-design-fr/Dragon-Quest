@@ -5,8 +5,9 @@ import { FALLBACK, INTENTS as BASE, JOKES, OPENERS, RIDDLES, STORY, type IntentD
 import { MORE_INTENTS } from './DialogueMore.js';
 import { contentWords, patternReply, priorityPattern, soft } from './DialoguePatterns.js';
 import { WHY_INTENTS } from './DialogueWhy.js';
+import { MEMORY_INTENTS, captureEvent, dueLine, noteReply, prune, type MemEvent } from './Memory.js';
 
-const INTENTS: IntentDef[] = [...BASE, ...MORE_INTENTS, ...WHY_INTENTS];
+const INTENTS: IntentDef[] = [...BASE, ...MORE_INTENTS, ...WHY_INTENTS, ...MEMORY_INTENTS];
 
 /** État du monde utile au dragon pour répondre. */
 export interface TalkCtx {
@@ -40,7 +41,7 @@ export interface TalkCtx {
 
 export interface TalkReply { text: string; anim?: string; fx?: string; then?: IntentDef['then']; intent: string; gold?: number }
 
-interface Mem { ctx: string | null; ctxAt: number; recent: string[]; story: number; riddle: number; riddleOpen: number | null; last: string | null; riddleDay: string; riddleWins: number; riddleTries: number; likes: string[]; dislikes: string[]; unknown: Array<{ t: string; at: number }> }
+interface Mem { ctx: string | null; ctxAt: number; recent: string[]; story: number; riddle: number; riddleOpen: number | null; last: string | null; riddleDay: string; riddleWins: number; riddleTries: number; likes: string[]; dislikes: string[]; unknown: Array<{ t: string; at: number }>; events: MemEvent[] }
 const KEY = 'quete-du-dragon:talk';
 
 /** Sans accents, minuscules, ponctuation en espaces. */
@@ -68,6 +69,8 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 let fuzzyIndex: Array<{ it: IntentDef; words: Set<string> }> | null = null;
 void soft;
 
+/** La mémoire des événements sert l'enfant (le parent a sa propre dragonne, sans cette fonction pour l'instant). */
+const kidOnly = (c: TalkCtx) => c.role === 'kid';
 const pickFrom = <T>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
 const pickN = <T>(list: T[], n: number): T[] => [...list].sort(() => Math.random() - 0.5).slice(0, n);
 
@@ -86,11 +89,25 @@ export class Dialogue {
   constructor(private storageKey = KEY) {
     let m: Partial<Mem> = {};
     try { m = JSON.parse(localStorage.getItem(storageKey) ?? '{}') as Partial<Mem>; } catch { /* */ }
-    this.mem = { ctx: null, ctxAt: 0, recent: [], story: 0, riddle: Math.floor(Math.random() * RIDDLES.length), riddleOpen: null, last: null, riddleDay: '', riddleWins: 0, riddleTries: 0, likes: [], dislikes: [], unknown: [], ...m };
+    this.mem = { ctx: null, ctxAt: 0, recent: [], story: 0, riddle: Math.floor(Math.random() * RIDDLES.length), riddleOpen: null, last: null, riddleDay: '', riddleWins: 0, riddleTries: 0, likes: [], dislikes: [], unknown: [], events: [], ...m };
   }
   private save(): void { try { localStorage.setItem(this.storageKey, JSON.stringify(this.mem)); } catch { /* */ } }
 
-  opener(c: TalkCtx): string { return this.fill(pickFrom(OPENERS), c); }
+  opener(c: TalkCtx): string { return this.memoryLine(c) ?? this.fill(pickFrom(OPENERS), c); }
+
+  /**
+   * Ce dont il se souvient aujourd'hui (encouragement le matin, « alors, ça s'est passé comment ? » ensuite).
+   * Chaque annonce n'est rappelée qu'une fois de chaque sorte ; la question attend la réponse (contexte « souvenir »).
+   */
+  memoryLine(c: TalkCtx): string | null {
+    if (!kidOnly(c)) return null;
+    this.mem.events = prune(this.mem.events ?? [], c.now);
+    const due = dueLine(this.mem.events, c.now);
+    if (!due) return null;
+    if (due.ask) { due.event.asked = true; this.ask('souvenir'); } else due.event.cheered = true;
+    this.save();
+    return due.text;
+  }
 
   /** Le dragon attend-il une réponse précise ? */
   get waiting(): string | null { return this.mem.ctx && Date.now() - this.mem.ctxAt < 3 * 60000 ? this.mem.ctx : null; }
@@ -183,6 +200,16 @@ export class Dialogue {
       return { ...r, intent: 'calcul' };
     }
     const { it: found, score } = this.scored(heard, c);
+    // une annonce datée (« demain j'ai un contrôle ») est retenue ; il y répond, sauf sujet plus important
+    const note = kidOnly(c) ? captureEvent(heard[0] ?? '', c.now) : null;
+    if (note) {
+      this.mem.events = prune([note.event, ...this.mem.events.filter(e => e.what !== note.event.what)], c.now);
+      if (score < 30 && !(found?.ctx && !found.k.includes('*'))) {
+        this.mem.ctx = null; this.mem.last = 'memoire';
+        this.save();
+        return { text: noteReply(note.event, note.said), intent: 'memoire', anim: note.event.brave ? 'pet' : 'happy' };
+      }
+    }
     const prevCtx = this.waiting;
     this.mem.ctx = null;
     let out: TalkReply;

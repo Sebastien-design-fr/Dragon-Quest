@@ -96,7 +96,7 @@ export const MORE_INTENTS: IntentDef[] = [
     r: ['Je ne suis pas très fort en devoirs… mais je crois en toi ! Relis doucement, et si ça bloque, demande à ta maman ou à ton prof.', 'Une étape à la fois. Lis la question deux fois, souligne les mots importants. Tu vas y arriver.', 'Respire. Ce qui est dur aujourd’hui sera facile demain. Et tu peux toujours demander de l’aide à un adulte.', '{parent}Je ne suis qu’une dragonne… mais je suis sûre que tu vas trouver. Fais une pause et reviens-y.'] },
   { id: 'nulle_matiere', k: ['je suis nulle en', 'je suis nul en', 'je deteste les maths', 'j aime pas les maths', 'les maths c est dur', 'le francais c est dur', 'l anglais c est dur'],
     r: ['Personne n’est nul : on est juste « pas encore bon ». Avec un peu d’entraînement, ça viendra.', 'Moi aussi, au début, je ratais tous mes atterrissages. Maintenant je vole ! Continue.', 'Les maths, c’est comme le feu : au début ça brûle, après on maîtrise.'] },
-  { id: 'demain_stress', prio: 25, k: ['j ai peur pour demain', 'demain j ai', 'j ai un expose', 'j ai un controle demain', 'demain c est la rentree', 'la rentree', 'j ai peur de demain', 'j ai un oral'],
+  { id: 'demain_stress', prio: 25, k: ['j ai peur pour demain', 'j ai un expose', 'j ai un controle demain', 'demain c est la rentree', 'la rentree', 'j ai peur de demain', 'j ai un oral'],
     r: ['Tu vas y arriver. Prépare tes affaires ce soir, dors bien, et demain respire un grand coup avant de commencer.', 'Je souffle un peu de courage sur toi. Voilà. Tu en as plein maintenant.', 'Demain, je croise mes griffes pour toi. Tu me raconteras ?'] },
 
   // ---------------- Vie quotidienne ----------------

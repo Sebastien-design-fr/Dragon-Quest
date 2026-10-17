@@ -4,7 +4,8 @@ import type { ChildBook } from './ChildBook.js';
 import { isNight, type Companion } from './Companion.js';
 import type { Mission } from './model.js';
 
-export type ThoughtAction = 'missions' | 'feed' | 'wash' | 'pet' | 'sleep' | 'play' | null;
+/** talk : ouvre la conversation (il vient de poser une question, par exemple sur un souvenir). */
+export type ThoughtAction = 'missions' | 'feed' | 'wash' | 'pet' | 'sleep' | 'play' | 'talk' | null;
 export interface Thought { id: string; text: string; action: ThoughtAction; priority: number }
 
 const pick = <T>(list: T[]): T => list[Math.floor(Math.random() * list.length)];

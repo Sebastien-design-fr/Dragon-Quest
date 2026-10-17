@@ -24,7 +24,8 @@ import { hatchCeremony, needsHatch } from './Hatch.js';
 import { installLairTaps, syncDecor } from './Lair.js';
 import { fireSeasonReaction, installSeasonal, syncSeasonal } from './Seasonal.js';
 import { installWeather } from './Weather.js';
-import { installTalk } from './TalkUI.js';
+import { installTalk, memoryThought, openTalk } from './TalkUI.js';
+import { openPathMap } from './PathMap.js';
 import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
@@ -694,6 +695,11 @@ export class App {
     if (!comp || !this.showingOwn || this.evolving) return;
     if (!force && this.bubble.classList.contains('show')) return;
     if (this.sleeping && !isNight()) return;
+    // un souvenir du jour (« alors, ton contrôle ? ») passe avant tout le reste ; toucher la bulle ouvre la conversation
+    if (!this.sleeping) {
+      const mem = memoryThought(this);
+      if (mem) { this.say(mem, 'talk', 12000); return; }
+    }
     const now = Date.now();
     const list = thoughts(this.family.book, comp, this.family.book?.childName ?? this.family.linkState.deviceName ?? '');
     const fresh = (t: Thought) => now - (this.shownAt.get(t.id) ?? 0) > (t.priority >= 85 ? 3 : t.priority >= 60 ? 8 : 20) * 60000;
@@ -715,7 +721,8 @@ export class App {
   private bubbleTap(): void {
     const a = this.bubbleAction;
     this.bubble.classList.remove('show');
-    if (a === 'missions') this.show('missions');
+    if (a === 'talk') openTalk(this, this.bubble.textContent ?? undefined);
+    else if (a === 'missions') this.show('missions');
     else if (a === 'feed' || a === 'play' || a === 'wash' || a === 'sleep' || a === 'pet') { this.show('dragon'); (this.current as { focus?: (a: string) => void })?.focus?.(a); }
   }
 
@@ -908,13 +915,15 @@ export class App {
     // pendant l'évolution, le bandeau garde l'ancien stade jusqu'à la révélation
     const stage = (this.evolving && this.evoFrom) || this.stageOverride || this.state.stage;
     const need = this.state.xpToNext();
+    // niveau et barre d'XP : un seul bouton qui ouvre « Mon chemin » (la route des récompenses)
     this.hud.append(
-      h('div', { class: 'hud-id' },
-        h('div', { class: 'hud-stage' }, this.stageLabel(stage.label), this.stageOverride ? h('em', null, ' (aperçu)') : null),
-        h('div', { class: 'hud-level' }, `Niveau ${d.level}${this.family.book?.titleText() ? ' · ' + this.family.book.titleText() : ''}`)),
-      h('div', { class: 'hud-xp' },
-        h('div', { class: 'bar' }, h('div', { class: 'fill', style: { width: `${Math.min(100, (d.xp / need) * 100)}%` } })),
-        h('div', { class: 'hud-xp-label' }, `${d.xp} / ${need} XP`)),
+      h('button', { type: 'button', class: 'hud-path', 'aria-label': `Niveau ${d.level}, ${d.xp} sur ${need} XP. Voir mon chemin`, onclick: () => openPathMap(this) },
+        h('div', { class: 'hud-id' },
+          h('div', { class: 'hud-stage' }, this.stageLabel(stage.label), this.stageOverride ? h('em', null, ' (aperçu)') : null),
+          h('div', { class: 'hud-level' }, `Niveau ${d.level}${this.family.book?.titleText() ? ' · ' + this.family.book.titleText() : ''}`)),
+        h('div', { class: 'hud-xp' },
+          h('div', { class: 'bar' }, h('div', { class: 'fill', style: { width: `${Math.min(100, (d.xp / need) * 100)}%` } })),
+          h('div', { class: 'hud-xp-label' }, `${d.xp} / ${need} XP`, h('span', { class: 'hud-path-go', 'aria-hidden': 'true' }, ' · mon chemin ›')))),
       h('div', { class: 'gold' }, icon(ICONS.coin, 18), h('span', null, d.gold.toLocaleString('fr-FR')))
     );
     this.root.dataset.stage = stage.id;
