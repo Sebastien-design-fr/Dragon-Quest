@@ -26,7 +26,9 @@ type ChildEntry = NonNullable<ReturnType<ParentHub['child']>>;
 const SWIPE_THRESHOLD = 0.35;
 /** Cartes visibles dans la pile (la première + celles qui dépassent derrière). */
 const DECK_DEPTH = 3;
-const CROSS = 'M6 6l12 12 M18 6L6 18';
+/** Motifs proposés quand une mission est à refaire : courts, encourageants. */
+const WHY_PRESETS = ['Presque ! Il reste un petit bout', 'Pas encore fait', 'La photo n’est pas claire', 'Avec un peu plus de soin'];
+const CROSS ='M6 6l12 12 M18 6L6 18';
 const REDO = 'M4 12a8 8 0 1 0 2.5-5.8 M4 4v4h4';
 
 const hhmm = (t: number) => new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -170,8 +172,14 @@ export class ValidationsScreen implements Screen {
     for (let i = cards.length - 1; i >= 0; i--) stack.append(cards[i]);
 
     const top = shown[0]; const topCard = cards[0];
-    const decide = (approved: boolean, bonus?: number) =>
-      this.fly(topCard, cards.slice(1), approved, () => hub.decide(top.requestId, approved, bonus));
+    const send = (approved: boolean, bonus?: number, note?: string) =>
+      this.fly(topCard, cards.slice(1), approved, () => hub.decide(top.requestId, approved, bonus, note));
+    // Mission à refaire : on demande d'abord pourquoi, pour que l'enfant sache quoi reprendre.
+    const decide = (approved: boolean, bonus?: number) => {
+      if (approved || top.kind !== 'mission') { send(approved, bonus); return; }
+      this.busy = true;
+      this.askWhy(top, note => send(false, undefined, note), () => this.unswipe(topCard));
+    };
     this.bindSwipe(topCard, top, decide);
 
     const isInit = top.kind === 'initiative';
@@ -261,6 +269,31 @@ export class ValidationsScreen implements Screen {
     card.addEventListener('pointerup', e => end(e, false));
     card.addEventListener('pointercancel', e => end(e, true));
     card.addEventListener('lostpointercapture', e => end(e, true));
+  }
+
+  /** Panneau « Pourquoi la refaire ? » : motifs en un geste, ou un mot libre. Fermer sans choisir annule. */
+  private askWhy(r: Pending, onSend: (note?: string) => void, onCancel: () => void): void {
+    let sent = false;
+    const go = (close: () => void, note?: string) => { sent = true; close(); onSend(note); };
+    openSheet('Pourquoi la refaire ?', close => {
+      const input = h('input', { type: 'text', maxlength: '120', placeholder: 'Autre chose à lui dire…', 'aria-label': 'Motif libre',
+        onkeydown: (e: KeyboardEvent) => { if (e.key === 'Enter' && input.value.trim()) go(close, input.value); } }) as HTMLInputElement;
+      return [
+        h('p', { class: 'small muted' }, `${r.childName ?? 'Votre enfant'} verra votre mot sur « ${r.title} ». Aucune perte de points : la mission est simplement à reprendre.`),
+        h('div', { class: 'ph-why' }, ...WHY_PRESETS.map(t => h('button', { class: 'chip ph-why-chip', onclick: () => go(close, t) }, t))),
+        input,
+        h('div', { class: 'ph-why-act' },
+          h('button', { class: 'btn ghost', onclick: () => go(close) }, 'Sans motif'),
+          h('button', { class: 'btn primary', onclick: () => go(close, input.value) }, 'Envoyer'))
+      ];
+    }, () => { if (!sent) onCancel(); });
+  }
+
+  /** Carte glissée puis décision annulée : elle revient au centre. */
+  private unswipe(card: HTMLElement): void {
+    card.classList.remove('dragging', 'yes', 'no', 'armed');
+    card.style.transform = ''; card.style.removeProperty('--a');
+    this.release();
   }
 
   /** La carte s'envole, les suivantes avancent, puis la décision part. */

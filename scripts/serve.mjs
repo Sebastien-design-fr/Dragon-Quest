@@ -1,9 +1,10 @@
 // Petit serveur statique pour tester dans un navigateur : npm run build && npm run serve
+import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 
-const ROOT = new URL('../www/', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('../www/', import.meta.url));
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml' };
 const PORT = Number(process.env.PORT || 5173);
 

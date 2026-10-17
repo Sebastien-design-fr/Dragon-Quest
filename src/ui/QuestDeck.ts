@@ -118,6 +118,12 @@ export function questDeck(app: App): HTMLElement | null {
   return h('section', { class: 'qd' }, top, stack, open.length > 1 ? dots : null,
     waiting ? h('div', { class: 'qd-wait' }, icon(ICONS.clock, 14), `${waiting} en attente des parents`) : null);
 
+  /** Motif du parent sous le titre d'une quête à refaire (« Presque ! Il reste le bureau »). */
+  function refusalNote(app: App, t: Entry): HTMLElement | null {
+    const why = t.status === 'refused' ? app.family.book?.refusal(t.mission.id) : null;
+    return why?.note ? h('p', { class: 'qd-why' }, h('b', null, `${why.by ?? 'Tes parents'} : `), `« ${why.note} »`) : null;
+  }
+
   function buildCard(app: App, t: Entry, x2: boolean, onDone: () => void): HTMLElement {
     const m = t.mission;
     const mult = x2 ? 2 : 1;
@@ -140,7 +146,8 @@ export function questDeck(app: App): HTMLElement | null {
           h('h3', { class: 'qd-title' }, m.title),
           h('div', { class: 'qd-meta' },
             m.time ? h('span', null, icon(ICONS.clock, 13), `avant ${m.time.replace(':', ' h ')}`) : null,
-            parent ? h('span', null, icon(ICONS.shield, 13), 'un parent valide') : null)),
+            parent ? h('span', null, icon(ICONS.shield, 13), 'un parent valide') : null),
+          refusalNote(app, t)),
         photoBtn),
       h('div', { class: 'qd-rew' },
         m.xp ? h('span', { class: 'qd-r xp' }, icon(ICONS.star, 14), `+${m.xp * mult}`, h('small', null, 'XP')) : null,

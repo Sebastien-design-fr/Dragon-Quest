@@ -95,22 +95,24 @@ export class ParentHub {
   onOther: ((msg: LinkMessage) => boolean) | null = null;
 
   // ---------- Décisions ----------
-  async decide(requestId: string, approved: boolean, bonus?: number): Promise<void> {
+  /** `note` : motif d'une mission à refaire, montré à l'enfant (« Presque ! Il reste le bureau »). */
+  async decide(requestId: string, approved: boolean, bonus?: number, note?: string): Promise<void> {
     const req = this.data.pending[requestId];
     if (!req) return;
     const xp = req.kind === 'initiative' ? bonus ?? 0 : req.xp;
     const gold = req.kind === 'initiative' ? bonus ?? 0 : req.gold;
-    const payload = { requestId, approved, xp, gold };
+    note = note?.trim().slice(0, 120) || undefined;
+    const payload = { requestId, approved, xp, gold, note };
     const notif = req.kind === 'reward'
       ? { title: approved ? 'Récompense accordée !' : 'Récompense refusée', body: approved ? req.title : `${req.title} : tes gemmes te sont rendues.`, tag: 'res-' + requestId, channel: 'missions' as const }
       : approved
       ? { title: req.kind === 'initiative' ? 'Initiative récompensée !' : 'Mission validée !', body: `${req.title} : ${rewardText(xp, gold)}`, tag: 'res-' + requestId, channel: 'missions' as const }
-      : { title: req.kind === 'initiative' ? 'Initiative non retenue' : 'Mission à refaire', body: req.kind === 'initiative' ? req.title : `${req.title} : tes parents te demandent de la reprendre.`, tag: 'res-' + requestId, channel: 'missions' as const };
+      : { title: req.kind === 'initiative' ? 'Initiative non retenue' : 'Mission à refaire', body: req.kind === 'initiative' ? req.title : note ? `${req.title} : « ${note} »` : `${req.title} : tes parents te demandent de la reprendre.`, tag: 'res-' + requestId, channel: 'missions' as const };
     await this.link.send(req.childId, 'validation.response', payload, notif);
     await this.link.send('parents', 'validation.closed', payload, null, 'req-' + requestId);
     await this.link.dismiss('req-' + requestId);
     delete this.data.pending[requestId];
-    this.log(`Vous : ${req.title} ${approved ? 'validé' : 'refusé'}`);
+    this.log(`Vous : ${req.title} ${approved ? 'validé' : 'refusé'}${note ? ` (« ${note} »)` : ''}`);
     this.save();
   }
 

@@ -123,7 +123,9 @@ export class MissionsScreen implements Screen {
     const waiting = today.filter(t => t.status === 'pending').length;
     const pct = total ? Math.round(done / total * 100) : 0;
     const wpct = total ? Math.round((done + waiting) / total * 100) : 0;
-    const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    // « Samedi 17 octobre » : majuscule au jour seulement (le CSS capitalize mettait aussi « Octobre »).
+    const raw = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const date = raw.charAt(0).toUpperCase() + raw.slice(1);
     const streak = book.streak();
     const shields = book.data.shields;
     const cost = book.pendingCost();
@@ -168,7 +170,12 @@ export class MissionsScreen implements Screen {
           parent && actionable ? h('span', { class: 'q-who' }, icon(ICONS.shield, 13), 'un parent valide') : null)),
       h('div', { class: 'q-rew' }, chips, m.note ? h('p', { class: 'q-note' }, m.note) : null));
 
-    if (status === 'refused') card.append(h('div', { class: 'q-banner red' }, icon(ICONS.edit, 15), h('span', null, h('b', null, 'À refaire'), ' · tes parents te demandent de la reprendre')));
+    if (status === 'refused') {
+      const why = this.app.family.book?.refusal(m.id);
+      card.append(h('div', { class: 'q-banner red' }, icon(ICONS.edit, 15), why?.note
+        ? h('span', null, h('b', null, 'À refaire'), ` · ${why.by ?? 'Tes parents'} : `, h('q', { class: 'q-why' }, why.note))
+        : h('span', null, h('b', null, 'À refaire'), ' · tes parents te demandent de la reprendre')));
+    }
     if (status === 'pending') card.append(h('div', { class: 'q-banner amber' }, icon(ICONS.clock, 15), h('span', null, h('b', null, 'En attente des parents'), ' · ils vont bientôt valider')));
 
     if (actionable) {

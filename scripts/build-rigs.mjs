@@ -8,9 +8,10 @@
 // Les fichiers générés sont de simples données : on peut les retoucher à la main
 // (par exemple pour caler les ancrages sur les illustrations définitives).
 // Relancer : npm run rigs
+import { fileURLToPath } from 'node:url';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const OUT = new URL('../www/data/rigs/', import.meta.url).pathname;
+const OUT = fileURLToPath(new URL('../www/data/rigs/', import.meta.url));
 mkdirSync(OUT, { recursive: true });
 
 const STAGES = {

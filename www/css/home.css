@@ -71,6 +71,8 @@
 .qd-meta span { display: inline-flex; align-items: center; gap: 4px; }
 .qd-tag { align-self: flex-start; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
 .qd-tag.red { color: #ffb1a5; background: rgba(224,106,92,.18); }
+.qd-why { margin: 2px 0 0; font-size: 13px; line-height: 1.35; color: #ffd2ca; }
+.qd-why b { font-weight: 700; color: #ff9f92; }
 .qd-tag.gold { color: #ffe08a; background: rgba(255,214,90,.16); }
 .qd-photo { flex: none; align-self: flex-start; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
   border: 1px solid #3a3242; background: #221e28; color: var(--text); cursor: pointer; }

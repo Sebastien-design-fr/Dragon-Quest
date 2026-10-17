@@ -2,10 +2,11 @@
 // L'AssetManager ne demande au réseau QUE les fichiers listés ici ; tout le reste
 // est remplacé instantanément par un placeholder procédural (aucune requête 404 sur mobile).
 // Ajouter un asset = déposer le fichier au bon endroit. Ce script le détecte au build.
+import { fileURLToPath } from 'node:url';
 import { readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-const ROOT = new URL('../www/assets/', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('../www/assets/', import.meta.url));
 const EXT = /\.(png|webp|jpg|jpeg|avif|json)$/i;
 
 function walk(dir, out) {

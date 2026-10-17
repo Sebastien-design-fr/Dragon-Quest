@@ -58,13 +58,13 @@
 
 .ph-photo { display: block; width: 100%; height: 200px; object-fit: cover; background: #0f0d12; border-bottom: 1px solid var(--line); -webkit-user-drag: none; }
 .ph-art {
-  height: 112px; display: grid; place-items: center; color: var(--gold-soft);
+  height: 76px; display: grid; place-items: center; color: var(--gold-soft);
   background:
     radial-gradient(circle at 50% 60%, rgba(217,168,74,.22), transparent 55%),
     repeating-linear-gradient(135deg, rgba(255,255,255,.018) 0 10px, transparent 10px 20px);
   border-bottom: 1px solid var(--line);
 }
-.ph-art svg { padding: 14px; width: 68px; height: 68px; border-radius: 50%; border: 1px solid rgba(217,168,74,.45); background: rgba(21,19,26,.8); box-shadow: 0 0 22px rgba(217,168,74,.2); }
+.ph-art svg { padding: 11px; width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgba(217,168,74,.45); background: rgba(21,19,26,.8); box-shadow: 0 0 22px rgba(217,168,74,.2); }
 .ph-card.kind-initiative .ph-art { color: #8fd694; background: radial-gradient(circle at 50% 60%, rgba(143,214,148,.2), transparent 55%), repeating-linear-gradient(135deg, rgba(255,255,255,.018) 0 10px, transparent 10px 20px); }
 .ph-card.kind-initiative .ph-art svg { border-color: rgba(143,214,148,.45); box-shadow: 0 0 22px rgba(143,214,148,.2); }
 .ph-card.kind-reward .ph-art { color: #7fd4ff; background: radial-gradient(circle at 50% 60%, rgba(127,212,255,.2), transparent 55%), repeating-linear-gradient(135deg, rgba(255,255,255,.018) 0 10px, transparent 10px 20px); }
@@ -195,3 +195,10 @@
 /* bouton « Rappeler » d'une tâche pas encore faite */
 .ph-remind { min-height: 34px; padding: 0 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; flex: none; }
 .ph-remind:disabled { opacity: .6; }
+
+/* ---------- Motif « à refaire » ---------- */
+.ph-why { display: flex; flex-wrap: wrap; gap: 8px; }
+.ph-why-chip { color: var(--text); white-space: normal; text-align: left; line-height: 1.25; padding: 8px 14px; }
+.ph-why-chip:active { border-color: var(--ph-no); background: rgba(224,112,92,.12); }
+.ph-why-act { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ph-why-act .btn { min-height: 48px; }

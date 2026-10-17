@@ -15,7 +15,7 @@ import type { Companion } from './Companion.js';
 import { missionLine } from './Thoughts.js';
 import { ENERGY, EMPTY_STATS, PENALTY, badgeProgress, type BadgeDef, type ChildStats, type Severity } from './badges.js';
 
-interface DayRecord { date: string; status: MissionStatus; requestId?: string }
+interface DayRecord { date: string; status: MissionStatus; requestId?: string; note?: string; by?: string }
 interface BookData {
   missions: Mission[];
   records: Record<string, DayRecord>;
@@ -132,6 +132,12 @@ export class ChildBook {
     if (!r) return 'todo';
     if (m?.once) return r.status; // quête spéciale : son statut ne dépend pas du jour
     return r.date === date ? r.status : 'todo';
+  }
+
+  /** Motif laissé par le parent quand la mission est à refaire (et qui l'a laissé). */
+  refusal(id: string): { note?: string; by?: string } | null {
+    const r = this.data.records[id];
+    return r && this.status(id) === 'refused' ? { note: r.note, by: r.by } : null;
   }
 
   today(): Array<{ mission: Mission; status: MissionStatus }> {
@@ -565,9 +571,10 @@ export class ChildBook {
           }
         } else {
           req.status = 'refused';
-          this.log(`${req.title} : à refaire (${by})`);
-          this.events.emit('toast', `${req.title} : à refaire`);
-          if (req.missionId) this.data.records[req.missionId] = { date: req.date, status: 'refused', requestId: req.requestId };
+          const note = typeof p.note === 'string' && p.note.trim() ? p.note.trim().slice(0, 120) : undefined;
+          this.log(`${req.title} : à refaire (${by})${note ? ` — « ${note} »` : ''}`);
+          this.events.emit('toast', note ? `${req.title} : « ${note} »` : `${req.title} : à refaire`);
+          if (req.missionId) this.data.records[req.missionId] = { date: req.date, status: 'refused', requestId: req.requestId, note, by };
         }
         return true;
       }
