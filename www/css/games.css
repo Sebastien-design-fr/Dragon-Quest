@@ -51,3 +51,11 @@
 /* Pêche au lac */
 .fish-hint { position: absolute; left: 50%; top: calc(64px + env(safe-area-inset-top)); transform: translate(-50%, -6px); z-index: 3; padding: 6px 14px; border-radius: 999px; background: rgba(15,14,22,.75); color: #fff3c4; font-family: var(--display); font-size: 17px; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; white-space: nowrap; }
 .fish-hint.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Jeux peints et pouvoirs des stades ---------- */
+.game-painted { background: #0f0b14; }
+.game-powers { margin: 0; padding: 8px 10px; list-style: none; display: flex; flex-direction: column; gap: 4px;
+  border-radius: 10px; border: 1px solid rgba(217,168,74,.35); background: rgba(217,168,74,.08); text-align: left; }
+.game-powers li { font-size: 13px; line-height: 1.35; color: var(--gold-soft); padding-left: 18px; position: relative; }
+.game-powers li::before { content: ''; position: absolute; left: 3px; top: .45em; width: 8px; height: 8px; transform: rotate(45deg);
+  background: linear-gradient(135deg, #fff1a8, #d79a16); box-shadow: 0 0 6px rgba(255,210,110,.7); }

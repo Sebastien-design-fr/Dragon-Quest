@@ -3,8 +3,10 @@
 // Petit poisson +1, gros poisson +3 (plonge moins longtemps), poisson doré +5 (rare et très vif). 60 secondes.
 // Les poissons attrapés remplissent le garde-manger (3 par jour au plus).
 import { Assets } from '../../engine/AssetManager.js';
+import { hasPower } from '../../game/StagePowers.js';
 import { h } from '../dom.js';
 import type { GameOpts } from './index.js';
+import { powerNote } from './Scenery.js';
 
 const DURATION = 60;
 type FishKind = 'small' | 'big' | 'gold';
@@ -19,6 +21,9 @@ export let lastCatch = 0;
 
 export function playFishing(dragonName: string, opts: GameOpts): Promise<number> {
   return new Promise(resolve => {
+    // Pouvoirs du stade : plus de temps pour ferrer (adulte), poisson doré doublé (légendaire).
+    const extraWindow = opts.stage && hasPower(opts.stage, 'blaze') ? 0.15 : 0;
+    const pts = (k: FishKind) => FISH[k].pts * (k === 'gold' && opts.stage && hasPower(opts.stage, 'aura') ? 2 : 1);
     const cv = h('canvas', { class: 'game-canvas' });
     const scoreEl = h('div', { class: 'game-score' }, '0');
     const timeEl = h('div', { class: 'game-time' }, String(DURATION));
@@ -26,7 +31,8 @@ export function playFishing(dragonName: string, opts: GameOpts): Promise<number>
     const intro = h('div', { class: 'game-intro' },
       h('h2', null, 'Pêche au lac'),
       h('p', null, `${dragonName} et le loup pêchent au bord du lac d’argent. Regarde bien le flotteur : quand il frémit, attends… Quand il plonge d’un coup, touche l’écran !`),
-      h('p', { class: 'game-rules' }, 'Petit +1 · Gros +3 · Doré +5 · Trop tôt, le poisson s’enfuit · 60 s'),
+      h('p', { class: 'game-rules' }, `Petit +1 · Gros +3 · Doré +${pts('gold')} · Trop tôt, le poisson s’enfuit · ${DURATION} s`),
+      powerNote(opts.stage, 'fish'),
       h('button', { class: 'btn primary', onclick: () => { intro.remove(); start(); } }, 'On lance la ligne !'));
     const root = h('div', { class: 'game game-fish' }, cv, h('div', { class: 'game-hud' }, scoreEl, timeEl), hint, intro);
     document.body.append(root);
@@ -84,10 +90,10 @@ export function playFishing(dragonName: string, opts: GameOpts): Promise<number>
       const b = bob();
       if (phase === 'bite') {
         const f = FISH[kind];
-        score += f.pts; caught++;
+        score += pts(kind); caught++;
         splash(b.x, b.y, 16, 1.2);
         flying = { kind, t: 0, x0: b.x, y0: b.y, x1: W * 0.38, y1: H * 0.8 };
-        pops.push({ x: b.x, y: b.y - 30, text: `+${f.pts}`, life: 1.1, gold: kind === 'gold' });
+        pops.push({ x: b.x, y: b.y - 30, text: `+${pts(kind)}`, life: 1.1, gold: kind === 'gold' });
         say(f.label);
         try { navigator.vibrate?.(kind === 'small' ? 10 : 18); } catch { /* */ }
         setPhase('caught');
@@ -210,7 +216,7 @@ export function playFishing(dragonName: string, opts: GameOpts): Promise<number>
           }
         } else if (phase === 'bite') {
           dip = 1;
-          if (phaseT > FISH[kind].window) { say('Raté, il s’est échappé !'); setPhase('escaped'); }
+          if (phaseT > FISH[kind].window + extraWindow) { say('Raté, il s’est échappé !'); setPhase('escaped'); }
         } else if (phase === 'flee' || phase === 'escaped') {
           shadow.x += (W * 1.1 - shadow.x) * Math.min(1, dt * 2); shadow.a = Math.max(0, shadow.a - dt * 1.2);
           if (phaseT > 1.2) newFish();

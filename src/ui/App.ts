@@ -4,6 +4,7 @@ import type { DragonView } from '../engine/DragonView.js';
 import type { ChildBook } from '../family/ChildBook.js';
 import { isNight, type Companion } from '../family/Companion.js';
 import { Sound } from '../engine/Sound.js';
+import { powerOf } from '../game/StagePowers.js';
 import type { Duo } from '../family/Duo.js';
 import type { Training } from '../family/Training.js';
 import type { Activity } from '../family/Activity.js';
@@ -857,6 +858,12 @@ export class App {
       this.syncEquipment();
       this.renderHud();
     }
+    // Le nouveau stade apporte un pouvoir de jeu : le dragon l'annonce une fois posé.
+    const power = powerOf(to.id);
+    if (power) setTimeout(() => {
+      this.say(`Nouveau pouvoir : ${power.name} ! ${power.effect} Viens l’essayer dans les jeux !`, null, 9000);
+      this.toast(`Pouvoir débloqué : ${power.name}`);
+    }, 1800);
   }
 
   /** Panneau développeur : évolution complète du stade affiché vers le suivant (sans toucher à la sauvegarde). */

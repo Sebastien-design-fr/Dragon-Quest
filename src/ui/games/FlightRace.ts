@@ -1,11 +1,12 @@
 // Mini-jeu « Course dans les nuages » : le dragon vole dans une grotte, on touche l’écran pour battre des ailes.
 // Chaque paire de rochers franchie rapporte 1 point, chaque gemme attrapée 2 points. 3 cœurs, 40 secondes.
+import { hasPower } from '../../game/StagePowers.js';
 import { h } from '../dom.js';
 import type { GameOpts } from './index.js';
+import { GRADES, Juice, loadImage, paintBackdrop, powerNote } from './Scenery.js';
 
 interface Rock { x: number; w: number; gapY: number; gap: number; top: number[]; bot: number[]; passed: boolean; gem: { y: number; taken: number; phase: number } | null }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number; max: number; color: string; size: number }
-interface Pop { x: number; y: number; t: number; text: string; color: string }
 
 const DURATION = 40;
 const GRAVITY = 1350;
@@ -22,15 +23,19 @@ function loadImg(src: string): { img: HTMLImageElement; ok: () => boolean } {
 
 export function playFlightRace(dragonName: string, opts: GameOpts): Promise<number> {
   return new Promise(resolve => {
+    // Pouvoirs du stade : un 4e cœur (jeune dragon), gemmes doublées (légendaire).
+    const maxHearts = opts.stage && hasPower(opts.stage, 'agile') ? 4 : 3;
+    const gemPts = opts.stage && hasPower(opts.stage, 'aura') ? 4 : 2;
     const canvas = h('canvas', { class: 'game-canvas' });
     const scoreEl = h('div', { class: 'game-score' }, '0');
     const timeEl = h('div', { class: 'game-time' }, String(DURATION));
-    const heartEls = [0, 1, 2].map(() => h('span', { class: 'game-heart' }, '♥'));
+    const heartEls = Array.from({ length: maxHearts }, (_, i) => i).map(() => h('span', { class: 'game-heart' }, '♥'));
     const heartsEl = h('div', { class: 'game-hearts' }, heartEls);
     const intro = h('div', { class: 'game-intro' },
       h('h2', null, 'Course dans les nuages'),
       h('p', null, `Touche l’écran pour que ${dragonName} batte des ailes et prenne de la hauteur. Passe entre les rochers de la grotte sans les toucher !`),
-      h('p', { class: 'game-rules' }, 'Rocher franchi : +1 · Gemme : +2 · 3 cœurs · 40 s'),
+      h('p', { class: 'game-rules' }, `Rocher franchi : +1 · Gemme : +${gemPts} · ${maxHearts} cœurs · ${DURATION} s`),
+      powerNote(opts.stage, 'race'),
       h('button', { class: 'btn primary', onclick: () => { intro.remove(); start(); } }, 'C’est parti !'));
     const root = h('div', { class: 'game game-cave' }, canvas, h('div', { class: 'game-hud' }, scoreEl, heartsEl, timeEl), intro);
     document.body.append(root);
@@ -42,7 +47,9 @@ export function playFlightRace(dragonName: string, opts: GameOpts): Promise<numb
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     let W = 0, H = 0;
     // Fond pré-rendu (dégradé + lueur) et deux couches de silhouettes rocheuses en boucle.
-    let bg: HTMLCanvasElement | null = null;
+    let bg: HTMLCanvasElement | null = null, bgPainted = false;
+    const backdrop = loadImage(opts.backdrop);
+    const juice = new Juice();
     let layers: Array<{ tile: HTMLCanvasElement; speed: number; tw: number }> = [];
 
     const buildLayer = (tw: number, color: string, tipColor: string, rim: string, amp: number, base: number, spikes: number): HTMLCanvasElement => {
@@ -88,9 +95,8 @@ export function playFlightRace(dragonName: string, opts: GameOpts): Promise<numb
       bg.width = W * dpr; bg.height = H * dpr;
       const g = bg.getContext('2d')!;
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const grd = g.createLinearGradient(0, 0, 0, H);
-      grd.addColorStop(0, '#120d16'); grd.addColorStop(0.45, '#2a1a22'); grd.addColorStop(0.6, '#3a2219'); grd.addColorStop(1, '#0d0a0c');
-      g.fillStyle = grd; g.fillRect(0, 0, W, H);
+      paintBackdrop(g, W, H, backdrop.ok() ? backdrop.img : null, GRADES.cave, 0.5);
+      bgPainted = backdrop.ok();
       const glow = g.createRadialGradient(W * 0.75, H * 0.55, 10, W * 0.75, H * 0.55, Math.max(W, H) * 0.6);
       glow.addColorStop(0, 'rgba(255,140,60,0.28)'); glow.addColorStop(1, 'rgba(255,140,60,0)');
       g.fillStyle = glow; g.fillRect(0, 0, W, H);
@@ -104,10 +110,9 @@ export function playFlightRace(dragonName: string, opts: GameOpts): Promise<numb
 
     const rocks: Rock[] = [];
     const sparks: Spark[] = [];
-    const pops: Pop[] = [];
     const embers = Array.from({ length: 26 }, () => ({ x: Math.random() * W, y: Math.random() * H, s: 0.5 + Math.random() * 1.8, v: 10 + Math.random() * 30, p: Math.random() * 6 }));
     let score = 0, t = 0, spawn = 0.6, last = 0, raf = 0, running = false, over = false;
-    let hearts = 3, inv = 0, flapT = 0, scroll = 0, shake = 0;
+    let hearts = maxHearts, inv = 0, flapT = 0, scroll = 0, shake = 0;
     const dragon = { x: 0, y: 0, vy: 0 };
     dragon.x = Math.max(70, W * 0.24); dragon.y = H * 0.45;
 
@@ -168,7 +173,7 @@ export function playFlightRace(dragonName: string, opts: GameOpts): Promise<numb
       hearts--; inv = 2; shake = 0.3;
       heartEls.forEach((el, i) => el.classList.toggle('lost', i >= hearts));
       burst(dragon.x, dragon.y, '#ffb070', 18, 220);
-      pops.push({ x: dragon.x, y: dragon.y - 40, t: 0, text: '-1 ♥', color: '#ff6b5a' });
+      juice.pop(dragon.x, dragon.y - 40, '-1 ♥', '#ff6b5a'); juice.flash('255,70,50', 0.3);
       if (navigator.vibrate) navigator.vibrate([70, 40, 70]);
       if (hearts <= 0) end();
     };
@@ -300,15 +305,15 @@ export function playFlightRace(dragonName: string, opts: GameOpts): Promise<numb
         }
         if (!r.passed && r.x + r.w / 2 < dragon.x - 30) {
           r.passed = true; score += 1;
-          pops.push({ x: dragon.x, y: dragon.y - 50, t: 0, text: '+1', color: '#ffd76a' });
+          juice.pop(dragon.x, dragon.y - 50, '+1', '#ffd76a');
           if (navigator.vibrate) navigator.vibrate(10);
         }
         if (r.gem && !r.gem.taken) {
           const gy = r.gem.y + Math.sin(now / 250 + r.gem.phase) * 8;
           if (Math.hypot(r.x - (dragon.x + 10), gy - dragon.y) < 40) {
-            r.gem.taken = 0.001; score += 2;
+            r.gem.taken = 0.001; score += gemPts;
             burst(r.x, gy, '#9fe6ff', 16, 160);
-            pops.push({ x: r.x, y: gy - 20, t: 0, text: '+2', color: '#9fe6ff' });
+            juice.pop(r.x, gy - 20, `+${gemPts}`, '#9fe6ff', gemPts > 2); juice.flash('160,230,255', 0.15);
             if (navigator.vibrate) navigator.vibrate(15);
           }
         }
@@ -317,6 +322,7 @@ export function playFlightRace(dragonName: string, opts: GameOpts): Promise<numb
       for (let i = rocks.length - 1; i >= 0; i--) if (rocks[i].x + rocks[i].w < -20) rocks.splice(i, 1);
 
       // --- dessin ---
+      if (!bgPainted && backdrop.ok()) resize();
       ctx.save();
       if (shake > 0) ctx.translate((Math.random() - 0.5) * 10 * shake * 3, (Math.random() - 0.5) * 10 * shake * 3);
       if (bg) ctx.drawImage(bg, 0, 0, W, H);
@@ -353,11 +359,9 @@ export function playFlightRace(dragonName: string, opts: GameOpts): Promise<numb
       }
       ctx.globalCompositeOperation = 'source-over';
       for (let i = sparks.length - 1; i >= 0; i--) if (sparks[i].life > sparks[i].max) sparks.splice(i, 1);
-      ctx.font = 'bold 22px system-ui, sans-serif'; ctx.textAlign = 'center';
-      for (const p of pops) { p.t += dt; ctx.globalAlpha = Math.max(0, 1 - p.t); ctx.fillStyle = p.color; ctx.fillText(p.text, p.x, p.y - p.t * 40); }
-      ctx.globalAlpha = 1;
-      for (let i = pops.length - 1; i >= 0; i--) if (pops[i].t > 1) pops.splice(i, 1);
       ctx.restore();
+      juice.begin(ctx, dt);
+      juice.end(ctx, W, H, dt);
 
       scoreEl.textContent = String(score);
       timeEl.textContent = String(Math.max(0, Math.ceil(DURATION - t)));

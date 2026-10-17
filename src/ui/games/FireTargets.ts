@@ -1,28 +1,35 @@
 // Mini-jeu « Tir de feu » : on touche l’écran pour que le dragon crache une boule de feu à cet endroit.
 // Cibles en bois, mannequins de paille et lanternes : +1 ; cible dorée : +3 ; cristaux de glace : −2. 30 secondes.
+import { hasPower } from '../../game/StagePowers.js';
 import { h } from '../dom.js';
 import type { GameOpts } from './index.js';
+import { Ambience, GRADES, Juice, loadImage, paintBackdrop, powerNote } from './Scenery.js';
 
 type Kind = 'shield' | 'dummy' | 'lantern' | 'gold' | 'ice';
 interface Target { x: number; y: number; bx: number; by: number; r: number; kind: Kind; age: number; life: number; hit: boolean; out: number; mx: number; my: number; ph: number }
 interface Ball { x: number; y: number; tx: number; ty: number; vx: number; vy: number; dist: number; done: boolean }
 interface Part { x: number; y: number; vx: number; vy: number; life: number; max: number; size: number; color: string; glow: boolean; g: number }
-interface Pop { x: number; y: number; t: number; text: string; color: string }
 
 const DURATION = 30;
 const DRAGON_W = 140;
 const BALL_SPEED = 950;
 const POINTS: Record<Kind, number> = { shield: 1, dummy: 1, lantern: 1, gold: 3, ice: -2 };
+/** Souffle ardent (dragon adulte) : rayon de l'explosion qui touche aussi les cibles voisines. */
+const BLAST_R = 72;
 
 export function playFireTargets(dragonName: string, opts: GameOpts): Promise<number> {
   return new Promise(resolve => {
+    const blaze = !!opts.stage && hasPower(opts.stage, 'blaze');
+    const aura = !!opts.stage && hasPower(opts.stage, 'aura');
+    const goldPts = aura ? 6 : POINTS.gold;
     const canvas = h('canvas', { class: 'game-canvas' });
     const scoreEl = h('div', { class: 'game-score' }, '0');
     const timeEl = h('div', { class: 'game-time' }, String(DURATION));
     const intro = h('div', { class: 'game-intro' },
       h('h2', null, 'Tir de feu'),
-      h('p', null, `Touche une cible : ${dragonName} crache une boule de feu dessus ! Boucliers, mannequins et lanternes rapportent 1 point, les cibles dorées 3 points.`),
+      h('p', null, `Touche une cible : ${dragonName} crache une boule de feu dessus ! Boucliers, mannequins et lanternes rapportent 1 point, les cibles dorées ${goldPts} points.`),
       h('p', { class: 'game-rules' }, 'Attention : ne touche pas les cristaux de glace bleus (−2).'),
+      powerNote(opts.stage, 'fire'),
       h('button', { class: 'btn primary', onclick: () => { intro.remove(); start(); } }, 'C’est parti !'));
     const root = h('div', { class: 'game game-arena' }, canvas, h('div', { class: 'game-hud' }, scoreEl, timeEl), intro);
     document.body.append(root);
@@ -35,7 +42,10 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
     const ctx = canvas.getContext('2d')!;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     let W = 0, H = 0, groundY = 0;
-    let bg: HTMLCanvasElement | null = null;
+    let bg: HTMLCanvasElement | null = null, bgPainted = false;
+    const backdrop = loadImage(opts.backdrop);
+    const ambience = new Ambience('embers', 30);
+    const juice = new Juice();
 
     const resize = () => {
       W = root.clientWidth; H = root.clientHeight; groundY = H - 70;
@@ -45,31 +55,9 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
       bg.width = W * dpr; bg.height = H * dpr;
       const g = bg.getContext('2d')!;
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const sky = g.createLinearGradient(0, 0, 0, H);
-      sky.addColorStop(0, '#0f0b18'); sky.addColorStop(0.5, '#2b1a2c'); sky.addColorStop(0.78, '#5a2a22'); sky.addColorStop(1, '#1a100e');
-      g.fillStyle = sky; g.fillRect(0, 0, W, H);
-      // étoiles
-      for (let i = 0; i < 70; i++) {
-        g.globalAlpha = 0.2 + Math.random() * 0.6; g.fillStyle = '#f5e8d0';
-        const s = Math.random() < 0.15 ? 2 : 1;
-        g.fillRect(Math.random() * W, Math.random() * H * 0.5, s, s);
-      }
-      g.globalAlpha = 1;
-      // lune voilée
-      const moon = g.createRadialGradient(W * 0.78, H * 0.16, 4, W * 0.78, H * 0.16, 70);
-      moon.addColorStop(0, 'rgba(255,230,190,0.9)'); moon.addColorStop(0.35, 'rgba(255,200,140,0.35)'); moon.addColorStop(1, 'rgba(255,200,140,0)');
-      g.fillStyle = moon; g.fillRect(W * 0.78 - 70, H * 0.16 - 70, 140, 140);
-      // montagnes lointaines (2 plans)
-      const ridge = (base: number, amp: number, color: string, seed: number) => {
-        g.beginPath(); g.moveTo(0, H);
-        for (let x = 0; x <= W + 20; x += 20) {
-          const y = base - Math.abs(Math.sin(x * 0.012 + seed)) * amp - Math.sin(x * 0.041 + seed * 2) * amp * 0.25;
-          g.lineTo(x, y);
-        }
-        g.lineTo(W, H); g.closePath(); g.fillStyle = color; g.fill();
-      };
-      ridge(H * 0.72, H * 0.16, '#26161f', 1.3);
-      ridge(H * 0.8, H * 0.1, '#1a1015', 4.1);
+      // décor peint du stade (la grotte), passé en lumière de soir pour que les cibles ressortent
+      paintBackdrop(g, W, H, backdrop.ok() ? backdrop.img : null, GRADES.dusk, 0.35);
+      bgPainted = backdrop.ok();
       // sol rocheux
       const ground = g.createLinearGradient(0, groundY - 10, 0, H);
       ground.addColorStop(0, '#3a241c'); ground.addColorStop(1, '#120b0a');
@@ -84,7 +72,6 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
     const targets: Target[] = [];
     const balls: Ball[] = [];
     const parts: Part[] = [];
-    const pops: Pop[] = [];
     let score = 0, t = 0, spawn = 0.3, last = 0, raf = 0, running = false, over = false;
     let recoil = 0, mouthFlash = 0;
 
@@ -139,9 +126,12 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
 
     const hitTarget = (o: Target) => {
       o.hit = true; o.out = 0.001;
-      const pts = POINTS[o.kind];
+      const pts = o.kind === 'gold' ? goldPts : POINTS[o.kind];
       score = Math.max(0, score + pts);
-      pops.push({ x: o.x, y: o.y - o.r, t: 0, text: pts > 0 ? `+${pts}` : `${pts}`, color: pts > 0 ? (o.kind === 'gold' ? '#fff1a8' : '#ffd76a') : '#c8f0ff' });
+      juice.pop(o.x, o.y - o.r, pts > 0 ? `+${pts}` : `${pts}`, pts > 0 ? (o.kind === 'gold' ? '#fff1a8' : '#ffd76a') : '#c8f0ff', o.kind === 'gold');
+      if (o.kind === 'ice') { juice.kick(9, 0.3); juice.flash('150,210,255', 0.28); }
+      else if (o.kind === 'gold') { juice.kick(5, 0.18); juice.flash('255,220,140', 0.25); }
+      else juice.kick(3, 0.12);
       if (o.kind === 'ice') {
         burst(o.x, o.y, 22, ['#bfeaff', '#6fc3ff', '#ffffff'], 260, true, 380);
         if (navigator.vibrate) navigator.vibrate(70);
@@ -151,6 +141,14 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
         burst(o.x, o.y, 12, chips, 220, false, 600);
         if (navigator.vibrate) navigator.vibrate(o.kind === 'gold' ? [15, 30, 15] : 14);
       }
+    };
+
+    // Souffle ardent : onde de feu qui touche les cibles voisines, jamais la glace.
+    const rings: Array<{ x: number; y: number; t: number }> = [];
+    const blast = (x: number, y: number) => {
+      rings.push({ x, y, t: 0 });
+      burst(x, y, 18, ['#ffcf5a', '#ff8a2a', '#fff0b0'], 260, true);
+      for (const o of targets) if (!o.hit && o.kind !== 'ice' && o.age >= 0.08 && Math.hypot(o.x - x, o.y - y) < BLAST_R + o.r) hitTarget(o);
     };
 
     // ---------- dessin des cibles ----------
@@ -313,19 +311,22 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
             const ex = nx - b.x, ey = ny - b.y, len2 = ex * ex + ey * ey || 1;
             const u = Math.max(0, Math.min(1, ((o.x - b.x) * ex + (o.y - b.y) * ey) / len2));
             const cx = b.x + ex * u, cy = b.y + ey * u;
-            if (Math.hypot(o.x - cx, o.y - cy) < o.r + 10) { hitTarget(o); b.done = true; break; }
+            if (Math.hypot(o.x - cx, o.y - cy) < o.r + 10) { hitTarget(o); b.done = true; if (blaze) blast(o.x, o.y); break; }
           }
         }
         b.x = nx; b.y = ny; b.dist -= step;
         for (let i = 0; i < 3 && parts.length < 450; i++) {
           parts.push({ x: b.x - b.vx * dt * i / 3 + (Math.random() - 0.5) * 6, y: b.y - b.vy * dt * i / 3 + (Math.random() - 0.5) * 6, vx: (Math.random() - 0.5) * 40, vy: -20 - Math.random() * 40, life: 0, max: 0.25 + Math.random() * 0.25, size: 4 + Math.random() * 6, color: Math.random() < 0.5 ? '#ff8a2a' : '#ffcf5a', glow: true, g: -40 });
         }
-        if (!b.done && b.dist <= 0) { b.done = true; burst(b.tx, b.ty, 10, ['#ff8a2a', '#ffcf5a', '#7a5a50'], 140, true); }
+        if (!b.done && b.dist <= 0) { b.done = true; burst(b.tx, b.ty, 10, ['#ff8a2a', '#ffcf5a', '#7a5a50'], 140, true); if (blaze && running) blast(b.tx, b.ty); }
       }
       for (let i = balls.length - 1; i >= 0; i--) if (balls[i].done) balls.splice(i, 1);
 
       // --- dessin ---
+      if (!bgPainted && backdrop.ok()) resize();
+      juice.begin(ctx, dt);
       if (bg) ctx.drawImage(bg, 0, 0, W, H);
+      ambience.draw(ctx, W, H, dt, now);
       for (const o of targets) if (o.kind === 'dummy') drawTarget(o, now);
       for (const o of targets) if (o.kind !== 'dummy') drawTarget(o, now);
       drawDragon();
@@ -345,12 +346,18 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
         g.addColorStop(0, '#fffbe0'); g.addColorStop(0.35, '#ffcf5a'); g.addColorStop(0.7, 'rgba(255,110,30,0.6)'); g.addColorStop(1, 'rgba(255,80,20,0)');
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, 18, 0, Math.PI * 2); ctx.fill();
       }
+      for (const r of rings) {
+        r.t += dt;
+        const k = Math.min(1, r.t / 0.35);
+        ctx.globalAlpha = (1 - k) * 0.8;
+        ctx.strokeStyle = '#ffb050'; ctx.lineWidth = 6 * (1 - k) + 1;
+        ctx.beginPath(); ctx.arc(r.x, r.y, BLAST_R * (0.3 + 0.7 * k), 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      for (let i = rings.length - 1; i >= 0; i--) if (rings[i].t > 0.35) rings.splice(i, 1);
       ctx.globalCompositeOperation = 'source-over';
       for (let i = parts.length - 1; i >= 0; i--) if (parts[i].life > parts[i].max) parts.splice(i, 1);
-      ctx.font = 'bold 24px system-ui, sans-serif'; ctx.textAlign = 'center';
-      for (const p of pops) { p.t += dt; ctx.globalAlpha = Math.max(0, 1 - p.t); ctx.fillStyle = p.color; ctx.fillText(p.text, p.x, p.y - p.t * 40); }
-      ctx.globalAlpha = 1;
-      for (let i = pops.length - 1; i >= 0; i--) if (pops[i].t > 1) pops.splice(i, 1);
+      juice.end(ctx, W, H, dt);
 
       scoreEl.textContent = String(score);
       timeEl.textContent = String(Math.max(0, Math.ceil(DURATION - t)));

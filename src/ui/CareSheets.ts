@@ -1,5 +1,6 @@
 // Panneaux de soins ouverts depuis la scène : état détaillé, tours, mini-jeux.
 import { Assets } from '../engine/AssetManager.js';
+import { POWERS, hasPower } from '../game/StagePowers.js';
 import { STATS, type GameStat } from '../family/Training.js';
 import type { App } from './App.js';
 import { ICONS, h, icon } from './dom.js';
@@ -70,6 +71,20 @@ export function tricksSheet(app: App): void {
   });
 }
 
+/** Pouvoirs des stades : ceux qu'il a (allumés) et ceux qui l'attendent (stade et niveau à atteindre). */
+function powerStrip(app: App, stage: string): HTMLElement {
+  return h('div', { class: 'cs-powers', role: 'list', 'aria-label': 'Pouvoirs du dragon' }, ...POWERS.filter(p => p.stage !== 'baby').map(p => {
+    const on = hasPower(stage, p.id);
+    const def = app.catalog.stage(p.stage);
+    const need = def ? `${app.stageLabel(def.label)} · niveau ${def.minLevel}` : '';
+    return h('div', { class: `cs-power${on ? ' on' : ''}`, role: 'listitem' },
+      h('span', { class: 'cs-power-gem', 'aria-hidden': 'true' }),
+      h('span', { class: 'cs-power-txt' },
+        h('strong', null, p.name),
+        h('span', null, on ? p.effect : `Se débloque : ${need}`)));
+  }));
+}
+
 /** Les mini-jeux : chacun entraîne une caractéristique. Le premier jeu du jour rapporte le plus. */
 export function gamesSheet(app: App): void {
   const comp = app.family.companion;
@@ -78,9 +93,10 @@ export function gamesSheet(app: App): void {
   const variant = app.isParent ? 'dragonne' : 'dragon';
   const stage = app.view.stage?.id ?? 'baby';
   const img = (k: string) => Assets.dragonPart(stage, k, variant) ?? Assets.dragonPart(stage, 'full', variant) ?? '';
-  const opts = { stand: img('full'), flyUp: img('flyUp'), flyDown: img('flyDown') };
+  const opts = { stand: img('full'), flyUp: img('flyUp'), flyDown: img('flyDown'), backdrop: Assets.background(stage) ?? undefined, stage };
   openSheet('Jouer avec ' + comp.name, close => [
     h('p', { class: 'small muted' }, 'Chaque jeu entraîne une de ses qualités. La première partie de chaque jeu rapporte de l’or et des points d’entraînement chaque jour.'),
+    powerStrip(app, stage),
     ...GAMES.map(g => {
       const lv = training?.level(g.stat as GameStat);
       const already = training?.rewarded(g.id) ?? false;
