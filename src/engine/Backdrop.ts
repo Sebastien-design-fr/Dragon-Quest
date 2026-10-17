@@ -35,6 +35,11 @@ export class Backdrop {
   fadeTime = 1.2;
   /** Nuit : voile bleuté posé par-dessus le décor (couche séparée). */
   night = 0;
+  /** Heure forcée (0-24) pour les tests ; null = heure réelle. */
+  hourOverride: number | null = null;
+  private rays: HTMLCanvasElement | null = null;
+  private raysKey = '';
+  private flies: Array<{ x: number; y: number; vx: number; vy: number; p: number }> = [];
   /** Couches d'ambiance indépendantes du décor, désactivables une par une. */
   readonly layers = { lights: true, motes: true, tint: true };
   /** Lumière de la scène, mesurée sur l'image du décor (lecture seule). */
@@ -89,6 +94,7 @@ export class Backdrop {
     }
 
     if (!effects) { this.nightTint(ctx, W, H); return; }
+    if (this.layers.tint) this.daylight(ctx, W, H, time);
     // Lueurs (torches, braseros, lave…)
     ctx.globalCompositeOperation = 'lighter';
     if (this.layers.lights) for (const [i, l] of def.lights.entries()) {
@@ -103,6 +109,89 @@ export class Backdrop {
     ctx.globalCompositeOperation = 'source-over';
     if (this.layers.motes) this.ambient(ctx, W, H, dt, def.ambient);
     this.nightTint(ctx, W, H);
+    if (this.layers.motes) this.fireflies(ctx, W, H, dt, time);
+  }
+
+  /** Heure de la journée (décimale), réelle ou forcée. */
+  private hour(): number {
+    if (this.hourOverride !== null) return this.hourOverride;
+    const d = new Date();
+    return d.getHours() + d.getMinutes() / 60;
+  }
+
+  /**
+   * Lumière du jour, en couches séparées par-dessus le décor (l'image n'est jamais modifiée) :
+   * matin (6 h-10 h) rayons dorés qui entrent par le haut de la grotte ; soir (17 h 30-22 h) voile ambré puis rosé.
+   */
+  private daylight(ctx: CanvasRenderingContext2D, W: number, H: number, time: number): void {
+    const h = this.hour();
+    const bell = (a: number, peak: number, b: number) => h <= a || h >= b ? 0 : h < peak ? (h - a) / (peak - a) : (b - h) / (b - peak);
+    const morning = bell(6, 7.5, 10.5), evening = bell(17.5, 20, 22.5);
+    if (morning > 0) {
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = `rgba(255,200,120,${0.07 * morning})`;
+      ctx.fillRect(0, 0, W, H);
+      // rayons obliques adoucis (pré-rendus une fois par taille), qui respirent et glissent à peine
+      ctx.globalAlpha = morning * (0.8 + 0.2 * Math.sin(time * 0.5));
+      ctx.drawImage(this.rayLayer(W, H), Math.sin(time * 0.12) * W * 0.015, 0);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    if (evening > 0) {
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, `rgba(90,40,90,${0.22 * evening})`);
+      g.addColorStop(1, `rgba(255,120,60,${0.12 * evening})`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  /** Rayons de soleil du matin, flous, mis en cache par taille d'écran. */
+  private rayLayer(W: number, H: number): HTMLCanvasElement {
+    const key = `${Math.round(W)}x${Math.round(H)}`;
+    if (this.rays && this.raysKey === key) return this.rays;
+    const c = this.rays ?? document.createElement('canvas');
+    c.width = Math.round(W); c.height = Math.round(H);
+    const g = c.getContext('2d')!;
+    g.clearRect(0, 0, W, H);
+    g.filter = `blur(${Math.round(Math.max(W, H) * 0.02)}px)`;
+    for (let i = 0; i < 4; i++) {
+      const x0 = W * (0.06 + i * 0.2), w = W * (0.05 + (i % 2) * 0.04), len = H;
+      const grd = g.createLinearGradient(x0, 0, x0 + len * 0.42, len);
+      grd.addColorStop(0, `rgba(255,226,160,${0.6 - i * 0.07})`);
+      grd.addColorStop(0.7, 'rgba(255,214,140,0.12)');
+      grd.addColorStop(1, 'rgba(255,214,140,0)');
+      g.fillStyle = grd;
+      g.beginPath();
+      g.moveTo(x0, -10); g.lineTo(x0 + w, -10);
+      g.lineTo(x0 + w * 2.4 + len * 0.42, len); g.lineTo(x0 + len * 0.42, len);
+      g.closePath(); g.fill();
+    }
+    g.filter = 'none';
+    this.rays = c; this.raysKey = key;
+    return c;
+  }
+
+  /** Lucioles le soir et la nuit : points vert doré qui errent et clignotent lentement. */
+  private fireflies(ctx: CanvasRenderingContext2D, W: number, H: number, dt: number, time: number): void {
+    const h = this.hour();
+    const on = h >= 20.5 || h < 6.5 ? 1 : 0;
+    if (!on) { this.flies.length = 0; return; }
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    while (this.flies.length < 14) this.flies.push({ x: Math.random() * W, y: H * (0.25 + Math.random() * 0.6), vx: 0, vy: 0, p: Math.random() * 10 });
+    ctx.globalCompositeOperation = 'lighter';
+    for (const f of this.flies) {
+      f.vx += (Math.random() - 0.5) * 30 * dpr * dt; f.vy += (Math.random() - 0.5) * 30 * dpr * dt;
+      f.vx *= 0.98; f.vy *= 0.98;
+      f.x = (f.x + f.vx * dt + W) % W; f.y = Math.min(H * 0.92, Math.max(H * 0.15, f.y + f.vy * dt));
+      const blink = Math.max(0, Math.sin(time * 1.3 + f.p)) ** 2;
+      if (blink < 0.02) continue;
+      const r = 10 * dpr;
+      const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r);
+      g.addColorStop(0, `rgba(230,255,150,${0.9 * blink})`); g.addColorStop(0.3, `rgba(190,240,90,${0.45 * blink})`); g.addColorStop(1, 'rgba(160,220,60,0)');
+      ctx.fillStyle = g; ctx.fillRect(f.x - r, f.y - r, r * 2, r * 2);
+    }
+    ctx.globalCompositeOperation = 'source-over';
   }
 
   /** Copie du décor à la taille d'affichage, faite une seule fois par taille (pas de rééchantillonnage à chaque image). */

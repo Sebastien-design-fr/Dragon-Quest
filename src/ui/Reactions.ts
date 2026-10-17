@@ -98,9 +98,31 @@ export function levelUpReaction(app: App, level: number): void {
           { transform: 'translate(-50%,-62%) scale(.96)', opacity: 0 }
         ], { duration: 2200, easing: 'ease-out', fill: 'forwards' }).onfinish = () => banner.remove();
       }, 850);
+      // pluie de pièces sur toute la scène, puis la prime de niveau file vers le compteur d'or
+      setTimeout(() => coinRain(host), 1000);
+      floatLabel(app, '+50', 'gold', 1700);
     }
     return 2800;
   });
+}
+
+/** Pièces d'or qui tombent en tournoyant sur la scène (passage de niveau). Respecte « animations réduites ». */
+function coinRain(host: HTMLElement): void {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const W = host.clientWidth, H = host.clientHeight;
+  for (let i = 0; i < 26; i++) {
+    const coin = h('span', { class: 'rx-coin', 'aria-hidden': 'true' });
+    const x = Math.random() * W, size = 12 + Math.random() * 10;
+    coin.style.left = `${x}px`; coin.style.width = coin.style.height = `${size}px`;
+    host.append(coin);
+    const drift = (Math.random() - 0.5) * 60, spin = 360 + Math.random() * 720;
+    coin.animate([
+      { transform: `translate(0, -40px) rotateY(0deg)`, opacity: 0 },
+      { opacity: 1, offset: 0.1 },
+      { transform: `translate(${drift}px, ${H * (0.7 + Math.random() * 0.25)}px) rotateY(${spin}deg)`, opacity: 1, offset: 0.85 },
+      { transform: `translate(${drift}px, ${H * 0.95}px) rotateY(${spin + 90}deg)`, opacity: 0 }
+    ], { duration: 1500 + Math.random() * 900, delay: Math.random() * 600, easing: 'cubic-bezier(.4,.1,.6,1)', fill: 'forwards' }).onfinish = () => coin.remove();
+  }
 }
 
 const RARITY_FX: Record<string, { preset: string; zoom: number; anim: string; pulse: number }> = {

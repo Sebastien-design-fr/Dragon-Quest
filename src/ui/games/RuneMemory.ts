@@ -3,6 +3,7 @@
 // Score = paires × 3 + bonus de temps (secondes restantes / 3).
 import { h } from '../dom.js';
 import type { GameOpts } from './index.js';
+import { Ambience, GRADES, loadImage, paintBackdrop } from './Scenery.js';
 
 const DURATION = 60;
 const PREVIEW = 1.6;
@@ -44,7 +45,7 @@ function drawRune(c: HTMLCanvasElement, rune: Pt[][], size: number): void {
   g.strokeStyle = '#fff3c4'; g.lineWidth = size * 0.035; path(); g.stroke();
 }
 
-export function playRuneMemory(dragonName: string, _opts: GameOpts): Promise<number> {
+export function playRuneMemory(dragonName: string, opts: GameOpts): Promise<number> {
   return new Promise(resolve => {
     const scoreEl = h('div', { class: 'game-score' }, '0');
     const timeEl = h('div', { class: 'game-time' }, String(DURATION));
@@ -56,7 +57,7 @@ export function playRuneMemory(dragonName: string, _opts: GameOpts): Promise<num
       h('p', null, `Seize pierres cachent des runes anciennes. Retourne-les deux par deux pour retrouver les paires et aider ${dragonName} à percer leur secret.`),
       h('p', { class: 'game-rules' }, 'Paire trouvée : +3 · Bonus pour le temps restant · 60 s'),
       h('button', { class: 'btn primary', onclick: () => { intro.remove(); start(); } }, 'C’est parti !'));
-    const root = h('div', { class: 'game game-runes' }, motes, h('div', { class: 'game-hud' }, scoreEl, timeEl), h('div', { class: 'rune-wrap' }, board, statusEl), intro);
+    const root = h('div', { class: 'game game-runes game-painted' }, motes, h('div', { class: 'game-hud' }, scoreEl, timeEl), h('div', { class: 'rune-wrap' }, board, statusEl), intro);
     document.body.append(root);
 
     // Choix de 8 runes au hasard, en paires mélangées.
@@ -81,16 +82,23 @@ export function playRuneMemory(dragonName: string, _opts: GameOpts): Promise<num
       board.style.width = board.style.height = `${size}px`;
       const tileSize = (size - 3 * 10) / 4;
       tiles.forEach(tl => drawRune(tl.face, RUNES[tl.rune], tileSize));
-      // particules d’ambiance
+      // décor peint du stade (pré-rendu) et poussières dorées
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       motes.width = W * dpr; motes.height = H * dpr;
       mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       mW = W; mH = H;
+      bg = document.createElement('canvas');
+      bg.width = W * dpr; bg.height = H * dpr;
+      const g = bg.getContext('2d')!;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      paintBackdrop(g, W, H, backdrop.ok() ? backdrop.img : null, GRADES.cave, 0.5);
+      bgPainted = backdrop.ok();
     };
     const mctx = motes.getContext('2d')!;
-    let mW = 0, mH = 0;
+    const backdrop = loadImage(opts.backdrop);
+    const ambience = new Ambience('dust', 34);
+    let mW = 0, mH = 0, bg: HTMLCanvasElement | null = null, bgPainted = false;
     layout();
-    const dust = Array.from({ length: 34 }, () => ({ x: Math.random() * mW, y: Math.random() * mH, v: 6 + Math.random() * 16, s: 0.8 + Math.random() * 1.8, p: Math.random() * 6 }));
 
     let pairs = 0, t = 0, last = 0, raf = 0, running = false, over = false, lock = true;
     let opened: Tile[] = [];
@@ -145,15 +153,9 @@ export function playRuneMemory(dragonName: string, _opts: GameOpts): Promise<num
       scoreEl.textContent = String(pairs * 3);
       timeEl.textContent = String(left);
       timeEl.classList.toggle('game-time-low', running && left <= 10);
-      mctx.clearRect(0, 0, mW, mH);
-      mctx.fillStyle = '#f2c46a';
-      for (const d of dust) {
-        d.y -= d.v * dt; d.x += Math.sin(now / 1500 + d.p) * 6 * dt;
-        if (d.y < -4) { d.y = mH + 4; d.x = Math.random() * mW; }
-        mctx.globalAlpha = 0.25 + 0.35 * Math.sin(now / 700 + d.p) ** 2;
-        mctx.fillRect(d.x, d.y, d.s, d.s);
-      }
-      mctx.globalAlpha = 1;
+      if (!bgPainted && backdrop.ok()) layout();
+      if (bg) mctx.drawImage(bg, 0, 0, mW, mH); else mctx.clearRect(0, 0, mW, mH);
+      ambience.draw(mctx, mW, mH, dt, now);
     };
     raf = requestAnimationFrame(frame);
 

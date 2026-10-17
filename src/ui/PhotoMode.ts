@@ -32,6 +32,12 @@ async function grab(app: App, backdrop: boolean): Promise<HTMLCanvasElement | nu
   return backdrop ? c : crop(c);
 }
 
+/** Le dragon tel qu'il est dans la scène (équipements compris), détouré : image pour les mini-jeux. */
+export async function captureDragon(app: App): Promise<string | null> {
+  const c = await grab(app, false);
+  return c ? c.toDataURL('image/png') : null;
+}
+
 /** Recadre sur les pixels non transparents. */
 function crop(c: HTMLCanvasElement): HTMLCanvasElement | null {
   const g = c.getContext('2d', { willReadFrequently: true })!;

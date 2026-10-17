@@ -171,3 +171,7 @@
 .cs-power.on { border-style: solid; border-color: rgba(217,168,74,.45); background: rgba(217,168,74,.07); }
 .cs-power.on strong { color: var(--gold-soft); }
 .cs-power.on .cs-power-gem { background: linear-gradient(135deg, #fff1a8, #d79a16); box-shadow: 0 0 8px rgba(255,210,110,.7); }
+/* Pluie de pièces (passage de niveau) */
+.rx-coin { position: absolute; top: 0; z-index: 6; border-radius: 50%; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 35% 30%, #fff6c8 0 18%, #ffd76a 30%, #c98a14 70%, #7a4d10 100%);
+  box-shadow: 0 0 8px rgba(255,200,90,.6), inset 0 0 0 2px rgba(122,77,16,.5); }
