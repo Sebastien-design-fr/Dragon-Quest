@@ -120,6 +120,19 @@ export class Backdrop {
   }
 
   /**
+   * Teinte du moment de la journée pour les personnages (dragon, loup) : la même lumière que le décor.
+   * k = force du mélange (0 en pleine journée), ambient = couleur vers laquelle tirer, exposure = luminosité.
+   */
+  dayLight(): { ambient: [number, number, number]; k: number; exposure: number } {
+    if (!this.layers.tint) return { ambient: [1, 1, 1], k: 0, exposure: 1 };
+    const h = this.hour();
+    const bell = (a: number, peak: number, b: number) => h <= a || h >= b ? 0 : h < peak ? (h - a) / (peak - a) : (b - h) / (b - peak);
+    const morning = bell(6, 7.5, 10.5), evening = bell(17.5, 20, 22.5);
+    if (morning >= evening) return { ambient: [1, 0.8, 0.55], k: 0.35 * morning, exposure: 1 + 0.05 * morning };
+    return { ambient: [0.62, 0.36, 0.52], k: 0.4 * evening, exposure: 1 - 0.07 * evening };
+  }
+
+  /**
    * Lumière du jour, en couches séparées par-dessus le décor (l'image n'est jamais modifiée) :
    * matin (6 h-10 h) rayons dorés qui entrent par le haut de la grotte ; soir (17 h 30-22 h) voile ambré puis rosé.
    */

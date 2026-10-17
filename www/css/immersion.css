@@ -1,0 +1,56 @@
+/* Immersion : chargé en dernier, il prime sur les feuilles précédentes (home, density, compact). */
+/* ================= Lèvre de la grotte : la scène se termine sur un rebord de roche ================= */
+/* Les boutons d'action sont posés sur ce rebord (pierres gravées) ; la lumière du stade déborde dans le contenu. */
+.stage-view { border-bottom: 0; }
+.sh-bar {
+  left: 0; right: 0; bottom: 0; border-radius: 0; border: 0; padding: 30px 6px 10px; gap: 2px; isolation: isolate;
+  background: linear-gradient(180deg, rgba(11,10,13,0) 0%, rgba(11,10,13,.55) 32%, rgba(11,10,13,.94) 64%, var(--bg) 100%);
+  box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+/* la roche elle-même, et le liseré de lumière du stade sur son arête */
+.sh-bar::before, .sh-bar::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 2px; height: 40px; pointer-events: none; z-index: -1;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%2048%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2048%20L0%2020%20Q19%2017%2038%2022%20Q49%2020%2060%2016%20Q79%208%2098%2016%20Q127%2017%20156%2016%20Q167%2011%20178%2022%20Q189%2017%20200%2016%20Q229%2011%20258%2016%20Q287%2020%20316%2018%20Q345%2020%20374%2022%20Q385%2017%20396%2016%20Q398%2017%20400%2020%20L400%2048%20Z%22%20fill%3D%22%23000%22/%3E%3C/svg%3E") center top / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%2048%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2048%20L0%2020%20Q19%2017%2038%2022%20Q49%2020%2060%2016%20Q79%208%2098%2016%20Q127%2017%20156%2016%20Q167%2011%20178%2022%20Q189%2017%20200%2016%20Q229%2011%20258%2016%20Q287%2020%20316%2018%20Q345%2020%20374%2022%20Q385%2017%20396%2016%20Q398%2017%20400%2020%20L400%2048%20Z%22%20fill%3D%22%23000%22/%3E%3C/svg%3E") center top / 100% 100% no-repeat;
+}
+.sh-bar::after { background: linear-gradient(180deg, #1d181d, var(--bg) 70%); }
+.sh-bar::before { top: 0; background: linear-gradient(90deg, transparent, var(--st-glow, rgba(217,168,74,.35)) 25%, rgba(242,212,138,.35) 50%, var(--st-glow, rgba(217,168,74,.35)) 75%, transparent); }
+.sh-ico {
+  width: 44px; height: 44px;
+  background: radial-gradient(circle at 34% 26%, #3d343b, #1c171b 60%, #100d11);
+  border: 1px solid rgba(217,168,74,.26);
+  box-shadow: inset 0 2px 1px rgba(255,240,210,.08), inset 0 -4px 7px rgba(0,0,0,.6), 0 4px 8px rgba(0,0,0,.55);
+}
+.sh-lbl { color: #e9dcc4; opacity: 1; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+/* Braise : ce dont il a besoin maintenant */
+.sh-btn.need .sh-ico {
+  border-color: #ff9a4a; color: #ffd2a6;
+  background: radial-gradient(circle at 34% 26%, #5a3524, #2a1710 62%, #160c08);
+  box-shadow: 0 0 0 3px rgba(255,154,74,.2), 0 0 18px rgba(255,130,50,.55), inset 0 -4px 7px rgba(0,0,0,.5);
+  animation: sh-ember 2.6s ease-in-out 3;
+}
+.sh-btn.need .sh-lbl { color: #ffc28c; }
+@keyframes sh-ember { 0%, 100% { box-shadow: 0 0 0 3px rgba(255,154,74,.2), 0 0 18px rgba(255,130,50,.55), inset 0 -4px 7px rgba(0,0,0,.5); } 50% { box-shadow: 0 0 0 6px rgba(255,154,74,.08), 0 0 28px rgba(255,140,60,.85), inset 0 -4px 7px rgba(0,0,0,.5); } }
+@media (prefers-reduced-motion: reduce) { .sh-btn.need .sh-ico { animation: none; } }
+
+/* la lumière de la grotte déborde un peu dans le contenu, au lieu d'un bord net */
+.screen { background: radial-gradient(130% 70px at 50% 0, var(--st-glow, rgba(217,168,74,.22)), transparent 100%) no-repeat; }
+
+/* ================= Navigation : un tison sous l'onglet ouvert ================= */
+.tabs { background: linear-gradient(180deg, #121014, #0a090b); border-top: 1px solid rgba(217,168,74,.16); }
+.tab-icon { isolation: isolate; }
+.tab.active .tab-icon::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 46px; height: 34px; transform: translate(-50%, -50%); z-index: -1;
+  background: radial-gradient(closest-side, var(--st-glow, rgba(217,168,74,.4)), transparent); border-radius: 50%;
+}
+.tab.active span:last-child { font-weight: 700; }
+
+/* intertitre « Prochaine quête » : dans la voix du jeu plutôt qu'en capitales espacées */
+.qd-kicker { font-family: var(--display); font-size: 15px; font-weight: 700; letter-spacing: .03em; text-transform: none; }
+
+/* Onglets où la barre d'actions est cachée : la scène se termine quand même sur le rebord de roche */
+.stage-view:has(.sh-bar.hide)::after, .stage-view:has(.sh[hidden])::after, .stage-view:not(:has(.sh-bar))::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 36px; z-index: 4; pointer-events: none;
+  background: linear-gradient(180deg, #1d181d, var(--bg) 70%);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%2048%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2048%20L0%2020%20Q19%2017%2038%2022%20Q49%2020%2060%2016%20Q79%208%2098%2016%20Q127%2017%20156%2016%20Q167%2011%20178%2022%20Q189%2017%20200%2016%20Q229%2011%20258%2016%20Q287%2020%20316%2018%20Q345%2020%20374%2022%20Q385%2017%20396%2016%20Q398%2017%20400%2020%20L400%2048%20Z%22%20fill%3D%22%23000%22/%3E%3C/svg%3E") center top / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%2048%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2048%20L0%2020%20Q19%2017%2038%2022%20Q49%2020%2060%2016%20Q79%208%2098%2016%20Q127%2017%20156%2016%20Q167%2011%20178%2022%20Q189%2017%20200%2016%20Q229%2011%20258%2016%20Q287%2020%20316%2018%20Q345%2020%20374%2022%20Q385%2017%20396%2016%20Q398%2017%20400%2020%20L400%2048%20Z%22%20fill%3D%22%23000%22/%3E%3C/svg%3E") center top / 100% 100% no-repeat;
+  filter: drop-shadow(0 -1.5px 0 rgba(242,212,138,.42)) drop-shadow(0 -6px 10px var(--st-glow, rgba(217,168,74,.3)));
+}

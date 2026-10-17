@@ -2,9 +2,17 @@
 // (respiration du torse, tête qui bouge doucement, queue qui se balance, oreilles qui frémissent de temps en temps).
 // Course : petits bonds et queue plus rapide. Sans illustration, repli sur le dessin vectoriel.
 import { Assets } from '../engine/AssetManager.js';
+import { shadowBlob } from '../engine/Lighting.js';
 import { wolfImage } from './WolfArt.js';
 
-export interface WolfPose { run: boolean; mirror: boolean; bag: boolean; happy: boolean; sleep: boolean; wear?: string[]; /** 0..1 : tapi (tête basse, queue rentrée), quand le dragon crache du feu. */ cower?: number }
+/** Lumière de la scène (voir DragonView.characterLight) : le loup est éclairé comme le dragon. */
+export interface WolfLight { tint: [number, number, number]; exposure: number; dir: [number, number]; light: [number, number, number]; strength: number }
+
+export interface WolfPose {
+  run: boolean; mirror: boolean; bag: boolean; happy: boolean; sleep: boolean; wear?: string[];
+  /** 0..1 : tapi (tête basse, queue rentrée), quand le dragon crache du feu. */ cower?: number;
+  light?: WolfLight | null;
+}
 
 const BAG = (() => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 50"><path d="M14 10 C20 0 40 0 46 10" stroke="#5a341a" stroke-width="4" fill="none"/>
@@ -30,6 +38,8 @@ export class WolfSprite {
   /** Rapport largeur / hauteur de l'illustration. */
   aspect = 900 / 626;
   private twitchAt = 0;
+  /** Le loup est peint dans ce calque, éclairé, puis posé sur son ombre. */
+  private body = document.createElement('canvas');
 
   constructor() {
     this.canvas = document.createElement('canvas');
@@ -101,15 +111,17 @@ export class WolfSprite {
     const c = this.canvas;
     if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
     c.style.width = `${w}px`; c.style.height = `${h * 1.12}px`;
-    const g = c.getContext('2d')!;
+    const out = c.getContext('2d')!;
+    out.setTransform(1, 0, 0, 1, 0, 0);
+    out.clearRect(0, 0, cw, ch);
+    if (!this.ready) return;
+    const bc = this.body;
+    if (bc.width !== cw || bc.height !== ch) { bc.width = cw; bc.height = ch; }
+    const g = bc.getContext('2d')!;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, cw, ch);
-    if (!this.ready) return;
     const top = ch - h * dpr;          // marge au-dessus pour la respiration et les bonds
     const W = w * dpr, H = h * dpr;
-    // ombre au sol
-    g.fillStyle = 'rgba(0,0,0,.3)';
-    g.beginPath(); g.ellipse(W * 0.52, ch - H * 0.025, W * 0.36, H * 0.045, 0, 0, Math.PI * 2); g.fill();
     if (p.mirror) { g.translate(cw, 0); g.scale(-1, 1); }
 
     const breathT = p.sleep ? 4.6 : p.run ? 0.9 : 3.2;
@@ -156,5 +168,57 @@ export class WolfSprite {
       const bw = W * (bigBag ? 0.2 : 0.16);
       g.drawImage(BAG, W * (bigBag ? 0.39 : 0.42), top + H * ((bigBag ? 0.26 : 0.3) + 0.012 * b) - hop, bw, bw * 50 / 60);
     }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    this.light(g, cw, ch, top, H, p);
+    // ombre de contact douce (plus nette et plus petite quand il saute), puis le loup éclairé
+    const lift = Math.min(1, hop / (H * 0.09 || 1));
+    const sw2 = W * (0.78 - 0.18 * lift), sh2 = H * (0.12 - 0.03 * lift);
+    out.globalAlpha = 0.55 * (1 - 0.45 * lift) * (p.sleep ? 1.1 : 1);
+    out.drawImage(shadowBlob(), W * 0.52 - sw2 / 2, ch - H * 0.035 - sh2 / 2, sw2, sh2);
+    out.globalAlpha = 0.35 * (1 - 0.6 * lift);
+    out.drawImage(shadowBlob(), W * 0.52 - sw2 * 0.3, ch - H * 0.03 - sh2 * 0.22, sw2 * 0.6, sh2 * 0.44); // occlusion sous les pattes
+    out.globalAlpha = 1;
+    out.drawImage(bc, 0, 0);
   }
+
+  /**
+   * Éclaire le loup comme le dragon : teinte de la scène (ambiance, nuit, heure du jour), lumière principale
+   * venant de son côté, haut éclairé / ventre dans l'ombre. Ne touche que les pixels du loup (source-atop).
+   */
+  private light(g: CanvasRenderingContext2D, cw: number, ch: number, top: number, H: number, p: WolfPose): void {
+    const L = p.light;
+    if (!L) return;
+    // 1. teinte multiplicative + luminosité (l'illustration du loup est un peu plus claire que le décor)
+    const e = Math.min(1.1, L.exposure) * 0.9;
+    const k = (v: number) => Math.round(Math.min(255, v * e * 255));
+    // silhouette d'avant l'éclairage : « multiply » peint aussi le transparent, on la remet ensuite
+    const m = this.mask;
+    if (m.width !== cw || m.height !== ch) { m.width = cw; m.height = ch; }
+    const mg = m.getContext('2d')!;
+    mg.clearRect(0, 0, cw, ch); mg.drawImage(g.canvas, 0, 0);
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = `rgb(${k(L.tint[0])},${k(L.tint[1])},${k(L.tint[2])})`;
+    g.fillRect(0, 0, cw, ch);
+    g.globalCompositeOperation = 'destination-in';
+    g.drawImage(m, 0, 0);
+    // 2. lumière directionnelle (du côté de la source) et ombre propre de l'autre côté
+    g.globalCompositeOperation = 'source-atop';
+    const dx = L.dir[0] >= 0 ? 1 : -1;
+    const lr = g.createLinearGradient(dx > 0 ? cw : 0, 0, dx > 0 ? 0 : cw, 0);
+    const lc = L.light.map(v => Math.round(Math.min(1, v) * 255)).join(',');
+    lr.addColorStop(0, `rgba(${lc},${Math.min(0.22, 0.6 * L.strength + 0.06)})`);
+    lr.addColorStop(0.55, 'rgba(0,0,0,0)');
+    lr.addColorStop(1, 'rgba(10,8,14,0.22)');
+    g.fillStyle = lr; g.fillRect(0, 0, cw, ch);
+    // 3. dos éclairé, ventre et pattes dans l'ombre (comme topLight / bottomShade du dragon)
+    const tb = g.createLinearGradient(0, top, 0, top + H);
+    tb.addColorStop(0, 'rgba(255,240,215,0.06)');
+    tb.addColorStop(0.55, 'rgba(0,0,0,0)');
+    tb.addColorStop(1, `rgba(8,6,12,${p.sleep ? 0.34 : 0.26})`);
+    g.fillStyle = tb; g.fillRect(0, 0, cw, ch);
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  /** Copie de la silhouette (alpha) avant éclairage, pour remettre la transparence après le « multiply ». */
+  private mask = document.createElement('canvas');
 }

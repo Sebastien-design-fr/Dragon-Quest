@@ -694,6 +694,8 @@ export class App {
     const comp = this.family.companion;
     if (!comp || !this.showingOwn || this.evolving) return;
     if (!force && this.bubble.classList.contains('show')) return;
+    // une bulle d'aide est affichée : il ne parle pas par-dessus (une seule bulle à la fois sur la scène)
+    if (this.root.querySelector('.tip-bubble:not(.out)')) return;
     if (this.sleeping && !isNight()) return;
     // un souvenir du jour (« alors, ton contrôle ? ») passe avant tout le reste ; toucher la bulle ouvre la conversation
     if (!this.sleeping) {

@@ -242,15 +242,26 @@ function tidy(app: App, key: string): void {
 export function installLairTaps(app: App): void {
   const stage = app.root.querySelector<HTMLElement>('.stage-view');
   if (!stage) return;
-  // Zone touchable pour les débris : tout le canvas sauf la barre d'actions posée sur le bas de la scène.
+  // Zone visible de la scène : tout le canvas sauf la barre d'actions posée sur le bas.
+  // - les débris y restent (sinon on ne peut pas les toucher) ;
+  // - le sol est remonté juste au-dessus de la barre, pour que les pattes du dragon et du loup se voient.
   const updateSafe = () => {
     const c = app.view.canvas.getBoundingClientRect();
+    if (!c.height) return;
     const bar = stage.querySelector<HTMLElement>('.sh-bar');
     const barTop = bar && bar.offsetParent ? bar.getBoundingClientRect().top - c.top : c.height;
     app.view.decor.safe = { left: 8, right: c.width - 8, bottom: Math.min(c.height, barTop) - 6 };
+    const toCss = c.height / (app.view.canvas.height || 1);
+    const f = app.view.decor.frame;
+    if (f.u > 1) {
+      const ground = f.oy * toCss + app.view.groundLiftShown; // sol sans remontée
+      // 46 px : les griffes et le loup (posé un peu en avant) descendent sous la ligne de sol du moteur
+      app.view.groundLift = Math.max(0, Math.min(c.height * 0.18, ground - (barTop - 46)));
+    }
   };
   updateSafe();
   new ResizeObserver(updateSafe).observe(stage);
+  window.setInterval(updateSafe, 1000);
   stage.addEventListener('pointerdown', e => {
     if (editor || !app.showingOwn || !app.family.companion) return;
     // touchers sur la scène elle-même ; sur le loup, seulement pour ramasser un débris caché derrière lui

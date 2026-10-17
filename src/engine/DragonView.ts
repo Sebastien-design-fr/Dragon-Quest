@@ -18,7 +18,7 @@ import { AssetScope, Assets } from './AssetManager.js';
 import { ParticleSystem } from './Particles.js';
 import { drawEquipment, drawPart } from './Placeholders.js';
 import { Skeleton } from './Skeleton.js';
-import { TintCache, buildUniforms, dragonConfig, shadowBlob, type DragonLightConfig, type LightUniforms, type ShadowConfig, type VisualConfig } from './Lighting.js';
+import { TintCache, buildUniforms, dragonConfig, shadowBlob, tintColor, type DragonLightConfig, type LightUniforms, type ShadowConfig, type VisualConfig } from './Lighting.js';
 import { OrganicLife, personalityFor } from './Organic.js';
 import { flightConfig, flightPhase, type FlightConfig } from './Flight.js';
 import { MeshRenderer, SpriteSkin } from './SpriteSkin.js';
@@ -161,6 +161,15 @@ export class DragonView {
   private lightState = { key: 'idle', w: 1 };
   /** Paramètres d'éclairage de l'image en cours (partagés avec les poses peintes). */
   private lightU: LightUniforms | null = null;
+  /**
+   * Lumière que reçoivent les personnages posés dans la scène hors du dragon (le loup) :
+   * teinte multiplicative (ambiance, nuit, heure), luminosité, direction et couleur de la lumière principale.
+   */
+  characterLight(): { tint: [number, number, number]; exposure: number; dir: [number, number]; light: [number, number, number]; strength: number } | null {
+    const u = this.lightU;
+    if (!u || !u.enabled) return null;
+    return { tint: tintColor(u), exposure: u.exposure, dir: u.dir, light: u.light, strength: u.lightStrength };
+  }
   private tints = new TintCache();
   readonly stats: ViewStats = { fps: 0, frameMs: 0, renderDpr: 1, canvas: '', refreshHz: 60, divisor: 1 };
   private tmp = new Mat2D();
@@ -174,6 +183,14 @@ export class DragonView {
   private mesh: MeshRenderer | null | undefined;
   /** Position dans la scène (fraction de largeur) et taille relative — pour accueillir un second dragon. */
   placement = { x: 0, scale: 1 };
+  /**
+   * Remonte le sol (pixels CSS) : la barre d'actions recouvre le bas de la scène, les pattes du dragon
+   * et du loup doivent rester visibles au-dessus. Réglé par l'interface, amorti pour ne jamais sauter.
+   */
+  groundLift = 0;
+  private liftShown = 0;
+  /** Remontée réellement appliquée à la dernière image (elle rejoint groundLift en douceur). */
+  get groundLiftShown(): number { return this.liftShown; }
   /** Dragon tourné vers la gauche (invité face à l'hôte). */
   mirrored = false;
   placeTarget = { x: 0, scale: 1 };
@@ -801,7 +818,8 @@ export class DragonView {
     this.camM.a = sx; this.camM.b = 0; this.camM.c = 0; this.camM.d = s;
     this.camM.e = W / 2 - (this.cam.x + this.cam.w / 2) * sx + (this.placement.x - want * 0.12 * this.leap.back) * W + shakeX;
     // le sol (y = 0) reste à la même hauteur quelle que soit la taille
-    this.camM.f = H / 2 - (this.cam.y + this.cam.h / 2) * s0 + shakeY;
+    this.liftShown = damp(this.liftShown, this.groundLift, 4, dt);
+    this.camM.f = H / 2 - (this.cam.y + this.cam.h / 2) * s0 + shakeY - this.liftShown * this.dpr;
     this.flightTick(dt);
     this.evoTick(dt);
 
@@ -1138,6 +1156,9 @@ export class DragonView {
     let scene = host.backdrop.scene;
     // la nuit (voile bleuté sur le décor), le dragon reçoit la même ambiance
     const night = host.backdrop.layers.tint ? host.backdrop.night : 0;
+    // matin doré, soir rosé : le dragon prend la même lumière que la grotte
+    const day = host.backdrop.dayLight();
+    if (day.k > 0) scene = { ...scene, ambient: scene.ambient.map((v, i) => v * (1 - day.k) + day.ambient[i] * day.k) as [number, number, number], ambientMix: scene.ambientMix + 0.1 * day.k };
     if (night > 0) {
       const k = 0.55 * night;
       scene = { ...scene, ambient: scene.ambient.map((v, i) => v * (1 - k) + [0.16, 0.2, 0.42][i] * k) as [number, number, number], ambientMix: scene.ambientMix + 0.12 * night };
@@ -1152,6 +1173,7 @@ export class DragonView {
     const env = key === act ? Math.pow(Math.sin(Math.PI * this.animator.actionProgress), 0.6) : 1;
     this.lightU = buildUniforms(scene, this.dcfg.lighting, states[key] ?? {}, this.lightState.w * env, { lighting: this.fx.lighting, rim: this.fx.rim });
     if (night > 0) this.lightU.exposure *= 1 - 0.12 * night;
+    this.lightU.exposure *= day.exposure;
     const evo = this.evo;
     if (evo && evo.f.halo > 0) {
       this.lightU.glow = Math.max(this.lightU.glow, Math.min(1, evo.f.halo) * 0.55);

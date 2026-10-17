@@ -76,10 +76,16 @@ export class StageHud {
     const comp = app.family.companion!;
     const rations = Object.values(comp.data.food).reduce((a, b) => a + b, 0);
     const evening = isNight() || new Date().getHours() >= 20;
-    const btn = (id: ActionId, label: string, ic: string, extra = '', badge?: string) =>
-      h('button', { class: `sh-btn ${extra}`, 'data-act': id, onclick: () => this.action(id) },
-        h('span', { class: 'sh-ico' }, icon(ic, 22), badge ? h('span', { class: 'sh-badge' }, badge) : null), h('span', { class: 'sh-lbl' }, label));
     const asleep = app.sleeping;
+    // Ce dont il a le plus besoin maintenant : ce bouton rougeoie (braise), pour qu'on sache quoi faire sans lire de jauge.
+    const d = comp.data;
+    const need: ActionId | null = asleep ? null
+      : d.hunger < 45 && rations ? 'feed' : d.clean < 45 ? 'wash'
+      : evening && !d.tucked ? 'sleep' : !d.played ? 'play' : null;
+    const why: Partial<Record<ActionId, string>> = { feed: 'il a faim', wash: 'il est sale', sleep: 'il est l’heure de dormir', play: 'il veut jouer' };
+    const btn = (id: ActionId, label: string, ic: string, extra = '', badge?: string) =>
+      h('button', { class: `sh-btn ${extra}${need === id ? ' need' : ''}`, 'data-act': id, 'aria-label': need === id ? `${label} (${why[id]})` : null, onclick: () => this.action(id) },
+        h('span', { class: 'sh-ico' }, icon(ic, 22), badge ? h('span', { class: 'sh-badge' }, badge) : null), h('span', { class: 'sh-lbl' }, label));
     clear(this.bar);
     this.bar.append(
       btn('feed', 'Nourrir', ICONS.meat, asleep ? 'dim' : '', rations ? String(rations) : undefined),
