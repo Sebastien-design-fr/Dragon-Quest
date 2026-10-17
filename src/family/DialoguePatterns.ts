@@ -67,7 +67,25 @@ export function priorityPattern(phrase: string): boolean {
 export const fr = (t: string) => t.replace(/\bde le\b/g, 'du').replace(/\bde les\b/g, 'des').replace(/\bà le\b/g, 'au').replace(/\bà les\b/g, 'aux')
   .replace(/\b([ldjmtsnc]|qu) (?=[aeiouyhéèêëàâîïôûœ])/gi, '$1’').replace(/\bpas de (le|la|les|l’|un|une|des|du) /g, 'pas de ').replace(/\bpas de ([aeiouyhéèêàâîôû])/g, 'pas d’$1');
 
-export interface PatternReply { text: string; anim?: string; fx?: string; ask?: string; like?: string; dislike?: string; then?: 'games' | 'feed' | 'wash' | 'end' | 'sleep' | 'voyage' }
+export interface PatternReply {
+  text: string; anim?: string; fx?: string; ask?: string; like?: string; dislike?: string; then?: 'games' | 'feed' | 'wash' | 'end' | 'sleep' | 'voyage';
+  /** Question à laquelle il ne sait pas répondre : gardée dans le journal des phrases à lui apprendre. */
+  unknown?: boolean;
+}
+
+/** Il ne sait pas : il le dit, avec curiosité, et propose de demander à un grand. Jamais de réponse au hasard. */
+function dontKnow(c: TalkCtx): PatternReply {
+  const kid = c.role === 'kid';
+  return {
+    text: pick(kid
+      ? ['Ça, même un dragon ne le sait pas ! Demande à tes parents… et reviens me l’apprendre ?',
+        'Hmm… ma grotte n’a pas de livre là-dessus. Tu demandes à un grand et tu me racontes ?',
+        'Je ne sais pas ! Mais j’adorerais savoir. Tu me l’expliqueras quand tu auras trouvé ?',
+        'Bonne question… trop forte pour moi. On cherche la réponse ensemble avec tes parents ?']
+      : ['Je ne sais pas… Tu me l’apprends ?', 'Aucune idée, et ça m’intrigue. Tu me racontes ?']),
+    ask: 'raconte_libre', unknown: true, anim: 'think'
+  };
+}
 
 /** Essaie de comprendre la tournure de la phrase. Renvoie null si aucune ne colle. */
 export function patternReply(phrase: string, c: TalkCtx): PatternReply | null {
@@ -184,7 +202,7 @@ function rawPattern(phrase: string, c: TalkCtx): PatternReply | null {
     return { text: pick([`${cap(x)}, moi ? Peut-être bien… Pourquoi tu dis ça ?`, `Ha ! ${cap(x)}… Je n’y avais jamais pensé.`]) };
   }
   // « j'aime X », « j'adore X »
-  if ((m = p.match(/ (?:j aime|j adore|moi j aime|j aime bien|j aime trop|je kiffe|je préfère|j aime beaucoup) (.+) $/))) {
+  if ((m = p.match(/ (?:j aime|j adore|moi j aime|j aime bien|j aime trop|je kiffe|je préfère|j aime beaucoup) (?!pas |vraiment pas |plus )(.+) $/))) {
     const x = swap(m[1]);
     return { text: pick([`Toi aussi tu aimes ${x} ? C’est noté, je m’en souviendrai !`, `${cap(x)} ! Bon choix. Moi j’aime surtout le poisson grillé.`, `J’adore quand tu me dis ce que tu aimes. ${cap(x)}, c’est noté.`]), like: x, anim: 'happy' };
   }
@@ -219,14 +237,11 @@ function rawPattern(phrase: string, c: TalkCtx): PatternReply | null {
     if (v.startsWith('fait') || v.startsWith('fini')) return { text: `Bravo ! ${cap(x)}, c’est fait. Je suis fier de toi.`, anim: 'happy' };
     return { text: `Ah oui ? Raconte-moi !`, ask: 'raconte_libre' };
   }
-  // questions ouvertes
-  if (/^ (pourquoi|comment ça se fait) /.test(p)) return { text: pick(['Hmm… parce que la vie est pleine de mystères. Toi, tu en penses quoi ?', 'Bonne question ! Je vais y réfléchir pendant ma sieste.', 'Parce que ! Réponse officielle des dragons. Bon, et toi, tu as une idée ?']), ask: 'raconte_libre' };
-  if (/^ (comment) /.test(p)) return { text: pick(['Comment ? Avec beaucoup de courage et un peu de feu. C’est ma réponse à tout.', 'Hmm, je ne sais pas trop… Tu m’expliques ?']), ask: 'raconte_libre' };
+  // questions ouvertes : s'il ne les a pas reconnues avant, il ne sait pas (et le dit)
+  if (/^ (pourquoi|comment ça se fait|comment ca se fait|comment|c est quoi|qu est ce que c est|qu est ce qu un|qu est ce qu une|ça veut dire quoi|ca veut dire quoi|combien|qui a inventé|qui a invente|quand est ce que) /.test(p)) return dontKnow(c);
   if (/^ (où|ou est|ou sont) /.test(p)) return { text: pick(['Hmm… sous le canapé ? C’est là que le loup cache tout.', 'Je ne sais pas, je ne sors pas beaucoup de ma grotte. Regarde bien autour de toi !']) };
   if (/^ (quand) /.test(p)) return { text: pick(['Bientôt ! Enfin… je crois.', 'Quand les dragons voleront… ah, mais on vole déjà. Alors bientôt !']) };
   if (/^ (qui) /.test(p)) return { text: pick(['Qui ? Hmm… je ne connais que toi, ta famille, le loup et le chat. Tu me présentes ?', 'Je ne sais pas ! Raconte-moi qui c’est.']), ask: 'raconte_libre' };
-  if (/^ (combien) /.test(p)) return { text: pick(['Beaucoup ! Au moins mille. Ou trois. Je ne suis pas fort en calcul.', 'Hmm… je compte avec mes griffes… pas assez de griffes !']) };
-  if (/^ (c est quoi|qu est ce que c est|ça veut dire quoi|ca veut dire quoi) /.test(p)) return { text: pick(['Hmm… je ne connais pas ce mot-là. Tu m’expliques ?', 'Aucune idée ! Les dragons ne savent pas tout. Dis-moi !']), ask: 'raconte_libre' };
   // ordres de chien (pas des tours de dragon)
   if (/ (donne la patte|assis|couché|couche|fais le beau|roule|fais le mort|au pied|rapporte|va chercher|saute) /.test(p)) {
     return { text: pick(['Je ne suis pas un chien ! Mais d’accord, juste pour toi…', 'Hé, je suis un dragon, pas un toutou ! Bon… voilà.', 'Ça, c’est un ordre pour le loup ! Mais je veux bien essayer.']), anim: pick(['bow', 'happy', 'tail_chase']) };

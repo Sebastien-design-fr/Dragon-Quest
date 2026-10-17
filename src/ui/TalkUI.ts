@@ -2,6 +2,7 @@
 // On appuie sur le micro, on parle ; il répond (bulle + voix de dragon) puis réécoute tout seul quelques tours.
 // Les ordres (« crache du feu ! ») déclenchent les tours. Rien n'est enregistré ni envoyé.
 import { Dialogue, norm, type TalkCtx, type TalkReply } from '../family/Dialogue.js';
+import { Assets } from '../engine/AssetManager.js';
 import { FOODS } from '../family/Companion.js';
 import type { SpeechEvent } from '../link/Transport.js';
 import type { App } from './App.js';
@@ -119,25 +120,44 @@ export function openTalk(app: App): void {
   if (!comp || panel) return;
   const d = getDialogue(app);
   const link = app.family.link;
-  const log = h('div', { class: 'tk-log' });
   const status = h('div', { class: 'tk-status small muted' }, 'Appuie sur le micro et parle-lui');
   const bars = h('span', { class: 'vc-bars' }, ...Array.from({ length: 5 }, () => h('i')));
   const micBtn = h('button', { class: 'tk-mic', 'aria-label': 'Parler' }, icon(ICONS.mic, 28)) as HTMLButtonElement;
   const input = h('input', { type: 'text', placeholder: 'Écris-lui…', 'aria-label': 'Écrire au dragon', maxlength: '140', enterkeyhint: 'send' }) as HTMLInputElement;
   const send = h('button', { class: 'btn small-btn', 'aria-label': 'Envoyer' }, '➤');
   const closeBtn = h('button', { class: 'tk-close', 'aria-label': 'Fermer' }, '×');
+  // portrait : l'illustration du stade, cadrée sur la tête (à droite de l'image)
+  const face = Assets.dragonPart(app.view.stage?.id ?? 'baby', 'full', app.ownVariant) ?? '';
+  const avatar = () => face ? h('img', { class: 'tk-face', src: face, alt: '', 'aria-hidden': 'true' }) : h('span', { class: 'tk-face' });
+  const suggest = h('div', { class: 'tk-suggest', role: 'group', 'aria-label': 'Réponses rapides' });
   panel = h('div', { class: 'tk-panel', role: 'dialog', 'aria-label': `Parler avec ${comp.name}` },
-    h('div', { class: 'tk-head' }, h('strong', null, `Parler avec ${comp.name}`), closeBtn),
-    log, status,
+    h('div', { class: 'tk-head' }, h('span', { class: 'tk-title' }, avatar(), h('strong', null, comp.name)), closeBtn),
+    h('div', { class: 'tk-log', role: 'log', 'aria-live': 'polite' }), status, suggest,
     h('div', { class: 'tk-controls' }, micBtn, bars, h('form', { class: 'tk-type', onsubmit: (e: Event) => { e.preventDefault(); submitText(); } }, input, send)));
+  const log = panel.querySelector('.tk-log') as HTMLElement;
   app.root.append(panel);
   requestAnimationFrame(() => panel?.classList.add('in'));
 
   let listening = false, speaking = false, closed = false, turns = 0, exchanges = 0;
   const addLine = (who: 'me' | 'him', text: string) => {
-    log.append(h('div', { class: `tk-line ${who}` }, text));
-    while (log.children.length > 6) log.firstElementChild?.remove();
+    log.append(who === 'him'
+      ? h('div', { class: 'tk-row him' }, avatar(), h('div', { class: 'tk-line him' }, text))
+      : h('div', { class: 'tk-line me' }, text));
+    while (log.children.length > 40) log.firstElementChild?.remove();
     log.scrollTop = log.scrollHeight;
+  };
+  /** « … » pendant qu'il réfléchit : un temps de lecture naturel, plus long pour une longue réponse. */
+  const thinking = async (text: string) => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const dots = h('div', { class: 'tk-row him tk-typing', 'aria-hidden': 'true' }, avatar(), h('div', { class: 'tk-line him' }, h('i'), h('i'), h('i')));
+    log.append(dots); log.scrollTop = log.scrollHeight;
+    await new Promise(r => setTimeout(r, Math.min(1100, 350 + text.length * 6)));
+    dots.remove();
+  };
+  /** Réponses rapides à toucher (pour les enfants qui écrivent peu, ou sans micro). */
+  const showSuggestions = (r: TalkReply | null) => {
+    suggest.replaceChildren(...d.suggestions(r, talkCtx(app)).map(t =>
+      h('button', { type: 'button', class: 'tk-chip', onclick: () => { if (listening) void link.stopListening(); turns = 99; void answer([t], false); } }, t)));
   };
   const setStatus = (t: string) => { status.textContent = t; };
   const close = () => {
@@ -167,6 +187,7 @@ export function openTalk(app: App): void {
     if (closed) return;
     const said = heard[0] ?? '';
     addLine('me', said);
+    suggest.replaceChildren();
     exchanges++;
     // un ordre ? il fait le tour
     const cmd = asCommand(app, heard);
@@ -175,8 +196,12 @@ export function openTalk(app: App): void {
       if (!cmd.unlocked) r = { text: `${cmd.label} ? Je ne sais pas encore le faire… (${cmd.need})`, intent: 'cmd-locked' };
       else { cmd.run(); r = { text: pick(['Regarde bien !', 'Et voilà !', 'Avec plaisir !', 'Admire un peu !']), intent: 'cmd' }; }
     } else r = d.reply(heard, talkCtx(app));
+    if (!cmd) await thinking(r.text);
+    if (closed) return;
     addLine('him', r.text);
-    if (r.anim && !cmd) void app.act(r.anim);
+    if (r.anim === 'think') app.view.life.force('head_tilt');
+    else if (r.anim && !cmd) void app.act(r.anim);
+    if (!r.then) showSuggestions(r);
     if (r.fx) app.view.emit(r.fx === 'confetti' ? 'rewardBurst' : r.fx, 'head_anchor');
     if (r.gold) { app.state.addGold(r.gold); }
     await speak(r.text);
@@ -234,6 +259,7 @@ export function openTalk(app: App): void {
   // il ouvre la conversation, puis écoute tout de suite
   const hello = d.waiting ? null : d.opener(talkCtx(app));
   if (hello) addLine('him', hello);
+  showSuggestions(null);
   setTimeout(() => void listen(), 250);
 }
 

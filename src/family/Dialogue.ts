@@ -4,8 +4,9 @@
 import { FALLBACK, INTENTS as BASE, JOKES, OPENERS, RIDDLES, STORY, type IntentDef } from './DialogueData.js';
 import { MORE_INTENTS } from './DialogueMore.js';
 import { contentWords, patternReply, priorityPattern, soft } from './DialoguePatterns.js';
+import { WHY_INTENTS } from './DialogueWhy.js';
 
-const INTENTS: IntentDef[] = [...BASE, ...MORE_INTENTS];
+const INTENTS: IntentDef[] = [...BASE, ...MORE_INTENTS, ...WHY_INTENTS];
 
 /** État du monde utile au dragon pour répondre. */
 export interface TalkCtx {
@@ -68,6 +69,17 @@ let fuzzyIndex: Array<{ it: IntentDef; words: Set<string> }> | null = null;
 void soft;
 
 const pickFrom = <T>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
+const pickN = <T>(list: T[], n: number): T[] => [...list].sort(() => Math.random() - 0.5).slice(0, n);
+
+/** Questions « pourquoi » proposées en suggestion (id du sujet, phrase à toucher). */
+const WHY_ASKS = [
+  { id: 'why_ciel_bleu', text: 'Pourquoi le ciel est bleu ?' }, { id: 'why_arc_en_ciel', text: 'C’est quoi un arc-en-ciel ?' },
+  { id: 'why_tonnerre', text: 'Pourquoi il y a des éclairs ?' }, { id: 'why_nuit', text: 'Pourquoi il fait nuit ?' },
+  { id: 'why_dormir', text: 'Pourquoi on dort ?' }, { id: 'why_mer_salee', text: 'Pourquoi la mer est salée ?' },
+  { id: 'why_dinosaures', text: 'Où sont les dinosaures ?' }, { id: 'why_lune', text: 'Pourquoi la lune change ?' },
+  { id: 'why_pourquoi_dragon_feu', text: 'Comment tu craches du feu ?' }, { id: 'why_feuilles', text: 'Pourquoi les feuilles tombent ?' },
+  { id: 'why_zebre', text: 'Pourquoi le zèbre a des rayures ?' }, { id: 'why_reves', text: 'Pourquoi on rêve ?' }
+];
 
 export class Dialogue {
   private mem: Mem;
@@ -130,6 +142,35 @@ export class Dialogue {
     return null;
   }
 
+  private remember(said: string): void {
+    const t = said.trim();
+    if (t) this.mem.unknown = [{ t, at: Date.now() }, ...this.mem.unknown.filter(u => u.t !== t)].slice(0, 40);
+  }
+
+  /**
+   * Réponses à toucher sous sa dernière phrase (2 ou 3), selon le sujet et la question qu'il vient de poser.
+   * Chaque suggestion est une phrase qu'il comprend (vérifié par les tests de conversation).
+   */
+  suggestions(r: TalkReply | null, c: TalkCtx): string[] {
+    const w = this.waiting;
+    if (w === 'devinette') return ['Je donne ma langue au chat', 'Je ne sais pas'];
+    if (w === 'moi_ca_va') return ['Ça va bien !', 'Bof…', 'Pas trop…'];
+    if (w === 'histoire_propose') return ['Oui, une histoire !', 'Non merci'];
+    const id = r?.intent ?? '';
+    if (id === 'histoire' || id === 'histoire_theme') return ['La suite !', 'Une blague', 'Une devinette'];
+    if (id === 'blague' || id === 'blague_theme') return ['Encore une blague !', 'Une devinette', 'Raconte-moi une histoire'];
+    if (id.startsWith('devinette') || id === 'langue_chat') return ['Une autre devinette', 'Une blague'];
+    const why = WHY_ASKS.filter(q => !this.mem.recent.some(x => x.startsWith(q.id + ':')));
+    if (id.startsWith('why_')) return [...pickN(why, 2).map(q => q.text), 'Une devinette'];
+    const pool = [
+      c.hunger < 50 ? 'Tu as faim ?' : 'Tu fais quoi ?',
+      'Une blague !', 'Une devinette', 'Raconte-moi une histoire', 'Ça va ?',
+      ...pickN(why, 1).map(q => q.text)
+    ];
+    if (id === 'fallback' || r?.intent === 'pattern') return pickN(pool, 3);
+    return pickN(pool.filter(x => x !== 'Ça va ?' || id !== 'ca_va'), 3);
+  }
+
   /** Phrases non comprises (gardées sur ce téléphone seulement, pour enrichir le dragon). */
   unknown(): Array<{ t: string; at: number }> { return this.mem.unknown; }
   clearUnknown(): void { this.mem.unknown = []; this.save(); }
@@ -155,6 +196,7 @@ export class Dialogue {
         if (pr.like) this.mem.likes = [pr.like, ...this.mem.likes.filter(l => l !== pr.like)].slice(0, 20);
         if (pr.dislike) this.mem.dislikes = [pr.dislike, ...this.mem.dislikes.filter(l => l !== pr.dislike)].slice(0, 20);
         if (pr.ask) { this.mem.ctx = pr.ask; this.mem.ctxAt = Date.now(); }
+        if (pr.unknown) this.remember(heard[0] ?? '');
         out = { text: c.role === 'parent' ? feminine(pr.text) : pr.text, intent: 'pattern', anim: pr.anim, fx: pr.fx, then: pr.then };
         this.mem.last = 'pattern';
         this.save();
@@ -163,8 +205,7 @@ export class Dialogue {
       if (!it) it = this.fuzzy(heard, c);
     }
     if (!it) {
-      const t = (heard[0] ?? '').trim();
-      if (t) this.mem.unknown = [{ t, at: Date.now() }, ...this.mem.unknown.filter(u => u.t !== t)].slice(0, 40);
+      this.remember(heard[0] ?? '');
       out = { text: this.choose(FALLBACK.map(t => t), c, 'fallback'), intent: 'fallback' };
     }
     else if (it.dyn) out = { ...this.dynamic(it.dyn, heard, c, prevCtx), intent: it.id, anim: it.anim, fx: it.fx, then: it.then };

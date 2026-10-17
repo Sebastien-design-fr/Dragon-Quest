@@ -167,3 +167,29 @@
 .tk-panel.listening .tk-type { display: none; }
 .sh-left .talk-fab { position: static; padding: 6px 12px 6px 9px; }
 .tk-unknown { margin: 6px 0 10px; padding-left: 18px; font-size: 14px; } .tk-unknown li { margin: 3px 0; font-style: italic; }
+
+/* ---------- Conversation : palette chaude du jeu, portrait, « il réfléchit », réponses rapides ---------- */
+.tk-panel { max-height: 52vh; background: linear-gradient(180deg, rgba(31,26,34,.985), rgba(17,14,19,.99)); border-color: rgba(217,168,74,.55); }
+.tk-head { color: var(--gold-soft); }
+.tk-title { display: inline-flex; align-items: center; gap: 8px; }
+.tk-close { color: var(--gold-soft); border-color: rgba(217,168,74,.35); }
+.tk-face { flex: none; width: 30px; height: 30px; border-radius: 50%; object-fit: cover; object-position: 88% 22%; background: #2a2026; border: 1px solid rgba(217,168,74,.55); box-shadow: 0 0 8px rgba(217,168,74,.25); }
+.tk-head .tk-face { width: 34px; height: 34px; }
+.tk-row { display: flex; align-items: flex-end; gap: 6px; max-width: 92%; align-self: flex-start; animation: tk-in .22s ease-out; }
+.tk-row .tk-line.him { max-width: none; }
+.tk-line.me { background: rgba(217,168,74,.16); color: #ffe9b8; border: 1px solid rgba(217,168,74,.35); font-style: normal; animation: tk-in .18s ease-out; }
+@keyframes tk-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.tk-typing .tk-line { display: inline-flex; gap: 4px; padding: 11px 14px; }
+.tk-typing i { width: 7px; height: 7px; border-radius: 50%; background: #8a6a3a; animation: tk-dot 1s ease-in-out infinite; }
+.tk-typing i:nth-child(2) { animation-delay: .15s; } .tk-typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes tk-dot { 0%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-4px); opacity: 1; } }
+.tk-suggest { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 1px 0 2px; }
+.tk-suggest:empty { display: none; }
+.tk-suggest::-webkit-scrollbar { display: none; }
+.tk-chip { flex: none; min-height: 38px; padding: 0 13px; border-radius: 999px; border: 1px solid rgba(217,168,74,.5); background: rgba(217,168,74,.08); color: var(--gold-soft); font: inherit; font-size: 13.5px; cursor: pointer; white-space: nowrap; }
+.tk-chip:active { background: rgba(217,168,74,.25); }
+.tk-mic { background: radial-gradient(circle at 40% 35%, #f2c46a, #b5761c 70%, #6a3f0c); color: #1a1208; box-shadow: 0 0 14px rgba(217,168,74,.35); }
+.tk-panel.listening .tk-mic { background: radial-gradient(circle at 40% 35%, #ffe08a, #e09a2a 70%, #8a5210); animation: tk-pulse 1.2s ease-in-out infinite; }
+@keyframes tk-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(242,196,106,.55); } 50% { box-shadow: 0 0 0 12px rgba(242,196,106,0); } }
+.tk-type input { border-color: rgba(217,168,74,.3); background: rgba(255,240,210,.05); }
+@media (prefers-reduced-motion: reduce) { .tk-row, .tk-line.me { animation: none; } }

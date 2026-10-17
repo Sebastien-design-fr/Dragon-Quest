@@ -160,8 +160,10 @@ export const INTENTS: IntentDef[] = [
     r: ['La la laaa… Grrr la laaa ! Bon, les dragons chantent faux, c’est connu.', 'Je ne connais qu’une chanson : « Il était un petit dragon, qui n’avait ja-ja-jamais volé »…', 'J’adore la musique ! Mets-en une, et je danse.', 'Hum hum… Laaa… Pardon, j’ai craché une étincelle sur la dernière note.'], anim: 'dance' },
   { id: 'pourquoi', k: ['pourquoi'],
     r: ['Hmm… parce que les dragons sont curieux, et que toi aussi !', 'Bonne question. Je vais y réfléchir pendant ma sieste.', 'Pourquoi ? Parce que ! Réponse officielle des dragons.'] },
-  { id: 'plus_fort', k: ['qui est le plus fort', 'qui est le plus beau', 'qui est la plus belle', 'le plus fort', 'le meilleur dragon'],
-    r: ['Moi, évidemment ! Enfin… après toi.', 'Le plus fort, c’est celui qui fait ses quêtes. Donc toi, aujourd’hui !', 'La plus belle ? Elle est en train de me parler.'] },
+  { id: 'plus_fort', k: ['qui est le plus fort', 'le plus fort', 'le meilleur dragon', 'qui est le meilleur'],
+    r: ['Moi, évidemment ! Enfin… après toi.', 'Le plus fort, c’est celui qui fait ses quêtes. Donc toi, aujourd’hui !', 'Un T-rex, peut-être… mais lui, il ne vole pas et ne crache pas de feu. Avantage dragon !'] },
+  { id: 'plus_beau', k: ['qui est le plus beau', 'qui est la plus belle', 'le plus beau', 'la plus belle'],
+    r: ['Hmm… quelqu’un qui est en train de me parler. Suivez mon regard.', 'Toi ! Et moi juste après, avec mes écailles toutes brillantes.'] },
   { id: 'ciel', k: ['etoile*', 'la lune', 'le ciel', 'le soleil', 'les nuages', 'l espace', 'les planetes'],
     r: ['La nuit, je compte les étoiles. J’en suis à 3 412. Ou 3 413.', 'La lune, c’est la veilleuse des dragons. Elle nous garde.', 'J’aimerais voler jusqu’aux nuages et en goûter un. Ils ont l’air moelleux.'] },
 
