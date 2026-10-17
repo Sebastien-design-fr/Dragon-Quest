@@ -242,13 +242,25 @@ function tidy(app: App, key: string): void {
 export function installLairTaps(app: App): void {
   const stage = app.root.querySelector<HTMLElement>('.stage-view');
   if (!stage) return;
+  // Zone touchable pour les débris : tout le canvas sauf la barre d'actions posée sur le bas de la scène.
+  const updateSafe = () => {
+    const c = app.view.canvas.getBoundingClientRect();
+    const bar = stage.querySelector<HTMLElement>('.sh-bar');
+    const barTop = bar && bar.offsetParent ? bar.getBoundingClientRect().top - c.top : c.height;
+    app.view.decor.safe = { left: 8, right: c.width - 8, bottom: Math.min(c.height, barTop) - 6 };
+  };
+  updateSafe();
+  new ResizeObserver(updateSafe).observe(stage);
   stage.addEventListener('pointerdown', e => {
     if (editor || !app.showingOwn || !app.family.companion) return;
-    // seulement les touchers sur la scène elle-même (pas sur le loup, les boutons, les bulles…)
-    if (e.target !== app.view.canvas) return;
+    // touchers sur la scène elle-même ; sur le loup, seulement pour ramasser un débris caché derrière lui
+    const onWolf = (e.target as Element | null)?.matches?.('canvas.wolf') ?? false;
+    if (e.target !== app.view.canvas && !onWolf) return;
+    updateSafe();
     const p = app.view.toCanvas(e.clientX, e.clientY);
     const hit = app.view.decor.hit(p.x, p.y, true);
     if (hit) { e.stopPropagation(); e.preventDefault(); tidy(app, hit.key); return; }
+    if (onWolf) return;
     // outils de la grotte (gamelle, bassin, coffre, nid acheté) ; un objet derrière le dragon ne lui vole pas ses caresses
     const any = app.view.decor.hit(p.x, p.y);
     const action = any ? toolAction(any.key) : null;

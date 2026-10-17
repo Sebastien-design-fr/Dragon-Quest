@@ -26,6 +26,9 @@ export interface DecorItem {
 
 export interface DecorRect { key: string; x: number; y: number; w: number; h: number; debris: boolean }
 
+/** Profondeur des débris sous les pattes (unités de scène), voir debrisItem dans ui/Lair.ts. */
+const DEBRIS_BAND: [number, number] = [0.06, 0.14];
+
 const images = new Map<string, HTMLImageElement>();
 function image(path: string): HTMLImageElement {
   let im = images.get(path);
@@ -46,6 +49,12 @@ export class DecorLayer {
   private batTimer = 1.5;
   /** Repère de la dernière image : origine (pixels) et unité (pixels par unité de scène). */
   frame = { ox: 0, oy: 0, u: 1 };
+  /**
+   * Zone de la scène réellement visible et touchable (pixels CSS depuis le coin du canvas) : la barre d'actions
+   * recouvre le bas. Les débris y sont ramenés, sinon on ne pourrait pas les toucher. null = tout le canvas.
+   */
+  safe: { left: number; right: number; bottom: number } | null = null;
+  private dpr = 1;
 
   set(items: DecorItem[]): void {
     // un débris en train de disparaître le reste jusqu'au bout
@@ -76,8 +85,22 @@ export class DecorLayer {
     const h = w * im.naturalHeight / im.naturalWidth * squash;
     const cx = ox + it.dx * u;
     const py = oy + it.dy * u;
-    const y = it.anchor === 'wall' ? py : it.anchor === 'ground' ? py - h / 2 : py - h;
-    return { im, x: cx - w / 2, y, w, h };
+    let x = cx - w / 2;
+    let y = it.anchor === 'wall' ? py : it.anchor === 'ground' ? py - h / 2 : py - h;
+    if (it.debris && this.safe) {
+      // Un débris reste entier dans la zone touchable, loin des bords. Si la barre d'actions mange le bas du sol,
+      // la bande des débris (dy de 0,06 à 0,14 sous les pattes) est resserrée entre le sol et le haut de la barre :
+      // ils restent étalés en profondeur au lieu de s'aligner tous contre la barre.
+      const d = this.dpr, pad = 6 * d;
+      x = Math.min(Math.max(x, this.safe.left * d + pad), this.safe.right * d - w - pad);
+      const maxB = this.safe.bottom * d - pad;
+      if (oy + DEBRIS_BAND[1] * u > maxB) {
+        const minB = Math.min(oy + 0.02 * u, maxB - 0.04 * u);
+        const t = Math.min(1, Math.max(0, (it.dy - DEBRIS_BAND[0]) / (DEBRIS_BAND[1] - DEBRIS_BAND[0])));
+        y = minB + (maxB - minB) * t - h;
+      }
+    }
+    return { im, x, y, w, h };
   }
 
   /**
@@ -85,7 +108,7 @@ export class DecorLayer {
    * u : hauteur affichée du décor peint (pixels).
    */
   draw(ctx: CanvasRenderingContext2D, which: 'back' | 'front', W: number, ground: number, u: number, time: number, dt: number, dpr: number): void {
-    if (which === 'back') { this.frame = { ox: W / 2, oy: ground, u }; this.rects = []; }
+    if (which === 'back') { this.frame = { ox: W / 2, oy: ground, u }; this.rects = []; this.dpr = dpr; }
     const inFront = (it: DecorItem) => !!it.front || (!it.behind && it.anchor === 'floor' && it.dy > 0.045);
     const list = this.items.filter(it => (which === 'front') === inFront(it))
       .sort((a, b) => (a.anchor === 'ground' ? -1 : 0) - (b.anchor === 'ground' ? -1 : 0) || (a.anchor === 'wall' ? -1 : 0) - (b.anchor === 'wall' ? -1 : 0) || a.dy - b.dy);
