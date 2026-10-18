@@ -30,7 +30,7 @@ import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missio
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
 import { installShake } from './Sensors.js';
-import { hideDrape, morningCurtain, nightKey, openBlanket } from './Rituals.js';
+import { hideDrape, morningCurtain, nightKey, openBlanket, showDrape } from './Rituals.js';
 import { appliesOn, todayKey } from '../family/model.js';
 import { sayFor, thoughts, type Thought, type ThoughtAction } from '../family/Thoughts.js';
 import type { ParentHub } from '../family/ParentHub.js';
@@ -300,6 +300,8 @@ export class App {
       this.wokenAt = comp.data.wokeAt ?? 0;
       this.applyCare();
       if (this.showingOwn) void view.play(this.sleeping ? 'sleep' : this.baseLoop());
+      // couché ce soir sous sa couverture : elle est toujours là quand on rouvre l'appli
+      if (this.sleeping && comp.data.blanketDay === nightKey()) setTimeout(() => { if (this.sleeping) showDrape(this); }, 1500);
       const away = comp.greet();
       if (!this.isParent) setTimeout(() => {
         if (away && !this.sleeping) { void this.act('welcome'); this.say(sayFor('welcome'), null, 5000); }
@@ -372,7 +374,7 @@ export class App {
     this.renderHud();
     this.show(this.screens[0].id);
     // ?dev=1 : panneau graphique ouvert d'office (tests)
-    if (new URLSearchParams(location.search).get('dev') === '1') { this.devMode = true; setTimeout(() => toggleDevPanel(this), 800); }
+    if (new URLSearchParams(location.search).get('dev') === '1') { this.devMode = true; (window as unknown as { __app: App }).__app = this; setTimeout(() => toggleDevPanel(this), 800); }
   }
 
   /** Joue la prochaine visite en attente, si notre dragon est affiché et éveillé. */
