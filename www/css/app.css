@@ -378,3 +378,16 @@ details p { margin-top: 6px; line-height: 1.45; }
 .pm-ico.feature { color: #9fe6ff; }
 .pm-step:not(.done):not(.current) .pm-ms { opacity: .85; }
 @media (prefers-reduced-motion: reduce) { .pm-step.current .pm-node { animation: none; } }
+
+/* Petits défis du parent (en tête de son chemin) */
+.pm-defis { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; border: 1px solid rgba(217,168,74,.35); background: rgba(217,168,74,.06); }
+.pm-defis p { margin: 0; }
+.pm-defis-head { display: flex; justify-content: space-between; align-items: baseline; }
+.pm-defis-head strong { font-family: var(--display); font-size: 17px; color: var(--gold-soft); }
+.pm-defi { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); text-align: left; cursor: pointer; }
+.pm-defi > span:last-child { display: flex; flex-direction: column; }
+.pm-defi-box { flex: none; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; border: 2px solid rgba(217,168,74,.6); color: #1a1408; }
+.pm-defi.done { opacity: .75; cursor: default; }
+.pm-defi.done .pm-defi-box, .pm-defi.pick.on .pm-defi-box { background: linear-gradient(135deg, #ffe08a, #c98a14); border-color: #ffe08a; }
+.pm-defi.pick.on { border-color: rgba(217,168,74,.6); }
+.pm-defis-edit { align-self: flex-start; }

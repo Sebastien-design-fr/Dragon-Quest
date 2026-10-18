@@ -68,6 +68,8 @@ interface Data {
   lairDay: string;
   tidied: number;
   /** Mode parent (tamagotchi) : XP gagné par les soins aujourd'hui. */
+  /** Mode parent : ses petits défis (habitudes choisies) et ceux réussis aujourd'hui. */
+  defis?: { chosen: string[]; doneDay: string; done: string[] };
   /** Mode parent : repas de famille reçus aujourd'hui (gestes de parent : valider, encourager, proposer une quête). */
   familyMeals?: number;
   /** Mode parent : « journée chargée » activée pour ce jour (AAAA-MM-JJ). */
@@ -102,6 +104,23 @@ const H = 3600 * 1000;
 const DECAY = { hunger: 4, clean: 1.4, mood: 2.2 };
 /** Plancher des jauges : au pire, il s'ennuie (jamais affamé, jamais malade). */
 export const FLOOR = 30;
+
+/** Petits défis du parent : des habitudes pour soi, au choix (3 au plus). */
+export interface DefiDef { id: string; label: string; hint: string }
+export const DEFIS: DefiDef[] = [
+  { id: 'eau', label: 'Boire assez d’eau', hint: 'Environ 1,5 litre dans la journée' },
+  { id: 'marche', label: 'Marcher 20 minutes', hint: 'Même en plusieurs fois' },
+  { id: 'coucher', label: 'Me coucher avant 23 h', hint: 'Le sommeil, ça se prépare' },
+  { id: 'lecture', label: 'Lire 10 minutes', hint: 'Un livre, pas un écran' },
+  { id: 'ecran', label: 'Une heure sans écran', hint: 'Téléphone posé, tête reposée' },
+  { id: 'calme', label: '5 minutes de calme', hint: 'Respirer, s’étirer, ne rien faire' },
+  { id: 'sport', label: 'Un peu de sport', hint: 'Ce qui te fait du bien' },
+  { id: 'legumes', label: '5 fruits et légumes', hint: 'Sur toute la journée' },
+  { id: 'proche', label: 'Prendre des nouvelles d’un proche', hint: 'Un appel, un message' },
+  { id: 'jeu', label: 'Jouer avec mon enfant', hint: 'Un vrai moment ensemble' }
+];
+/** Gains d'un défi réussi (parent). */
+export const DEFI_XP = 15, DEFI_GOLD = 5;
 /** Garde-manger : rations disponibles chaque matin (gratuites). */
 export const PANTRY = { ration: 5, fish: 2 };
 
@@ -403,6 +422,45 @@ export class Companion {
   }
 
   // ---------- Parent : une dragonne qui vit au rythme d'un adulte ----------
+  /** Petits défis du parent : prendre soin de soi en prenant soin d'elle (3 au plus, chaque jour). */
+  static DEFI_MAX = 3;
+  private defiState(): { chosen: string[]; doneDay: string; done: string[] } {
+    const d = this.data;
+    if (!d.defis) d.defis = { chosen: ['eau', 'marche', 'coucher'], doneDay: todayKey(), done: [] };
+    if (d.defis.doneDay !== todayKey()) { d.defis.doneDay = todayKey(); d.defis.done = []; }
+    return d.defis;
+  }
+  /** Défis choisis, avec leur état du jour. */
+  defis(): Array<DefiDef & { done: boolean }> {
+    const st = this.defiState();
+    return st.chosen.map(id => DEFIS.find(x => x.id === id)).filter((x): x is DefiDef => !!x).map(x => ({ ...x, done: st.done.includes(x.id) }));
+  }
+  chosenDefis(): string[] { return [...this.defiState().chosen]; }
+  /** Choisir / retirer un défi (3 au plus). Renvoie false si la limite est atteinte. */
+  toggleDefi(id: string): boolean {
+    const st = this.defiState();
+    if (st.chosen.includes(id)) st.chosen = st.chosen.filter(x => x !== id);
+    else if (st.chosen.length >= Companion.DEFI_MAX) return false;
+    else st.chosen.push(id);
+    this.save();
+    return true;
+  }
+  /** Défi réussi aujourd'hui : elle mange, se réjouit et grandit (XP et or hors du plafond des soins). */
+  completeDefi(id: string): string | null {
+    if (this.mode !== 'parent') return null;
+    this.tick();
+    const st = this.defiState();
+    if (!st.chosen.includes(id) || st.done.includes(id)) return null;
+    st.done.push(id);
+    const d = this.data;
+    d.hunger = clamp(d.hunger + 10); d.mood = clamp(d.mood + 12);
+    this.addBond(1);
+    this.state.addXp(DEFI_XP); this.state.addGold(DEFI_GOLD);
+    this.save();
+    const all = st.done.length === st.chosen.length;
+    return all ? `Tous tes défis du jour sont faits ! ${this.name} est fière de toi.` : `${this.name} est fière de toi : +${DEFI_XP} XP, +${DEFI_GOLD} or.`;
+  }
+
   /** Journée chargée (mode parent) : ses besoins baissent quatre fois moins vite et elle mange seule. */
   busy(at = new Date()): boolean { return this.mode === 'parent' && this.data.busyDay === todayKey(at); }
   setBusy(on: boolean): void { this.tick(); this.data.busyDay = on ? todayKey() : ''; this.save(); }

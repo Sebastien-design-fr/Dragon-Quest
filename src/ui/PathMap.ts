@@ -3,6 +3,7 @@
 // nouveautés ; « encore N quêtes » calculé avec l'XP moyen de ses vraies missions.
 // S'ouvre en touchant le niveau / la barre d'XP du bandeau.
 import { Assets } from '../engine/AssetManager.js';
+import { Companion, DEFIS, DEFI_XP } from '../family/Companion.js';
 import { POWERS } from '../game/StagePowers.js';
 import type { App } from './App.js';
 import { ICONS, h, icon } from './dom.js';
@@ -29,7 +30,8 @@ function milestones(app: App): Milestone[] {
     if (t.level <= 1) continue;
     out.push({ level: t.level, kind: 'tint', title: `Reflet ${t.label}`, sub: 'Une nouvelle couleur d’écailles', color: `rgb(${t.color.join(',')})` });
   }
-  for (const [f, lv] of Object.entries(UNLOCK_LEVEL)) {
+  // nouveautés débloquées par niveau : seulement pour l'enfant (le parent a tout d'emblée)
+  if (!app.isParent) for (const [f, lv] of Object.entries(UNLOCK_LEVEL)) {
     const txt = FEATURE_TEXT[f];
     if (txt && lv > 1) out.push({ level: lv, kind: 'feature', title: txt[0], sub: txt[1] });
   }
@@ -59,6 +61,15 @@ const plural = (n: number, w: string) => `${n} ${w}${n > 1 ? 's' : ''}`;
  * quand c'est loin (« 260 quêtes » décourage, « environ 3 mois » donne un horizon).
  */
 function howLong(app: App, xp: number, per: number): string {
+  if (app.isParent) {
+    // la dragonne grandit avec les soins, les petits défis, les gestes de parent et les pas
+    const comp = app.family.companion;
+    const perDay = Companion.CARE_XP_CAP * 0.7 + (comp?.chosenDefis().length ?? 0) * DEFI_XP * 0.7 + 20 + 24;
+    const days = Math.max(1, Math.ceil(xp / perDay));
+    if (days < 14) return `environ ${plural(days, 'jour')}`;
+    const weeks = Math.round(days / 7);
+    return weeks <= 8 ? `environ ${weeks} semaines` : `environ ${Math.round(weeks / 4.3)} mois`;
+  }
   const q = quests(xp, per);
   if (q <= 25) return `encore ${plural(q, 'quête')}`;
   const perDay = Math.max(1, app.family.book?.today().length ?? 3);
@@ -77,8 +88,41 @@ function badge(m: Milestone, reached: boolean, variant: string): HTMLElement {
   return h('span', { class: `pm-ico ${m.kind}` }, icon(m.kind === 'power' ? ICONS.spark : ICONS.gift, 18));
 }
 
+/** Parent : ses petits défis du jour (cocher), et le choix des défis (3 au plus). */
+function defisCard(app: App): HTMLElement | null {
+  const comp = app.family.companion;
+  if (!app.isParent || !comp) return null;
+  const box = h('section', { class: 'pm-defis', 'aria-label': 'Mes petits défis du jour' });
+  let choosing = false;
+  const render = () => {
+    const list = comp.defis();
+    const done = list.filter(x => x.done).length;
+    box.replaceChildren(
+      h('div', { class: 'pm-defis-head' },
+        h('strong', null, 'Mes petits défis du jour'),
+        h('span', { class: 'small muted' }, `${done} / ${list.length}`)),
+      h('p', { class: 'small muted' }, `Prendre soin de toi la fait grandir : chaque défi réussi lui donne ${DEFI_XP} XP et la nourrit.`),
+      ...(choosing
+        ? DEFIS.map(x => {
+          const on = comp.chosenDefis().includes(x.id);
+          return h('button', { type: 'button', class: `pm-defi pick${on ? ' on' : ''}`, 'aria-pressed': on ? 'true' : 'false', onclick: () => {
+            if (!comp.toggleDefi(x.id)) app.toast(`${Companion.DEFI_MAX} défis au plus : retire-en un d’abord`);
+            render();
+          } }, h('span', { class: 'pm-defi-box', 'aria-hidden': 'true' }, on ? icon(ICONS.check, 14) : null), h('span', null, h('strong', null, x.label), h('span', { class: 'small muted' }, x.hint)));
+        })
+        : list.length ? list.map(x => h('button', { type: 'button', class: `pm-defi${x.done ? ' done' : ''}`, disabled: x.done, onclick: () => {
+          const t = comp.completeDefi(x.id);
+          if (t) { app.toast(t); app.view.emit('happySparkle', 'head_anchor'); void app.act('happy'); }
+          render();
+        } }, h('span', { class: 'pm-defi-box', 'aria-hidden': 'true' }, x.done ? icon(ICONS.check, 14) : null), h('span', null, h('strong', null, x.label), h('span', { class: 'small muted' }, x.done ? 'Fait aujourd’hui' : x.hint))))
+        : [h('p', { class: 'small' }, 'Aucun défi choisi pour l’instant.')]),
+      h('button', { type: 'button', class: 'btn ghost small-btn pm-defis-edit', onclick: () => { choosing = !choosing; render(); } }, choosing ? 'Terminé' : 'Choisir mes défis'));
+  };
+  render();
+  return box;
+}
+
 export function openPathMap(app: App): void {
-  if (app.isParent) return;
   const d = app.state.data;
   const per = questXp(app);
   const all = milestones(app);
@@ -88,7 +132,7 @@ export function openPathMap(app: App): void {
   const nextEvolve = all.find(m => m.kind === 'evolve' && m.level > d.level);
   const toNext = app.state.xpToNext() - d.xp;
 
-  openSheet('Mon chemin', () => {
+  openSheet(app.isParent ? `Le chemin de ${app.family.companion?.name ?? 'ta dragonne'}` : 'Mon chemin', () => {
     const head = h('section', { class: 'pm-head' },
       h('div', { class: 'pm-now' },
         h('strong', null, `Niveau ${d.level}`),
@@ -115,15 +159,16 @@ export function openPathMap(app: App): void {
         h('span', { class: 'pm-label' },
           h('span', { class: 'pm-lv' }, `Niveau ${lv}`),
           ...ms.map(m => h('span', { class: 'pm-ms' }, badge(m, reached, variant),
-            h('span', null, h('strong', null, m.kind === 'evolve' && !reached ? 'Évolution mystère' : m.title), h('span', { class: 'small muted' }, m.kind === 'evolve' && !reached ? 'Qui va-t-il devenir ?' : m.sub)))))));
+            h('span', null, h('strong', null, m.kind === 'evolve' && !reached ? 'Évolution mystère' : m.title), h('span', { class: 'small muted' }, m.kind === 'evolve' && !reached ? (app.isParent ? 'Qui va-t-elle devenir ?' : 'Qui va-t-il devenir ?') : m.sub)))))));
     }
     // la route s'ouvre sur sa position actuelle
-    setTimeout(() => {
+    // (parent : ses petits défis du jour sont en haut, la route reste en dessous)
+    if (!app.isParent) setTimeout(() => {
       const panel = road.closest<HTMLElement>('.sheet-panel'), cur = road.querySelector<HTMLElement>('.current');
       if (!panel || !cur) return;
       const y = panel.scrollTop + cur.getBoundingClientRect().top - panel.getBoundingClientRect().top;
       panel.scrollTop = Math.max(0, y - panel.clientHeight * 0.35);
     }, 320);
-    return [head, road];
+    return [defisCard(app), head, road].filter((n): n is HTMLElement => !!n);
   });
 }
