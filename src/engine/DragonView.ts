@@ -1108,6 +1108,30 @@ export class DragonView {
     ctx.globalAlpha = 1;
   }
 
+  /**
+   * Image d'une pose peinte (vol, sommeil) avec les équipements portés, pour les mini-jeux.
+   * Cadrée sur la caméra du rig ; null si la pose n'existe pas pour ce stade. Rien n'est affiché à l'écran.
+   */
+  async posePortrait(pose: PoseId, width = 560): Promise<HTMLCanvasElement | null> {
+    const v = this.poseViews[pose];
+    if (!v?.skeleton || !v.rig) return null;
+    await v.prewarm();
+    // cadre de la caméra élargi : les ailes et la queue dépassent souvent du cadre serré du rig (recadré ensuite)
+    const c0 = v.rig.camera, pad = 0.3;
+    const cam = { x: c0.x - c0.w * pad, y: c0.y - c0.h * pad, w: c0.w * (1 + 2 * pad), h: c0.h * (1 + 2 * pad) };
+    const W = width, H = Math.max(1, Math.round(width * cam.h / cam.w));
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const ctx = c.getContext('2d');
+    if (!ctx || !v.skeleton) return null;
+    v.ensureSkin();
+    v.skeleton.resetPose(); v.skeleton.update(IDENT); v.skin?.update();
+    const s = W / cam.w;
+    v.camM.a = s; v.camM.b = 0; v.camM.c = 0; v.camM.d = s; v.camM.e = -cam.x * s; v.camM.f = -cam.y * s;
+    v.lightU = null; v.fx = this.fx; v.tint = this.tint; v.time = this.time; v.dirt = 0;
+    v.drawDragon(ctx, W, H, 1);
+    return c;
+  }
+
   /** Vue fille (pose peinte) : même caméra et mêmes mouvements que la vue principale, dessinée dans son canvas. */
   private renderPose(ctx: CanvasRenderingContext2D, main: DragonView, W: number, H: number, alpha: number): void {
     const sk = this.skeleton;

@@ -6,7 +6,7 @@ import type { App } from './App.js';
 import { ICONS, h, icon } from './dom.js';
 import { GAMES } from './games/index.js';
 import { lastCatch } from './games/Fishing.js';
-import { captureDragon } from './PhotoMode.js';
+import { captureDragon, captureFlightPose } from './PhotoMode.js';
 import { openSheet } from './screens/common.js';
 import { startBlow } from './Sensors.js';
 import { openTalk } from './TalkUI.js';
@@ -106,14 +106,19 @@ export function gamesSheet(app: App): void {
         close();
         // Le dragon équipé (collier, armure…) remplace l'illustration de base quand il est à l'écran.
         // La capture masque le décor deux images : un écran de jeu opaque la cache.
-        let stand = opts.stand;
+        let stand = opts.stand, flyUp = opts.flyUp, flyDown = opts.flyDown;
         if (app.showingOwn && !app.sleeping && Object.keys(app.state.data.equipped).length) {
           const cover = h('div', { class: 'game game-painted', 'aria-hidden': 'true' });
           document.body.append(cover);
           stand = (await captureDragon(app)) ?? stand;
+          // en vol aussi, il garde son casque et son armure (poses peintes équipées)
+          if (g.id === 'race') {
+            flyUp = (await captureFlightPose(app, 'flyUp')) ?? flyUp;
+            flyDown = (await captureFlightPose(app, 'flyDown')) ?? flyDown;
+          }
           setTimeout(() => cover.remove(), 50);
         }
-        const score = await g.play(comp.name, { ...opts, stand });
+        const score = await g.play(comp.name, { ...opts, stand, flyUp, flyDown });
         const first = !already;
         const firstOfDay = (training?.playedToday() ?? 0) === 0;
         const res = training?.record(g.id, g.stat as GameStat, score);

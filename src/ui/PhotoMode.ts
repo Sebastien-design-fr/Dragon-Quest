@@ -38,6 +38,13 @@ export async function captureDragon(app: App): Promise<string | null> {
   return c ? c.toDataURL('image/png') : null;
 }
 
+/** Pose de vol équipée (ailes hautes / basses), détourée, pour la course dans les nuages. */
+export async function captureFlightPose(app: App, pose: 'flyUp' | 'flyDown'): Promise<string | null> {
+  const c = await app.view.posePortrait(pose);
+  const t = c ? crop(c) : null;
+  return t ? t.toDataURL('image/png') : null;
+}
+
 /** Recadre sur les pixels non transparents. */
 function crop(c: HTMLCanvasElement): HTMLCanvasElement | null {
   const g = c.getContext('2d', { willReadFrequently: true })!;

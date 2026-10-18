@@ -54,3 +54,27 @@
   -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%2048%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2048%20L0%2020%20Q19%2017%2038%2022%20Q49%2020%2060%2016%20Q79%208%2098%2016%20Q127%2017%20156%2016%20Q167%2011%20178%2022%20Q189%2017%20200%2016%20Q229%2011%20258%2016%20Q287%2020%20316%2018%20Q345%2020%20374%2022%20Q385%2017%20396%2016%20Q398%2017%20400%2020%20L400%2048%20Z%22%20fill%3D%22%23000%22/%3E%3C/svg%3E") center top / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%2048%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2048%20L0%2020%20Q19%2017%2038%2022%20Q49%2020%2060%2016%20Q79%208%2098%2016%20Q127%2017%20156%2016%20Q167%2011%20178%2022%20Q189%2017%20200%2016%20Q229%2011%20258%2016%20Q287%2020%20316%2018%20Q345%2020%20374%2022%20Q385%2017%20396%2016%20Q398%2017%20400%2020%20L400%2048%20Z%22%20fill%3D%22%23000%22/%3E%3C/svg%3E") center top / 100% 100% no-repeat;
   filter: drop-shadow(0 -1.5px 0 rgba(242,212,138,.42)) drop-shadow(0 -6px 10px var(--st-glow, rgba(217,168,74,.3)));
 }
+
+/* ================= Typographie : Cinzel pour les titres courts, Andika pour ce qu'un enfant doit lire ================= */
+/* Cinzel n'a que des capitales : sur un intitulé de quête long elle devient lourde. Les intitulés passent en Andika. */
+.qd-title, .q-title, .ph-title, .pm-ms strong, .cs-game strong, .rw-title { font-family: var(--body); font-weight: 700; letter-spacing: 0; }
+.qd-title { font-size: 21px; line-height: 1.2; }
+h2, h3 { letter-spacing: .02em; }
+
+/* ================= Cartes : pierre sombre, liseré d'or, lumière par le haut ================= */
+/* (au lieu d'un panneau plat gris : la même matière que le rebord de la grotte) */
+.card {
+  background: linear-gradient(180deg, #1e191d 0%, #151216 100%);
+  border: 1px solid rgba(217,168,74,.16);
+  box-shadow: inset 0 1px 0 rgba(255,240,210,.06), 0 6px 18px rgba(0,0,0,.35);
+}
+.card > h3:first-child, .card > h2:first-child { color: var(--gold-soft); }
+
+/* ================= Changement d'onglet : la scène glisse d'une taille à l'autre ================= */
+.stage-view { view-transition-name: stage; }
+#hud { view-transition-name: hud; }
+.tabs { view-transition-name: tabs; }
+::view-transition-group(stage) { animation-duration: .38s; animation-timing-function: cubic-bezier(.2,.8,.25,1); }
+/* l'image de la scène garde ses proportions pendant le glissement (recadrée, jamais écrasée) */
+::view-transition-old(stage), ::view-transition-new(stage) { height: 100%; width: 100%; object-fit: cover; object-position: 50% 75%; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .25s; }

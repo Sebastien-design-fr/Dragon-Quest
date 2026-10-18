@@ -1,3 +1,10 @@
+/* Polices incluses dans l'appli (pas de réseau) — licence SIL Open Font License, voir fonts/LICENCES.md.
+   Cinzel : titres gravés dans la pierre. Andika : texte, conçue pour les enfants qui apprennent à lire (b/d, I/l bien distincts). */
+@font-face { font-family: 'Cinzel'; src: url('../fonts/cinzel.woff2') format('woff2'); font-weight: 400 900; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Andika'; src: url('../fonts/andika-regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Andika'; src: url('../fonts/andika-bold.woff2') format('woff2'); font-weight: 600 800; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Andika'; src: url('../fonts/andika-italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
+
 :root {
   --bg: #0b0a0d;
   --panel: #15131a;
@@ -9,7 +16,7 @@
   --muted: #a2988a;
   --danger: #d0584c;
   --display: 'Cinzel', 'Trajan Pro', 'Cormorant Garamond', Georgia, serif;
-  --body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --body: 'Andika', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: var(--body); overscroll-behavior: none; }

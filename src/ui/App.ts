@@ -23,7 +23,7 @@ import { applyTint } from './Appearance.js';
 import { hatchCeremony, needsHatch } from './Hatch.js';
 import { installLairTaps, syncDecor } from './Lair.js';
 import { fireSeasonReaction, installSeasonal, syncSeasonal } from './Seasonal.js';
-import { installWeather } from './Weather.js';
+import { currentWeather, installWeather } from './Weather.js';
 import { installTalk, memoryThought, openTalk } from './TalkUI.js';
 import { openPathMap } from './PathMap.js';
 import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
@@ -306,6 +306,12 @@ export class App {
         else this.think(true);
       }, 1500);
       window.setInterval(() => { comp.tick(); this.applyCare(); this.think(false); }, 40000);
+      // par temps froid, un petit nuage de buée sort de sa gueule de temps en temps
+      window.setInterval(() => {
+        const wx = this.state.data.settings.weather !== false ? currentWeather() : null;
+        const cold = !!wx && (wx.temp <= 6 || wx.kind === 'snow');
+        if (cold && this.showingOwn && !this.sleeping && !this.evolving && !document.hidden && Math.random() < 0.3) this.view.emit('breathMist', 'mouth_anchor');
+      }, 2500);
       document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(() => this.think(true), 1200); });
     }
 
@@ -459,7 +465,7 @@ export class App {
     this.tabs.style.gridTemplateColumns = `repeat(${visible.length}, minmax(0, 1fr))`;
     for (const s of visible) {
       const badge = s.badge?.() ?? 0;
-      this.tabs.append(h('button', { class: 'tab', 'data-id': s.id, onclick: () => this.show(s.id) },
+      this.tabs.append(h('button', { class: 'tab', 'data-id': s.id, onclick: () => this.showAnimated(s.id) },
         h('span', { class: 'tab-icon' }, icon(s.icon, 22), badge ? h('span', { class: 'tab-badge' }, String(badge)) : null),
         h('span', null, s.label)));
     }
@@ -489,6 +495,17 @@ export class App {
     else setTimeout(() => this.morningCheck(), 600);
     this.buildTabs();
     window.dispatchEvent(new Event('resize'));
+  }
+
+  /**
+   * Changement d'onglet depuis la barre du bas : la scène glisse d'une taille à l'autre (transition de vue native),
+   * au lieu de sauter. Ailleurs, show() reste immédiat (les appelants s'en servent aussitôt après).
+   */
+  showAnimated(id: string): void {
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!doc.startViewTransition || calm || id === this.current?.id) { this.show(id); return; }
+    doc.startViewTransition(() => this.show(id));
   }
 
   /** Ouvre le coffre sur un onglet précis (boutique, objets, récompenses). */

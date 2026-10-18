@@ -18,7 +18,7 @@ import { unlocked } from './Unlocks.js';
 /** Place du loup dans la scène (unités de scène, voir DecorLayer) : à gauche du dragon, sur le sol. */
 const SPOT = { dx: -0.34, dy: 0.008, h: 0.17 };
 
-let wolf: { el: HTMLCanvasElement; sprite: WolfSprite; badge: HTMLButtonElement; raf: number; mode: 'home' | 'leaving' | 'away' | 'back' | 'arriving' | 'play'; t0: number; happyUntil: number; fireAt: number; nextPlay: number; x: number; y: number; w: number } | null = null;
+let wolf: { el: HTMLCanvasElement; sprite: WolfSprite; badge: HTMLButtonElement; raf: number; mode: 'home' | 'leaving' | 'away' | 'back' | 'arriving' | 'play'; t0: number; happyUntil: number; fireAt: number; nextPlay: number; x: number; y: number; w: number; dustAt?: number } | null = null;
 
 export function installVoyage(app: App): void {
   const v = app.family.voyage, comp = app.family.companion;
@@ -97,6 +97,8 @@ export function installVoyage(app: App): void {
       w.sprite.draw(wid, hgt, now / 1000, { run: running, mirror, bag, happy: w.mode === 'back' || now < w.happyUntil, sleep: app.sleeping && !running, cower, wear: Object.values(app.family.voyage?.data.wolfWear ?? {}) as string[], light: app.view.characterLight() });
       el.style.transform = `translate(${x - wid / 2}px, ${groundY - hgt * 1.12 - hop}px)`;
       w.x = x; w.y = groundY - hgt; w.w = wid;
+      // il court : petits nuages de poussière sous les pattes (un toutes les 0,22 s)
+      if (running && now - (w.dustAt ?? 0) > 220) { w.dustAt = now; app.view.burstAt(hr.left + x + (mirror ? 1 : -1) * wid * 0.25, hr.top + groundY - 2, 'dust'); }
       el.classList.toggle('glow', w.mode === 'back');
       const fg = app.view.fireGlow;
       el.style.filter = fg > 0.02 ? `brightness(${(1 + 0.22 * fg).toFixed(3)}) sepia(${(0.22 * fg).toFixed(3)}) saturate(${(1 + 0.3 * fg).toFixed(3)})` : '';
