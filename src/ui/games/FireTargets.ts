@@ -14,13 +14,22 @@ const DURATION = 30;
 const DRAGON_W = 140;
 const BALL_SPEED = 950;
 const POINTS: Record<Kind, number> = { shield: 1, dummy: 1, lantern: 1, gold: 3, ice: -2 };
+/** Tirage pseudo-aléatoire reproductible (duel : les deux téléphones voient les mêmes cibles). */
+function seeded(seed: number): () => number {
+  let a = seed >>> 0 || 1;
+  return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+
 /** Souffle ardent (dragon adulte) : rayon de l'explosion qui touche aussi les cibles voisines. */
 const BLAST_R = 72;
 
 export function playFireTargets(dragonName: string, opts: GameOpts): Promise<number> {
   return new Promise(resolve => {
-    const blaze = !!opts.stage && hasPower(opts.stage, 'blaze');
-    const aura = !!opts.stage && hasPower(opts.stage, 'aura');
+    const duel = opts.duel;
+    const rnd = duel ? seeded(duel.seed) : Math.random;
+    // en duel, pas de pouvoirs de stade : un bébé dragon peut battre une dragonne adulte
+    const blaze = !duel && !!opts.stage && hasPower(opts.stage, 'blaze');
+    const aura = !duel && !!opts.stage && hasPower(opts.stage, 'aura');
     const goldPts = aura ? 6 : POINTS.gold;
     const canvas = h('canvas', { class: 'game-canvas' });
     const scoreEl = h('div', { class: 'game-score' }, '0');
@@ -31,7 +40,13 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
       h('p', { class: 'game-rules' }, 'Attention : ne touche pas les cristaux de glace bleus (−2).'),
       powerNote(opts.stage, 'fire'),
       h('button', { class: 'btn primary', onclick: () => { intro.remove(); start(); } }, 'C’est parti !'));
-    const root = h('div', { class: 'game game-arena' }, canvas, h('div', { class: 'game-hud' }, scoreEl, timeEl), intro);
+    const rivalEl = h('div', { class: 'game-rival', 'aria-live': 'polite' });
+    if (duel) intro.replaceChildren(
+      h('h2', null, 'Duel de feu'),
+      h('p', null, `Détruis plus d’objets que ${duel.rival} ! Vous avez les mêmes cibles, au même moment.`),
+      h('p', { class: 'game-rules' }, 'Boucliers, mannequins, lanternes +1 · cible dorée +3 · glace −2'),
+      h('div', { class: 'game-count', 'aria-live': 'assertive' }, '3'));
+    const root = h('div', { class: 'game game-arena' }, canvas, h('div', { class: 'game-hud' }, scoreEl, duel ? rivalEl : null, timeEl), intro);
     document.body.append(root);
 
     const img = new Image();
@@ -84,23 +99,23 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
 
     const add = () => {
       const k = Math.min(1, t / DURATION);
-      const roll = Math.random();
+      const roll = rnd();
       const kind: Kind = roll < 0.1 ? 'gold' : roll < 0.1 + 0.12 + k * 0.1 ? 'ice' : roll < 0.55 ? 'shield' : roll < 0.78 ? 'dummy' : 'lantern';
       const r = kind === 'gold' ? 24 : kind === 'ice' ? 26 : kind === 'dummy' ? 30 : 30;
       const minX = W / 3 + r, maxX = W - r - 6;
       const minY = 110 + r, maxY = (kind === 'dummy' ? groundY - r - 8 : groundY - r - 40);
       let x = 0, y = 0;
       for (let tries = 0; tries < 12; tries++) {
-        x = minX + Math.random() * Math.max(1, maxX - minX);
-        y = kind === 'dummy' ? groundY - 46 - Math.random() * 10 : minY + Math.random() * Math.max(1, maxY - minY);
+        x = minX + rnd() * Math.max(1, maxX - minX);
+        y = kind === 'dummy' ? groundY - 46 - rnd() * 10 : minY + rnd() * Math.max(1, maxY - minY);
         if (!targets.some(o => Math.hypot(o.bx - x, o.by - y) < o.r + r + 16)) break;
       }
-      const moving = kind !== 'dummy' && Math.random() < 0.25 + k * 0.5;
+      const moving = kind !== 'dummy' && rnd() < 0.25 + k * 0.5;
       targets.push({
-        x, y, bx: x, by: y, r, kind, age: 0, hit: false, out: 0, ph: Math.random() * 6,
+        x, y, bx: x, by: y, r, kind, age: 0, hit: false, out: 0, ph: rnd() * 6,
         life: Math.max(1.6, 2.8 - k * 1.2) + (kind === 'gold' ? -0.4 : 0),
-        mx: moving ? (20 + Math.random() * 40) * (1 + k) : 0,
-        my: kind === 'lantern' ? 10 : moving ? Math.random() * 20 : 0
+        mx: moving ? (20 + rnd() * 40) * (1 + k) : 0,
+        my: kind === 'lantern' ? 10 : moving ? rnd() * 20 : 0
       });
     };
 
@@ -128,6 +143,7 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
       o.hit = true; o.out = 0.001;
       const pts = o.kind === 'gold' ? goldPts : POINTS[o.kind];
       score = Math.max(0, score + pts);
+      duel?.onScore(score);
       juice.pop(o.x, o.y - o.r, pts > 0 ? `+${pts}` : `${pts}`, pts > 0 ? (o.kind === 'gold' ? '#fff1a8' : '#ffd76a') : '#c8f0ff', o.kind === 'gold');
       if (o.kind === 'ice') { juice.kick(9, 0.3); juice.flash('150,210,255', 0.28); }
       else if (o.kind === 'gold') { juice.kick(5, 0.18); juice.flash('255,220,140', 0.25); }
@@ -283,7 +299,8 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
         t += dt; spawn -= dt;
         const k = Math.min(1, t / DURATION);
         const maxT = 3 + Math.floor(k * 3.5);
-        if (spawn <= 0 && targets.filter(o => !o.hit).length < maxT) { add(); spawn = Math.max(0.42, 0.95 - k * 0.55) * (0.7 + Math.random() * 0.6); }
+        // en duel, les cibles arrivent au même rythme pour les deux joueurs (sans dépendre des tirs de chacun)
+        if (spawn <= 0 && (duel || targets.filter(o => !o.hit).length < maxT)) { add(); spawn = Math.max(0.42, 0.95 - k * 0.55) * (0.7 + rnd() * 0.6); }
         if (t >= DURATION) end();
       }
       if (recoil > 0) recoil = Math.max(0, recoil - dt * 6);
@@ -361,13 +378,27 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
 
       scoreEl.textContent = String(score);
       timeEl.textContent = String(Math.max(0, Math.ceil(DURATION - t)));
+      if (duel) rivalEl.textContent = `${duel.rival} ${duel.rivalScore()}`;
     };
     raf = requestAnimationFrame(frame);
 
     function start(): void { running = true; t = 0; }
+    // duel : compte à rebours puis départ automatique (les deux téléphones partent ensemble)
+    if (duel) {
+      const count = intro.querySelector('.game-count') as HTMLElement;
+      let n = 3;
+      const tickDown = () => {
+        n--;
+        if (n > 0) { count.textContent = String(n); setTimeout(tickDown, 1000); return; }
+        count.textContent = 'Feu !';
+        setTimeout(() => { intro.remove(); start(); }, 500);
+      };
+      setTimeout(tickDown, 1000);
+    }
     function end(): void {
       if (over) return;
       running = false; over = true;
+      if (duel) { finish(); return; } // le résultat du duel est affiché par l'écran de duel
       const box = h('div', { class: 'game-intro game-end' },
         h('h2', null, `Score : ${score}`),
         h('p', null, score >= 30 ? `${dragonName} est un maître du feu !` : score >= 15 ? `Joli tir, ${dragonName} chauffe de plus en plus.` : `${dragonName} a adoré cracher du feu avec toi.`),

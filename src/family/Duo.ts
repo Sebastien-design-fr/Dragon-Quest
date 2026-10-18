@@ -47,6 +47,13 @@ interface QuestData {
 export interface VisitGift { food?: FoodId; item?: string; gold?: number }
 export interface Visit { id: string; from: DragonProfile; message?: string; gift?: VisitGift; fp: number; at: number }
 
+/** Duel de feu en direct pendant une visite : messages échangés entre les deux téléphones. */
+export type DuelMsg =
+  | { kind: 'invite'; duelId: string; seed: number; from: string; fromDragon: string; owner: string }
+  | { kind: 'accept' | 'decline' | 'cancel'; duelId: string; from: string }
+  | { kind: 'score'; duelId: string; from: string; score: number }
+  | { kind: 'end'; duelId: string; from: string; score: number };
+
 export interface DuoTrick { id: string; label: string; anim: string; at: number }
 export const DUO_TRICKS: DuoTrick[] = [
   { id: 'greet', label: 'Se saluer', anim: 'bow', at: 0 },
@@ -88,7 +95,7 @@ const KEY = 'quete-du-dragon:duo';
 const MAX_VISITS_PER_DAY = 3;
 
 export class Duo {
-  readonly events = new EventBus<{ change: void; visit: Visit; toast: string; hug: Hug }>();
+  readonly events = new EventBus<{ change: void; visit: Visit; toast: string; hug: Hug; duel: DuelMsg }>();
   data: Data;
   private profileTimer = 0;
 
@@ -377,6 +384,16 @@ export class Duo {
       return true;
     }
     if (msg.type === 'duo.request') { this.queueProfile(0); return true; }
+    if (msg.type.startsWith('duel.')) {
+      const kind = msg.type.slice(5);
+      const duelId = String(p.duelId ?? '');
+      if (!duelId) return false;
+      if (kind === 'invite') this.events.emit('duel', { kind, duelId, seed: Number(p.seed) || 1, from: msg.from, fromDragon: String(p.fromDragon ?? 'Son dragon'), owner: String(p.owner ?? msg.fromName ?? '') });
+      else if (kind === 'score' || kind === 'end') this.events.emit('duel', { kind, duelId, from: msg.from, score: Number(p.score) || 0 });
+      else if (kind === 'accept' || kind === 'decline' || kind === 'cancel') this.events.emit('duel', { kind, duelId, from: msg.from });
+      else return false;
+      return true;
+    }
     if (msg.type === 'duo.hug') {
       const hug: Hug = { id: String(p.id ?? Math.random()), fromDragon: String(p.fromDragon ?? 'Son ami'), owner: String(p.owner ?? ''), at: Number(p.at) || Date.now() };
       this.data.friendship = Math.max(this.data.friendship, Number(p.fp) || 0);
@@ -409,6 +426,21 @@ export class Duo {
 
   /** Pendant une visite, un tour à deux renforce l'amitié (une fois par tour et par visite). */
   played(): void { this.gain(1); this.save(); }
+
+  // ---------- Duel de feu (en direct, les deux téléphones ouverts) ----------
+  /** Défie l'autre dragon : notification sur son téléphone, réponse attendue dans l'appli. */
+  async duelInvite(duelId: string, seed: number): Promise<void> {
+    const me = this.profile();
+    await this.link.send(this.target, 'duel.invite', { duelId, seed, fromDragon: me.name, owner: me.owner }, {
+      title: 'Duel de feu !', body: `${me.name} te défie en duel. Ouvre l’appli pour accepter !`, tag: 'duel-' + duelId, channel: 'missions'
+    });
+  }
+  /** Réponse, scores en cours de partie et score final : messages légers, sans notification. */
+  async duelSend(kind: 'accept' | 'decline' | 'cancel' | 'score' | 'end', duelId: string, score?: number): Promise<void> {
+    await this.link.send(this.target, 'duel.' + kind, { duelId, score: score ?? 0 }, null, kind === 'accept' || kind === 'decline' || kind === 'cancel' ? 'duel-' + duelId : undefined);
+  }
+  /** Fin d'un duel : l'amitié grandit un peu. */
+  duelPlayed(): void { this.gain(2); this.save(); }
 
   /** Demande le profil de l'autre (au démarrage). */
   hello(): void { this.queueProfile(500); void this.link.send(this.target, 'duo.request', {}, null); }

@@ -18,6 +18,7 @@ import { de } from './Lair.js';
 import { installActivity } from './ActivityUI.js';
 import { VisitScene } from './VisitScene.js';
 import { NestScene } from './Nest.js';
+import { installDuel } from './DuelUI.js';
 import { StageHud } from './StageHud.js';
 import { UI, installTouchFeedback } from './Motion.js';
 import { applyTint } from './Appearance.js';
@@ -337,6 +338,7 @@ export class App {
 
     installActivity(this);
     installVoyage(this);
+    installDuel(this);
     installUnlocks(this);
     installTips(this);
     installWhatsNew(this);

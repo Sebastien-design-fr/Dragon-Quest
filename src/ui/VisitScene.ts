@@ -6,6 +6,7 @@ import type { Visit } from '../family/Duo.js';
 import type { EquipmentDef } from '../core/types.js';
 import type { App } from './App.js';
 import { h } from './dom.js';
+import { inviteDuel } from './DuelUI.js';
 
 export class VisitScene {
   private guest: DragonView | null = null;
@@ -81,7 +82,10 @@ export class VisitScene {
           this.timer = window.setTimeout(() => this.end(), 60000);
         }
       }, t.unlocked ? t.label : `🔒 ${t.label}`))),
-      h('button', { class: 'btn small-btn', onclick: () => this.end() }, 'Au revoir'));
+      h('div', { class: 'visit-act' },
+        // duel en direct : l'autre téléphone reçoit l'invitation (la visite reste ouverte pendant la partie)
+        h('button', { class: 'btn primary small-btn visit-duel', onclick: () => { clearTimeout(this.timer); this.timer = window.setTimeout(() => this.end(), 180000); inviteDuel(app, v.from.name); } }, 'Duel de feu'),
+        h('button', { class: 'btn small-btn', onclick: () => this.end() }, 'Au revoir')));
   }
 
   end(): void {
