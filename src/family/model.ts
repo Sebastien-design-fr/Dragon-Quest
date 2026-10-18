@@ -69,7 +69,7 @@ export interface ChildSnapshot {
   missStreak?: number;
   sick?: boolean;
   confiscated?: string | null;
-  companion?: { name: string; hunger: number; clean: number; mood: number; bond: string; moodLabel: string };
+  companion?: { name: string; hunger: number; clean: number; mood: number; bond: string; moodLabel: string; asleep?: boolean };
   /** Bilan des 7 derniers jours (le plus ancien d'abord, aujourd'hui compris). */
   week?: Array<{ date: string; done: number; total: number }>;
 }

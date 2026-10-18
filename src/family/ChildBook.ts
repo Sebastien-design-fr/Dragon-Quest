@@ -618,6 +618,11 @@ export class ChildBook {
         return true;
       }
       case 'rules': return false; // réglage des sanctions supprimé
+      case 'nest.wake': {
+        // la dragonne du parent vient réveiller le petit en douceur
+        this.events.emit('story', `${p.name ?? 'La dragonne'} est venue me réveiller tout doucement… Bonjour ! Tu ouvres les rideaux ?`);
+        return true;
+      }
       case 'treat': {
         this.companion?.onTreat(by);
         this.log(`Friandise envoyée par ${by}${p.message ? ` — « ${p.message} »` : ''}`);

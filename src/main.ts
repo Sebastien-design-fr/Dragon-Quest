@@ -65,6 +65,8 @@ async function boot(): Promise<void> {
     companion = new Companion(state, 'parent');
     duo = new Duo(link, state, companion, linkState.deviceId, linkState.deviceName, 'parent');
     hub.onOther = m => duo!.handle(m);
+    // les gestes de parent (valider, encourager, proposer une quête) nourrissent sa dragonne
+    hub.events.on('care', kind => { const t = companion!.familyMeal(kind); if (t) hub!.events.emit('toast', t); });
     hub.syncMembers(linkState.members);
     await hub.sync();
     link.onInbox(() => void hub!.sync());
@@ -73,6 +75,9 @@ async function boot(): Promise<void> {
     book.childName = linkState.deviceName;
     companion = new Companion(state);
     book.companion = companion;
+    // couché / réveillé : le téléphone du parent le sait (nid commun du soir)
+    let wasAsleep = companion.asleep();
+    companion.events.on('change', () => { const a = companion!.asleep(); if (a !== wasAsleep) { wasAsleep = a; book!.queueStatus(500); } });
     book.clearSanctions(); // sanctions supprimées : dragon guéri, objet rendu, énergie pleine
     duo = new Duo(link, state, companion, linkState.deviceId, linkState.deviceName, 'child');
     book.onOther = m => duo!.handle(m);

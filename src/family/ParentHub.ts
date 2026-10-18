@@ -14,7 +14,8 @@ interface HubData {
 const KEY = 'quete-du-dragon:hub';
 
 export class ParentHub {
-  readonly events = new EventBus<{ change: void; toast: string }>();
+  /** care : un geste de parent (la dragonne en profite, voir Companion.familyMeal). */
+  readonly events = new EventBus<{ change: void; toast: string; care: 'validate' | 'gift' | 'quest' }>();
   data: HubData;
 
   constructor(private link: Transport) {
@@ -114,6 +115,7 @@ export class ParentHub {
     delete this.data.pending[requestId];
     this.log(`Vous : ${req.title} ${approved ? 'validé' : 'refusé'}${note ? ` (« ${note} »)` : ''}`);
     this.save();
+    this.events.emit('care', 'validate');
   }
 
   async gift(childId: string, xp: number, gold: number, message: string): Promise<void> {
@@ -122,6 +124,7 @@ export class ParentHub {
     });
     this.log(`Coup de cœur envoyé à ${this.child(childId)?.name ?? 'l’enfant'} : ${rewardText(xp, gold)}`);
     this.save();
+    this.events.emit('care', 'gift');
   }
 
   /** Vitrine des vraies récompenses de l'enfant. */
@@ -132,12 +135,26 @@ export class ParentHub {
     this.save();
   }
 
+  /** Le matin, la dragonne du parent va réveiller le dragon de l'enfant (s'il dort encore). */
+  async nestWake(childId: string, dragonneName: string): Promise<void> {
+    await this.link.send(childId, 'nest.wake', { name: dragonneName }, null);
+  }
+
+  /** Enfants dont le dragon dort (état récent : moins de 14 h). */
+  sleepingChildren(): string[] {
+    return this.childIds().filter(id => {
+      const c = this.child(id);
+      return !!c?.snapshot?.companion?.asleep && Date.now() - c.updatedAt < 14 * 3600000;
+    });
+  }
+
   /** Friandise pour le dragon (elle la donne elle-même à son dragon). */
   async treat(childId: string, message: string): Promise<void> {
     await this.link.send(childId, 'treat', { message }, {
       title: 'Une friandise pour ton dragon !', body: message ? `« ${message} »` : 'Va la lui donner, il va adorer.', tag: newId('treat-'), channel: 'missions'
     });
     this.events.emit('toast', 'Friandise envoyée');
+    this.events.emit('care', 'gift');
   }
 
   /** Rappel d'une tâche : notification sur le téléphone de l'enfant (et sa montre), le dragon le lui redit. */
@@ -155,11 +172,13 @@ export class ParentHub {
     await this.link.send(childId, 'mission.upsert', { mission: m }, notif);
     // Mise à jour locale immédiate (l'état confirmé arrivera avec le prochain envoi de l'enfant).
     const snap = this.child(childId)?.snapshot;
+    const isNew = !snap?.missions.some(x => x.id === m.id);
     if (snap) {
       const i = snap.missions.findIndex(x => x.id === m.id);
       if (i >= 0) snap.missions[i] = m; else snap.missions.push(m);
     }
     this.save();
+    if (isNew) this.events.emit('care', 'quest');
   }
 
   async removeMission(childId: string, id: string): Promise<void> {

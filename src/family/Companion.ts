@@ -68,6 +68,10 @@ interface Data {
   lairDay: string;
   tidied: number;
   /** Mode parent (tamagotchi) : XP gagné par les soins aujourd'hui. */
+  /** Mode parent : repas de famille reçus aujourd'hui (gestes de parent : valider, encourager, proposer une quête). */
+  familyMeals?: number;
+  /** Mode parent : « journée chargée » activée pour ce jour (AAAA-MM-JJ). */
+  busyDay?: string;
   careXp: number;
   /** Son plat préféré (à découvrir en le nourrissant). */
   fav: FoodId;
@@ -151,7 +155,7 @@ export class Companion {
     while (t < now) {
       const step = Math.min(H, now - t);
       const k = step / H;
-      const r = decayRate(new Date(t)) * k;
+      const r = decayRate(new Date(t)) * k * (this.busy(new Date(t)) ? 0.25 : 1);
       d.hunger -= DECAY.hunger * r;
       d.clean -= DECAY.clean * r;
       d.mood -= DECAY.mood * r * (d.hunger < 45 || d.clean < 45 ? 1.4 : 1);
@@ -166,9 +170,11 @@ export class Companion {
       d.lairDay = todayKey();
     }
     if (d.day !== todayKey()) {
-      d.day = todayKey(); d.pets = 0; d.petBond = 0; d.played = false; d.tucked = false; d.careXp = 0; d.practiceToday = {};
+      d.day = todayKey(); d.pets = 0; d.petBond = 0; d.played = false; d.tucked = false; d.careXp = 0; d.practiceToday = {}; d.familyMeals = 0;
       this.fillPantry();
     }
+    // journée chargée : elle se sert seule dans le garde-manger plutôt que d'avoir faim
+    if (this.busy() && d.hunger < 50 && (d.food.ration ?? 0) > 0) { d.food.ration--; d.hunger = clamp(d.hunger + 30); }
     const any = d as Data & { pantryV2?: boolean };
     if (!any.pantryV2) { any.pantryV2 = true; d.sick = false; this.fillPantry(); }
   }
@@ -396,6 +402,31 @@ export class Companion {
     return TRICKS.map(t => ({ ...t, unlocked: lv >= t.level }));
   }
 
+  // ---------- Parent : une dragonne qui vit au rythme d'un adulte ----------
+  /** Journée chargée (mode parent) : ses besoins baissent quatre fois moins vite et elle mange seule. */
+  busy(at = new Date()): boolean { return this.mode === 'parent' && this.data.busyDay === todayKey(at); }
+  setBusy(on: boolean): void { this.tick(); this.data.busyDay = on ? todayKey() : ''; this.save(); }
+
+  /** Repas de famille par jour (au-delà, le geste fait toujours plaisir mais ne nourrit plus). */
+  static FAMILY_MEALS = 6;
+  /**
+   * Un geste de parent nourrit la dragonne : valider ou commenter une mission, envoyer un coup de cœur, proposer
+   * une quête. Elle s'épanouit quand l'appli sert à ce pour quoi elle existe, sans corvée en plus.
+   * Renvoie la phrase à afficher, ou null si le quota du jour est atteint.
+   */
+  familyMeal(kind: 'validate' | 'gift' | 'quest'): string | null {
+    if (this.mode !== 'parent') return null;
+    this.tick();
+    const d = this.data;
+    if ((d.familyMeals ?? 0) >= Companion.FAMILY_MEALS) return null;
+    d.familyMeals = (d.familyMeals ?? 0) + 1;
+    d.hunger = clamp(d.hunger + 12); d.mood = clamp(d.mood + 8);
+    this.addBond(1); this.careXp(8);
+    this.save();
+    const n = this.name;
+    return kind === 'validate' ? `${n} a apprécié : tu prends soin de la famille.` : kind === 'gift' ? `${n} adore quand tu encourages le petit.` : `${n} est ravie de cette nouvelle quête.`;
+  }
+
   // ---------- Amitié et souvenirs ----------
   /** Mode parent : XP des soins (plafonné à 100 par jour). */
   static CARE_XP_CAP = 100;
@@ -467,7 +498,15 @@ export class Companion {
   summary() {
     this.tick();
     const d = this.data;
-    return { name: this.name, hunger: Math.round(d.hunger), clean: Math.round(d.clean), mood: Math.round(d.mood), bond: this.bondLevel().label, moodLabel: this.mood().label };
+    return { name: this.name, hunger: Math.round(d.hunger), clean: Math.round(d.clean), mood: Math.round(d.mood), bond: this.bondLevel().label, moodLabel: this.mood().label, asleep: this.asleep() };
+  }
+
+  /** Couché sous sa couverture cette nuit et pas encore réveillé (ni rideaux ouverts, ni réveil à la main). */
+  asleep(now = new Date()): boolean {
+    const d = this.data;
+    const night = todayKey(now.getHours() < 12 ? new Date(now.getTime() - 86400000) : now);
+    if (d.blanketDay !== night || d.morningDay === todayKey(now)) return false;
+    return !(d.wokeAt && now.getTime() - d.wokeAt < 12 * H && d.wokeAt > Date.parse(night));
   }
 }
 

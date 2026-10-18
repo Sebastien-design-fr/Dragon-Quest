@@ -17,6 +17,7 @@ import { installWhatsNew } from './WhatsNew.js';
 import { de } from './Lair.js';
 import { installActivity } from './ActivityUI.js';
 import { VisitScene } from './VisitScene.js';
+import { NestScene } from './Nest.js';
 import { StageHud } from './StageHud.js';
 import { UI, installTouchFeedback } from './Motion.js';
 import { applyTint } from './Appearance.js';
@@ -171,6 +172,8 @@ export class App {
   private stroke: { x: number; y: number; sx: number; sy: number; t: number; dist: number; moved: number; pets: number; zone: 'head' | 'belly' | 'tail' | 'body'; purring: boolean } | null = null;
   /** Visites de l'autre dragon de la famille. */
   readonly visits = new VisitScene(this);
+  /** Parent : nid commun du soir avec le dragon de l'enfant. */
+  readonly nest = new NestScene(this);
   /** Jauges, barre d'actions, plateau de nourriture et menu rond posés sur la scène. */
   stageHud!: StageHud;
   private surprises: { stop(): void; tryGiftNow(): void } | null = null;
@@ -256,7 +259,7 @@ export class App {
     book?.events.on('toast', t => this.toast(t));
     book?.events.on('reward', r => { if (r.mission) missionReaction(this, r.xp, r.gold); });
     book?.events.on('story', t => setTimeout(() => this.say(t, null, 10000), 900));
-    hub?.events.on('change', () => { if (!this.showingOwn) this.showChildDragon(); this.refresh(); });
+    hub?.events.on('change', () => { if (!this.showingOwn) this.showChildDragon(); this.refresh(); this.nest.sync(); });
     hub?.events.on('toast', t => this.toast(t));
 
     if (family.link instanceof SimTransport) {
@@ -591,6 +594,9 @@ export class App {
   /** Réveil (bouton, rideaux du matin, téléphone secoué). */
   wakeUp(stretch: boolean): void {
     hideDrape();
+    // parent : sa dragonne va réveiller le petit tout doucement (s'il dort encore)
+    const hub = this.family.hub, comp = this.family.companion;
+    if (this.isParent && hub && comp) for (const id of hub.sleepingChildren()) void hub.nestWake(id, comp.name);
     this.noteWoken();
     this.view.backdrop.night = isNight() ? 1 : 0;
     this.toggleSleep(false);
@@ -611,6 +617,7 @@ export class App {
   toggleSleep(force?: boolean): void {
     const was = this.sleeping;
     this.sleeping = force ?? !this.sleeping;
+    setTimeout(() => this.nest.sync(), 600);
     const comp = this.family.companion;
     if (this.sleeping && !was && comp?.tuck()) this.say(sayFor('tuck'), null, 4000);
     void this.view.play(this.sleeping ? 'sleep' : this.baseLoop());

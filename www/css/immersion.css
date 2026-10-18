@@ -78,3 +78,8 @@ h2, h3 { letter-spacing: .02em; }
 /* l'image de la scène garde ses proportions pendant le glissement (recadrée, jamais écrasée) */
 ::view-transition-old(stage), ::view-transition-new(stage) { height: 100%; width: 100%; object-fit: cover; object-position: 50% 75%; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .25s; }
+
+/* Parent : interrupteur « journée chargée » dans l'état de sa dragonne */
+.cs-busy { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 14px; border: 1px solid rgba(217,168,74,.25); background: rgba(217,168,74,.06); cursor: pointer; }
+.cs-busy input { flex: none; width: 22px; height: 22px; margin-top: 2px; accent-color: var(--gold); }
+.cs-busy span { display: flex; flex-direction: column; gap: 2px; }

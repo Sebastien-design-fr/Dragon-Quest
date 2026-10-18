@@ -29,9 +29,23 @@ export function statusSheet(app: App): void {
       h('div', { class: 'row' }, icon(ICONS.heart, 18), h('strong', { class: 'grow' }, `Amitié : ${bond.label}`), h('span', { class: 'small muted' }, `niveau ${bond.level}`)),
       h('div', { class: 'bar bond-bar' }, h('div', { class: 'fill', style: { width: `${Math.round(bond.progress * 100)}%` } })),
       h('p', { class: 'small muted' }, 'Plus vous êtes amis, plus il apprend de tours.')),
-    app.isParent ? h('p', { class: 'small muted' }, `Chaque soin la fait grandir : encore ${comp.careXpLeft()} XP possibles aujourd’hui.`)
+    app.isParent ? busySwitch(app) : null,
+    app.isParent ? h('p', { class: 'small muted' }, `Chaque soin la fait grandir : encore ${comp.careXpLeft()} XP possibles aujourd’hui. Valider une mission, encourager ou proposer une quête la nourrit aussi.`)
       : h('p', { class: 'small muted' }, 'Le garde-manger se remplit chaque matin. Quand tu n’es pas là, il t’attend tranquillement : il peut s’ennuyer un peu, jamais être malade.')
   ] as Array<HTMLElement | null>).filter((n): n is HTMLElement => !!n));
+}
+
+/** Parent : « journée chargée », elle se débrouille seule aujourd'hui (besoins ×¼, mange seule). */
+function busySwitch(app: App): HTMLElement {
+  const comp = app.family.companion!;
+  const box = h('input', { type: 'checkbox', role: 'switch' }) as HTMLInputElement;
+  box.checked = comp.busy();
+  box.addEventListener('change', () => {
+    comp.setBusy(box.checked);
+    app.toast(box.checked ? `${comp.name} se débrouille seule aujourd’hui` : `${comp.name} compte sur toi`);
+  });
+  return h('label', { class: 'cs-busy' }, box,
+    h('span', null, h('strong', null, 'Journée chargée'), h('span', { class: 'small muted' }, 'Pour aujourd’hui : ses besoins baissent quatre fois moins vite et elle se sert seule dans le garde-manger.')));
 }
 
 /** Tours d'amitié, tours d'entraînement et souffle magique (micro). */
