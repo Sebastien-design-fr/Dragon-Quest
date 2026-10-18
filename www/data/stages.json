@@ -21,7 +21,7 @@
       "id": "adult",
       "label": "Dragon adulte",
       "tagline": "Massif et imposant",
-      "minLevel": 15,
+      "minLevel": 12,
       "rig": "data/rigs/adult.sprite.json",
       "permanentEffects": []
     },
@@ -29,7 +29,7 @@
       "id": "legendary",
       "label": "Dragon légendaire",
       "tagline": "Apothéose de la puissance",
-      "minLevel": 30,
+      "minLevel": 25,
       "rig": "data/rigs/legendary.sprite.json",
       "permanentEffects": [
         "legendaryAura",
@@ -40,6 +40,6 @@
   "xp": {
     "base": 190,
     "step": 26,
-    "note": "XP pour passer du niveau N au suivant = base + step × (N − 1). Avec ~400 XP/semaine : jeune ≈ 3 semaines, adulte ≈ 3 mois, légendaire ≈ 9-10 mois."
+    "note": "XP pour passer du niveau N au suivant = base + step × (N − 1). Avec ~360 XP/semaine (3 missions par jour, voir docs/ECONOMIE.md) : jeune ≈ 3,5 semaines, adulte ≈ 6,5 semaines plus tard, légendaire ≈ 23 semaines plus tard (≈ 7,5 mois en tout)."
   }
 }

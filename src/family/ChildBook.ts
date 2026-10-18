@@ -368,7 +368,11 @@ export class ChildBook {
     const loot = { gems: 5, gold: 120, fruit: false };
     this.data.gems += loot.gems;
     this.state.addGold(loot.gold);
-    if (this.companion) { this.companion.remember('exp-' + e.week, `Expédition : ${journeyFor(e.week).title}`, 'Arrivé au bout de l’expédition de la semaine.'); this.companion.save(); }
+    if (this.companion) {
+      const j = journeyFor(e.week);
+      this.companion.remember('exp-' + e.week, `Expédition : ${j.title}`, j.keepsake ? `Arrivé au bout de l’aventure. Souvenir rapporté : ${j.keepsake}.` : 'Arrivé au bout de l’expédition de la semaine.');
+      this.companion.save();
+    }
     this.log(`Coffre d’expédition : +${loot.gems} gemmes, +${loot.gold} or`);
     this.save();
     return loot;
