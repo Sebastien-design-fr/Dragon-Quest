@@ -829,6 +829,7 @@ export class DragonView {
     // objets de la grotte placés derrière le dragon (tapis, nid, objets muraux, objets du fond)
     const decorU = this.backdrop.displayHeight ?? H * 1.15;
     this.decor.shift = this.backdrop.tiltShift;
+    this.decor.shiftY = this.backdrop.tiltShiftY;
     if (this.showBackdrop) this.decor.draw(ctx, 'back', W, feet.y, decorU, this.time, dt, this.dpr);
     if (this.momentDim > 0) {
       // grand moment : la grotte s'efface dans l'ombre, un halo reste autour du dragon

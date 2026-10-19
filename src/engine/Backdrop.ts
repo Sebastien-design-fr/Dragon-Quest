@@ -46,6 +46,8 @@ export class Backdrop {
   tilt = { x: 0, y: 0 };
   /** Glissement dû à l'inclinaison à la dernière image (pixels) : les objets posés de la grotte le suivent. */
   tiltShift = 0;
+  /** Glissement vertical dû à l'inclinaison (pixels), suivi aussi par les objets posés. */
+  tiltShiftY = 0;
   /** Étoiles et étoiles filantes, là où le décor montre du ciel. */
   readonly sky = new NightSky();
   /** Heure forcée (0-24) pour les tests ; null = heure réelle. */
@@ -89,12 +91,14 @@ export class Backdrop {
     // léger débord (6 %) : de la marge pour que le décor glisse avec l'inclinaison sans laisser de bord vide
     const s = Math.max(W / iw, H / ih) * 1.06;
     const dw = iw * s, dh = ih * s;
-    let top = feetY - def.floor * dh;
-    top = Math.min(0, Math.max(H - dh, top));
+    // inclinaison : glissement léger sur les deux axes (quelques pixels, comme une fenêtre)
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const stillTop = Math.min(0, Math.max(H - dh, feetY - def.floor * dh));
+    const top = Math.min(0, Math.max(H - dh, stillTop - this.tilt.y * 6 * dpr));
+    this.tiltShiftY = top - stillTop;
     const clampX = (x: number) => Math.min(0, Math.max(W - dw, x));
     const still = clampX((W - dw) / 2 - shiftX * 0.15);
-    // seul le glissement horizontal : le sol peint reste sous les pattes
-    const left = clampX(still - this.tilt.x * (dw - W) * 0.45);
+    const left = clampX(still - this.tilt.x * 12 * dpr);
     this.tiltShift = left - still;
     const prev = this.prev;
     if (this.img) {

@@ -106,13 +106,18 @@ export function installShake(app: App): void {
  */
 export function installTilt(app: App): void {
   const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-  let rest: number | null = null, shown = 0;
+  let rest: number | null = null, restY: number | null = null, shown = 0, shownY = 0;
   window.addEventListener('deviceorientation', e => {
     const tilt = app.view.backdrop.tilt;
-    if (e.gamma == null || calm?.matches) { tilt.x = 0; return; }
+    if (e.gamma == null || e.beta == null || calm?.matches) { tilt.x = 0; tilt.y = 0; return; }
+    // gauche-droite (gamma) et avant-arrière (beta), chacun autour de sa position de repos
     rest = rest === null ? e.gamma : rest + (e.gamma - rest) * 0.01;
-    const want = Math.max(-1, Math.min(1, (e.gamma - rest) / 22));
-    shown += (want - shown) * 0.15;
+    restY = restY === null ? e.beta : restY + (e.beta - restY) * 0.01;
+    const want = Math.max(-1, Math.min(1, (e.gamma - rest) / 25));
+    const wantY = Math.max(-1, Math.min(1, (e.beta - restY) / 25));
+    shown += (want - shown) * 0.12;
+    shownY += (wantY - shownY) * 0.12;
     tilt.x = Math.abs(shown) < 0.01 ? 0 : shown;
+    tilt.y = Math.abs(shownY) < 0.01 ? 0 : shownY;
   });
 }

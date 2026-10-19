@@ -56,6 +56,7 @@ export class DecorLayer {
   safe: { left: number; right: number; bottom: number } | null = null;
   /** Décalage horizontal du décor peint (inclinaison du téléphone) : les objets posés le suivent. */
   shift = 0;
+  shiftY = 0;
   private dpr = 1;
 
   set(items: DecorItem[]): void {
@@ -110,7 +111,7 @@ export class DecorLayer {
    * u : hauteur affichée du décor peint (pixels).
    */
   draw(ctx: CanvasRenderingContext2D, which: 'back' | 'front', W: number, ground: number, u: number, time: number, dt: number, dpr: number): void {
-    if (which === 'back') { this.frame = { ox: W / 2 + this.shift, oy: ground, u }; this.rects = []; this.dpr = dpr; }
+    if (which === 'back') { this.frame = { ox: W / 2 + this.shift, oy: ground + this.shiftY, u }; this.rects = []; this.dpr = dpr; }
     const inFront = (it: DecorItem) => !!it.front || (!it.behind && it.anchor === 'floor' && it.dy > 0.045);
     const list = this.items.filter(it => (which === 'front') === inFront(it))
       .sort((a, b) => (a.anchor === 'ground' ? -1 : 0) - (b.anchor === 'ground' ? -1 : 0) || (a.anchor === 'wall' ? -1 : 0) - (b.anchor === 'wall' ? -1 : 0) || a.dy - b.dy);
