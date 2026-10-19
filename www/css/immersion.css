@@ -83,3 +83,29 @@ h2, h3 { letter-spacing: .02em; }
 .cs-busy { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 14px; border: 1px solid rgba(217,168,74,.25); background: rgba(217,168,74,.06); cursor: pointer; }
 .cs-busy input { flex: none; width: 22px; height: 22px; margin-top: 2px; accent-color: var(--gold); }
 .cs-busy span { display: flex; flex-direction: column; gap: 2px; }
+
+/* ================= Matière de pierre (texture générée par shader, voir ShaderTextures.ts) ================= */
+/* posée en « overlay » : elle ajoute du grain et des veines sans changer les couleurs ; absente sans WebGL */
+.sh-ico {
+  background-image: var(--tex-stone, none), radial-gradient(circle at 34% 26%, #3d343b, #1c171b 60%, #100d11);
+  background-size: 96px 96px, auto; background-blend-mode: overlay, normal;
+}
+.sh-btn.need .sh-ico {
+  background-image: var(--tex-stone, none), radial-gradient(circle at 34% 26%, #5a3524, #2a1710 62%, #160c08);
+}
+.sh-bar::after {
+  background-image: var(--tex-stone, none), linear-gradient(180deg, #1d181d, var(--bg) 70%);
+  background-size: 160px 160px, auto; background-blend-mode: overlay, normal;
+}
+.card {
+  background-image: var(--tex-stone, none), linear-gradient(180deg, #1e191d 0%, #151216 100%);
+  background-size: 220px 220px, auto; background-blend-mode: soft-light, normal;
+}
+.sheet-panel {
+  background-image: var(--tex-stone, none), linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, #2a2226), var(--panel) 160px);
+  background-size: 240px 240px, auto; background-blend-mode: soft-light, normal;
+}
+.tabs {
+  background-image: var(--tex-stone, none), linear-gradient(180deg, #121014, #0a090b);
+  background-size: 160px 160px, auto; background-blend-mode: overlay, normal;
+}

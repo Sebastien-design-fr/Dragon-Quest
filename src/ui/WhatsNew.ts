@@ -9,6 +9,11 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
+  { version: '0.35.0', items: [
+    { icon: ICONS.dragon, title: 'Des écailles plus belles', text: 'Les écailles du dragon sont plus nettes et en relief, et des reflets dorés glissent lentement sur ses bords. Le loup a un liseré de lumière sur la fourrure.' },
+    { icon: ICONS.flame, title: 'Une image de cinéma', text: 'Les couleurs de la grotte suivent l’heure du jour, les bords de l’image s’assombrissent doucement, et l’air tremble au-dessus des flammes.' },
+    { icon: ICONS.shield, title: 'Une interface en pierre', text: 'Les boutons, les panneaux et la barre du bas ont le grain de la roche de la grotte.' }
+  ] },
   { version: '0.34.0', items: [
     { icon: ICONS.flame, title: 'Un vrai jet de flammes', text: 'Le souffle de feu devient un long jet qui ondule, avec un cœur blanc et des bords rouges. Son ombre danse sur la paroi, et des braises rougeoient sur le sol.' },
     { icon: ICONS.star, title: 'Tout ce qui brille rayonne', text: 'Les flammes, les yeux, les cristaux, l’or et les étoiles diffusent un halo doux. Le dragon a maintenant une vraie ombre sur le sol.' },

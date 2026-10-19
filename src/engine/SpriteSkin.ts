@@ -236,11 +236,19 @@ class SharedGL {
       uniform float uTop; uniform float uBottom; uniform float uExposure;
       uniform float uGlow; uniform vec3 uGlowC; uniform float uLit;
       uniform vec3 uTint; uniform float uTintAmt;
+      uniform float uDetail; uniform float uTime;
       float A(vec2 o, float b){ return texture2D(t, vUv + o, b).a; }
+      float Lum(vec2 o){ vec4 s = texture2D(t, vUv + o); return dot(s.rgb / max(s.a, 0.004), vec3(0.299, 0.587, 0.114)); }
       void main(){
         vec4 c = texture2D(t, vUv, -0.25);
         if (c.a < 0.004) { gl_FragColor = c; return; }
         vec3 col = c.rgb / c.a;
+        // netteté des écailles : on renforce l'écart avec une version floue (mipmap), sans toucher aux bords
+        if (uDetail > 0.001) {
+          vec4 b = texture2D(t, vUv, 1.6);
+          vec3 blur = b.rgb / max(b.a, 0.004);
+          col = clamp(col + (col - blur) * 0.5 * uDetail * step(0.6, b.a), 0.0, 1.0);
+        }
         // reflets d'écailles choisis (personnalisation) : surtout sur les tons sombres et moyens, les reflets dorés restent
         if (uTintAmt > 0.001) {
           float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
@@ -265,6 +273,19 @@ class SharedGL {
         float side = clamp(dot(-G * 3.0, uDir), -1.0, 1.0);
         col *= 1.0 + uLightStr * side;
         col += uRimC * rim * rim * uRim;
+        if (uDetail > 0.001) {
+          // relief des écailles : la luminosité sert de carte de hauteur, éclairée du côté de la lumière
+          vec2 px = uTexel * 1.5;
+          vec2 hg = vec2(Lum(vec2(px.x, 0.0)) - Lum(vec2(-px.x, 0.0)), Lum(vec2(0.0, px.y)) - Lum(vec2(0.0, -px.y)));
+          float relief = clamp(dot(hg, uDir) * 5.0, -1.0, 1.0);
+          col *= 1.0 + 0.14 * uDetail * relief;
+          // reflets dorés : un éclat lent glisse sur les bords d'écailles clairs et chauds (le métal du dragon)
+          float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+          float gold = smoothstep(0.42, 0.8, lum) * clamp((col.r - col.b) * 2.5, 0.0, 1.0);
+          float band = sin((vUv.x * 1.3 + vUv.y * 0.7) * 9.0 - uTime * 0.9);
+          float glint = pow(max(band, 0.0), 14.0) * gold * (0.6 + 0.4 * max(relief, 0.0));
+          col += uLight * glint * 0.45 * uDetail;
+        }
         // halo d'événement : surtout sur les contours, l'intérieur s'éclaire sans se délaver
         col = col * (1.0 + uGlow * 0.45) + uGlowC * uGlow * (0.03 + 0.45 * edge);
         col *= uExposure;
@@ -285,7 +306,7 @@ class SharedGL {
     this.prog = prog;
     this.uMat = gl.getUniformLocation(prog, 'm')!;
     this.u = {};
-    for (const n of ['uTexel', 'uAmbient', 'uAmbientMix', 'uDir', 'uLight', 'uLightStr', 'uRim', 'uRimW', 'uRimC', 'uTop', 'uBottom', 'uExposure', 'uGlow', 'uGlowC', 'uLit', 'uTint', 'uTintAmt']) this.u[n] = gl.getUniformLocation(prog, n);
+    for (const n of ['uTexel', 'uAmbient', 'uAmbientMix', 'uDir', 'uLight', 'uLightStr', 'uRim', 'uRimW', 'uRimC', 'uTop', 'uBottom', 'uExposure', 'uGlow', 'uGlowC', 'uLit', 'uTint', 'uTintAmt', 'uDetail', 'uTime']) this.u[n] = gl.getUniformLocation(prog, n);
     this.aniso = gl.getExtension('EXT_texture_filter_anisotropic');
     gl.useProgram(prog);
     gl.enable(gl.BLEND);
@@ -407,12 +428,18 @@ export class MeshRenderer {
 
   /** Reflets d'écailles (couleur 0..1, intensité 0..1), null = couleurs d'origine. */
   tint: { color: [number, number, number]; amount: number } | null = null;
+  /** Finesse du rendu de la peau (netteté, relief, reflets dorés) : 0 = image brute. */
+  detail = 0;
+  /** Temps (s), pour le glissement des reflets. */
+  time = 0;
 
   private applyLighting(): void {
     const gl = this.s.gl, U = this.s.u, L = this.lighting;
     const T = this.tint;
     gl.uniform3f(U.uTint, T?.color[0] ?? 0, T?.color[1] ?? 0, T?.color[2] ?? 0);
     gl.uniform1f(U.uTintAmt, T?.amount ?? 0);
+    gl.uniform1f(U.uDetail, this.detail);
+    gl.uniform1f(U.uTime, this.time);
     if (!L || !L.u.enabled) { gl.uniform1f(U.uLit, 0); return; }
     const u = L.u;
     gl.uniform1f(U.uLit, 1);

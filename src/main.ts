@@ -18,8 +18,10 @@ import { loadCapacitor } from './platform/capacitor.js';
 import { setStorageSuffix } from './platform/storage.js';
 import { App } from './ui/App.js';
 import { runSetup } from './ui/Setup.js';
+import { installShaderTextures } from './ui/ShaderTextures.js';
 
 async function boot(): Promise<void> {
+  installShaderTextures();
   // Téléphone (Capacitor) ou navigateur (simulation : ?device=parent, ?device=enfant…).
   const core = await loadCapacitor();
   const simDevice = new URLSearchParams(location.search).get('device') || 'web';

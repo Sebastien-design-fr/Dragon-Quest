@@ -199,6 +199,25 @@ export class Backdrop {
     return mixc(mixc(day, eve, Math.min(1, e * 2.5)), night, n);
   }
 
+  /**
+   * Étalonnage de la passe finale selon l'heure : teinte des ombres et des lumières (petits décalages RVB),
+   * force de la courbe et de la vignette.
+   */
+  grading(): { shadowTint: [number, number, number]; lightTint: [number, number, number]; grade: number; vignette: number } {
+    const n = this.starNight(), e = Math.min(1, this.dayLight().k * 2.5);
+    type V = [number, number, number];
+    const mix = (a: V, b: V, t: number) => a.map((v, i) => v + (b[i] - v) * t) as V;
+    const day = { s: [-0.012, -0.002, 0.02] as V, l: [0.03, 0.016, -0.008] as V };
+    const eve = { s: [0.014, -0.01, 0.026] as V, l: [0.04, 0.012, -0.016] as V };
+    const night = { s: [-0.014, -0.004, 0.036] as V, l: [0.004, 0.01, 0.03] as V };
+    return {
+      shadowTint: mix(mix(day.s, eve.s, e), night.s, n),
+      lightTint: mix(mix(day.l, eve.l, e), night.l, n),
+      grade: 1,
+      vignette: 0.26 + 0.12 * n
+    };
+  }
+
   /** Force du reflet sur le sol du décor courant. */
   get reflect(): number { return this.def ? this.def.reflect ?? 0.3 : 0; }
 

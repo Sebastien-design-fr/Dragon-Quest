@@ -10,6 +10,7 @@
 // par un os animé. Quand la tête bouge, le casque suit ; quand l'aile bat, sa protection suit.
 import { Mist } from './Atmosphere.js';
 import { Bloom } from './Bloom.js';
+import { PostFX } from './PostFX.js';
 import { GroundMarks } from './GroundMarks.js';
 import { FlameShader } from './FlameShader.js';
 import { Mat2D } from '../core/math.js';
@@ -158,7 +159,9 @@ export class DragonView {
   debugPose: PoseId | null = null;
   debug = { capDpr2: false, noMipmaps: false };
   /** LOT 2 : ombres et éclairage, désactivables (panneau développeur). */
-  fx = { shadows: true, lighting: true, rim: true, bloom: true, castShadow: true };
+  fx = { shadows: true, lighting: true, rim: true, bloom: true, castShadow: true, post: true };
+  private post = new PostFX();
+  private flameAt: { x: number; y: number; r: number } | null = null;
   private bloom = new Bloom();
   private wingPrev = new Map<string, number>();
   private wingFlutter = new Map<string, number>();
@@ -957,6 +960,12 @@ export class DragonView {
 
     // halo de tout ce qui brille (après le feu et les particules, avant l'éclat blanc)
     if (rich && this.fx.bloom) this.bloom.apply(ctx, this.canvas, W, H);
+    // passe finale : étalonnage selon l'heure, vignette, grain, air chaud au-dessus des flammes
+    if (rich && this.fx.post && this.showBackdrop) {
+      const g = this.backdrop.grading();
+      const f = this.flameAt;
+      this.post.apply(ctx, this.canvas, W, H, this.time, { ...g, heat: f && this.fireLight > 0.05 ? { ...f, k: this.fireLight } : null });
+    }
 
     if (this.flash > 0) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1152,6 +1161,8 @@ export class DragonView {
     const reach = 290 * (this.rig?.fxScale ?? 2) * Math.abs(this.camM.d) * this.flameReach;
     // le jet s'allonge à l'allumage (fireLight monte) et se rétracte à la fin
     this.flame.draw(ctx, mouth.x, mouth.y, dir, reach, this.fireLight, this.time);
+    // zone où l'air tremble : au-dessus et le long du jet
+    this.flameAt = { x: mouth.x + dir * reach * 0.5, y: mouth.y - reach * 0.08, r: reach * 0.6 };
   }
 
   /** Intensité actuelle de la lumière du feu (0..1), pour éclairer les éléments posés par-dessus (le loup). */
@@ -1356,6 +1367,8 @@ export class DragonView {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         this.mesh.lighting = this.lightU ? { u: this.lightU, mirrored: this.camM.a < 0 } : null;
         this.mesh.tint = this.tint;
+        this.mesh.detail = this.effectsEnabled && this.quality.permanentEffects && this.fx.lighting ? 1 : 0;
+        this.mesh.time = this.time;
         const gl = this.mesh.render(this.camM, W, H);
         // copie pixel pour pixel : aucun filtrage nécessaire (le lissage « high » coûterait cher pour rien)
         ctx.imageSmoothingQuality = 'low';

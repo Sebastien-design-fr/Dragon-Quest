@@ -255,8 +255,31 @@ export class WolfSprite {
     tb.addColorStop(1, `rgba(8,6,12,${p.sleep ? 0.34 : 0.26})`);
     g.fillStyle = tb; g.fillRect(0, 0, cw, ch);
     g.globalCompositeOperation = 'source-over';
+    // 4. liseré de lumière sur le bord du pelage tourné vers la source : la silhouette, moins une copie
+    //    décalée à l'opposé de la lumière ; il reste une fine bande sur le côté éclairé, un peu adoucie
+    const r = this.rimCanvas;
+    if (r.width !== cw || r.height !== ch) { r.width = cw; r.height = ch; }
+    const rg = r.getContext('2d')!;
+    const off = Math.max(2, H * 0.012);
+    const lx = L.dir[0], ly = Math.min(L.dir[1], -0.35);
+    rg.globalCompositeOperation = 'copy';
+    rg.filter = `blur(${Math.max(1, off * 0.35)}px)`;
+    rg.drawImage(m, 0, 0);
+    rg.filter = 'none';
+    rg.globalCompositeOperation = 'source-in';
+    rg.fillStyle = `rgb(${lc})`;
+    rg.fillRect(0, 0, cw, ch);
+    rg.globalCompositeOperation = 'destination-out';
+    rg.drawImage(m, -lx * off, -ly * off);
+    rg.globalCompositeOperation = 'source-over';
+    g.globalCompositeOperation = 'lighter';
+    g.globalAlpha = Math.min(0.75, 0.3 + 1.2 * L.strength);
+    g.drawImage(r, 0, 0);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
   }
 
   /** Copie de la silhouette (alpha) avant éclairage, pour remettre la transparence après le « multiply ». */
   private mask = document.createElement('canvas');
+  private rimCanvas = document.createElement('canvas');
 }

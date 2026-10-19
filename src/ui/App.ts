@@ -77,7 +77,7 @@ function fireHaptics(): void {
   setTimeout(() => { try { navigator.vibrate?.(18); } catch { /* pas de vibreur */ } }, 1130);
 }
 
-export const APP_VERSION = '0.34.0';
+export const APP_VERSION = '0.35.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
