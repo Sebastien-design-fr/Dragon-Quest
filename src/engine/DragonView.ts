@@ -423,11 +423,13 @@ export class DragonView {
     previous.dispose();
   }
 
-  /** Placement d'un objet : catégorie puis objet ; "*" puis stade ; puis ancrage précis. */
+  /** Placement d'un objet : catégorie puis objet ; "*" puis stade, variante ; puis ancrage précis. */
   private fitFor(def: EquipmentDef, anchor: string): EquipFit {
     const st = this.stage!.id;
     const pose = this.rig?.pose;
-    const keys = ['*', st, `*:${anchor}`, `${st}:${anchor}`, ...(pose ? [pose, `${pose}:${anchor}`] : [])];
+    // la dragonne a d'autres proportions : réglages propres « dragonne », « dragonne.<stade> »
+    const v = this.variant;
+    const keys = ['*', st, v, `${v}.${st}`, `*:${anchor}`, `${st}:${anchor}`, `${v}.${st}:${anchor}`, ...(pose ? [pose, `${pose}:${anchor}`] : [])];
     const out: EquipFit = {};
     for (const table of [this.deps.fits?.categories[def.category], this.deps.fits?.items[def.id]]) {
       if (!table) continue;
