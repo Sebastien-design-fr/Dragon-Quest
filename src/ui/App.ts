@@ -31,7 +31,7 @@ import { openPathMap } from './PathMap.js';
 import { equipReaction, evolutionReaction, itemReaction, levelUpReaction, missionReaction } from './Reactions.js';
 import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
-import { installShake } from './Sensors.js';
+import { installShake, installTilt } from './Sensors.js';
 import { hideDrape, morningCurtain, nightKey, openBlanket, showDrape } from './Rituals.js';
 import { appliesOn, todayKey } from '../family/model.js';
 import { sayFor, thoughts, type Thought, type ThoughtAction } from '../family/Thoughts.js';
@@ -77,7 +77,7 @@ function fireHaptics(): void {
   setTimeout(() => { try { navigator.vibrate?.(18); } catch { /* pas de vibreur */ } }, 1130);
 }
 
-export const APP_VERSION = '0.32.0';
+export const APP_VERSION = '0.33.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -325,6 +325,7 @@ export class App {
       installSeasonal(this); installWeather(this);
       this.surprises = installSurprises(this);
       installShake(this);
+      installTilt(this);
       family.training?.events.on('levelUp', ({ stat, level, tricks }) => {
         const label = { agilite: 'Agilité', vitesse: 'Vitesse', feu: 'Feu', sagesse: 'Sagesse' }[stat];
         this.toast(`${label} niveau ${level} !`);

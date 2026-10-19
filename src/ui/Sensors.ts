@@ -99,3 +99,20 @@ export function installShake(app: App): void {
     }
   });
 }
+
+/**
+ * Pencher le téléphone : le décor glisse un peu derrière le dragon, comme une fenêtre sur la grotte.
+ * L'angle de repos suit lentement la façon dont on tient le téléphone ; rien ne bouge si l'on préfère moins d'animations.
+ */
+export function installTilt(app: App): void {
+  const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+  let rest: number | null = null, shown = 0;
+  window.addEventListener('deviceorientation', e => {
+    const tilt = app.view.backdrop.tilt;
+    if (e.gamma == null || calm?.matches) { tilt.x = 0; return; }
+    rest = rest === null ? e.gamma : rest + (e.gamma - rest) * 0.01;
+    const want = Math.max(-1, Math.min(1, (e.gamma - rest) / 22));
+    shown += (want - shown) * 0.15;
+    tilt.x = Math.abs(shown) < 0.01 ? 0 : shown;
+  });
+}

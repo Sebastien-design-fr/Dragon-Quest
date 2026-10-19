@@ -81,7 +81,7 @@ export function levelUpReaction(app: App, level: number): void {
   schedule(() => {
     const v = app.view;
     void app.act('level_up');
-    v.cameraPulse(0.05, 2.4);
+    v.spotlight();
     v.emitFor('levelUpRise', 'body_center', 1.4);
     v.emit('glow', 'body_center');
     setTimeout(() => { v.emit('levelUpRing', 'body_center'); v.emit('levelUpBurst', 'body_center'); }, 900);
@@ -141,7 +141,8 @@ export function itemReaction(app: App, def: EquipmentDef, how: 'buy' | 'gift'): 
     const v = app.view;
     if (!app.sleeping) void app.act(fx.anim);
     v.emit(fx.preset, 'body_center');
-    if (fx.zoom) v.cameraPulse(fx.zoom, 1.6);
+    if (fx.pulse >= 3) v.spotlight([255, 215, 110]); // objet légendaire : grand moment
+    else if (fx.zoom) v.cameraPulse(fx.zoom, 1.6);
     if (fx.pulse >= 2) void Sound.play('gem', { user: true });
     const host = stage(app);
     if (host) {

@@ -119,6 +119,51 @@ class SoundManager {
       n.connect(f).connect(g).connect(ctx.destination); n.start(t); n.stop(t + 0.32);
     }
   }
+  /**
+   * Sons du décor touché, synthétisés : cristal qui tinte (note de la gamme pentatonique selon sa place, de gauche
+   * à droite), torche qui crépite, eau qui éclabousse, or qui tinte, vœu (petite montée scintillante).
+   */
+  scenery(kind: 'crystal' | 'torch' | 'water' | 'lava' | 'gold' | 'wish', place = 0.5): void {
+    if (this.muted || this.volume <= 0) return;
+    const ctx = this.audio();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined);
+    const t = ctx.currentTime, v = this.volume;
+    const bell = (f: number, at: number, dur: number, gain: number) => {
+      for (const [mul, k] of [[1, 1], [2.76, 0.35], [5.4, 0.12]] as const) { // partiels d'une cloche de verre
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = f * mul;
+        g.gain.setValueAtTime(0.0001, t + at);
+        g.gain.exponentialRampToValueAtTime(gain * k * v, t + at + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + at + dur / mul ** 0.5);
+        o.connect(g).connect(ctx.destination); o.start(t + at); o.stop(t + at + dur + 0.05);
+      }
+    };
+    const hiss = (f0: number, f1: number, dur: number, gain: number, q = 1, at = 0) => {
+      const n = this.noise(ctx, dur), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      f.type = 'bandpass'; f.Q.value = q;
+      f.frequency.setValueAtTime(f0, t + at); f.frequency.exponentialRampToValueAtTime(f1, t + at + dur);
+      g.gain.setValueAtTime(0.0001, t + at); g.gain.exponentialRampToValueAtTime(gain * v, t + at + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + at + dur);
+      n.connect(f).connect(g).connect(ctx.destination); n.start(t + at); n.stop(t + at + dur + 0.02);
+    };
+    const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51];
+    if (kind === 'crystal') {
+      const i = Math.max(0, Math.min(PENTA.length - 1, Math.round(place * (PENTA.length - 1))));
+      bell(PENTA[i] * 2, 0, 1.4, 0.07);
+      bell(PENTA[Math.min(PENTA.length - 1, i + 2)] * 2, 0.11, 1.1, 0.04);
+    } else if (kind === 'torch' || kind === 'lava') {
+      for (let k = 0; k < 6; k++) hiss(2500 + Math.random() * 2500, 1500, 0.03 + Math.random() * 0.04, 0.12, 2.5, k * 0.05 + Math.random() * 0.04);
+      hiss(300, 160, kind === 'lava' ? 0.7 : 0.45, kind === 'lava' ? 0.12 : 0.07, 0.8);
+    } else if (kind === 'water') {
+      hiss(900, 3200, 0.18, 0.1, 1.5);
+      hiss(2400, 700, 0.35, 0.06, 1.2, 0.08);
+    } else if (kind === 'gold') {
+      for (let k = 0; k < 4; k++) bell(2200 + Math.random() * 900, k * 0.07, 0.35, 0.035);
+    } else if (kind === 'wish') {
+      [0, 2, 4, 5, 7].forEach((n, k) => bell(PENTA[n] * 2, k * 0.09, 1.2, 0.05));
+    }
+  }
+
   /** Sons d'interface activés (réglages). */
   uiSounds = true;
 

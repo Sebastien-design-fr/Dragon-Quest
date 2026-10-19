@@ -12,6 +12,10 @@ export interface WolfPose {
   run: boolean; mirror: boolean; bag: boolean; happy: boolean; sleep: boolean; wear?: string[];
   /** 0..1 : tapi (tête basse, queue rentrée), quand le dragon crache du feu. */ cower?: number;
   light?: WolfLight | null;
+  /** Force du reflet sur le sol mouillé (0 = aucun) ; le canvas s'allonge vers le bas pour l'accueillir. */
+  reflect?: number;
+  /** 0..1 : la nuit, ses yeux ambrés luisent. */
+  eyes?: number;
 }
 
 const BAG = (() => {
@@ -107,10 +111,13 @@ export class WolfSprite {
   /** Dessine le loup (taille en pixels CSS) au temps t (secondes). */
   draw(w: number, h: number, t: number, p: WolfPose): void {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const cw = Math.max(1, Math.round(w * dpr)), ch = Math.max(1, Math.round(h * dpr * 1.12));
+    const refl = p.reflect ?? 0;
+    const extra = refl > 0 ? Math.round(h * dpr * 0.32) : 0;
+    const cw = Math.max(1, Math.round(w * dpr)), ch = Math.max(1, Math.round(h * dpr * 1.12) + extra);
     const c = this.canvas;
     if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
-    c.style.width = `${w}px`; c.style.height = `${h * 1.12}px`;
+    c.style.width = `${w}px`; c.style.height = `${ch / dpr}px`;
+    const floor = ch - extra;           // ligne du sol (pattes)
     const out = c.getContext('2d')!;
     out.setTransform(1, 0, 0, 1, 0, 0);
     out.clearRect(0, 0, cw, ch);
@@ -120,7 +127,7 @@ export class WolfSprite {
     const g = bc.getContext('2d')!;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, cw, ch);
-    const top = ch - h * dpr;          // marge au-dessus pour la respiration et les bonds
+    const top = floor - h * dpr;       // marge au-dessus pour la respiration et les bonds
     const W = w * dpr, H = h * dpr;
     if (p.mirror) { g.translate(cw, 0); g.scale(-1, 1); }
 
@@ -170,13 +177,44 @@ export class WolfSprite {
     }
     g.setTransform(1, 0, 0, 1, 0, 0);
     this.light(g, cw, ch, top, H, p);
+    if ((p.eyes ?? 0) > 0.05 && !p.sleep) {
+      // yeux de l'illustration : œil proche (87 %, 22 %) et œil lointain, plus petit (95 %, 22 %)
+      const eyeDy = Math.sin((t * Math.PI * 2) / breathT + 0.9) * H * 0.012 + (p.cower ?? 0) * H * 0.07 - hop;
+      const a = p.eyes! * (0.85 + 0.15 * Math.sin(t * 1.9));
+      g.globalCompositeOperation = 'lighter';
+      for (const [fx, fy, fr, k] of [[0.872, 0.216, 0.016, 1], [0.95, 0.224, 0.009, 0.6]] as const) {
+        const x = p.mirror ? cw - fx * W : fx * W, y = top + fy * H + eyeDy, r = fr * W;
+        const halo = g.createRadialGradient(x, y, 0, x, y, r * 3);
+        halo.addColorStop(0, `rgba(255,220,120,${0.6 * a * k})`);
+        halo.addColorStop(0.35, `rgba(255,170,50,${0.25 * a * k})`);
+        halo.addColorStop(1, 'rgba(255,170,50,0)');
+        g.fillStyle = halo; g.fillRect(x - r * 3, y - r * 3, r * 6, r * 6);
+      }
+      g.globalCompositeOperation = 'source-over';
+    }
     // ombre de contact douce (plus nette et plus petite quand il saute), puis le loup éclairé
     const lift = Math.min(1, hop / (H * 0.09 || 1));
+    if (extra) {
+      // reflet : le loup retourné sous ses pattes, qui s'efface en s'éloignant du sol
+      out.setTransform(1, 0, 0, -1, 0, floor * 2);
+      out.globalAlpha = refl * (1 - 0.5 * lift);
+      out.drawImage(bc, 0, 0);
+      out.setTransform(1, 0, 0, 1, 0, 0);
+      out.globalAlpha = 1;
+      out.globalCompositeOperation = 'destination-out';
+      const fade = out.createLinearGradient(0, floor, 0, ch);
+      fade.addColorStop(0, 'rgba(0,0,0,0.1)');
+      fade.addColorStop(0.5, 'rgba(0,0,0,0.7)');
+      fade.addColorStop(1, 'rgba(0,0,0,1)');
+      out.fillStyle = fade;
+      out.fillRect(0, floor, cw, extra);
+      out.globalCompositeOperation = 'source-over';
+    }
     const sw2 = W * (0.78 - 0.18 * lift), sh2 = H * (0.12 - 0.03 * lift);
     out.globalAlpha = 0.55 * (1 - 0.45 * lift) * (p.sleep ? 1.1 : 1);
-    out.drawImage(shadowBlob(), W * 0.52 - sw2 / 2, ch - H * 0.035 - sh2 / 2, sw2, sh2);
+    out.drawImage(shadowBlob(), W * 0.52 - sw2 / 2, floor - H * 0.035 - sh2 / 2, sw2, sh2);
     out.globalAlpha = 0.35 * (1 - 0.6 * lift);
-    out.drawImage(shadowBlob(), W * 0.52 - sw2 * 0.3, ch - H * 0.03 - sh2 * 0.22, sw2 * 0.6, sh2 * 0.44); // occlusion sous les pattes
+    out.drawImage(shadowBlob(), W * 0.52 - sw2 * 0.3, floor - H * 0.03 - sh2 * 0.22, sw2 * 0.6, sh2 * 0.44); // occlusion sous les pattes
     out.globalAlpha = 1;
     out.drawImage(bc, 0, 0);
   }

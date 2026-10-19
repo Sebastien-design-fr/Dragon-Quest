@@ -94,7 +94,7 @@ export function installVoyage(app: App): void {
     el.hidden = !show || !visible || !f.u;
     if (!el.hidden) {
       const wid = hgt * w.sprite.aspect;
-      w.sprite.draw(wid, hgt, now / 1000, { run: running, mirror, bag, happy: w.mode === 'back' || now < w.happyUntil, sleep: app.sleeping && !running, cower, wear: Object.values(app.family.voyage?.data.wolfWear ?? {}) as string[], light: app.view.characterLight() });
+      w.sprite.draw(wid, hgt, now / 1000, { run: running, mirror, bag, happy: w.mode === 'back' || now < w.happyUntil, sleep: app.sleeping && !running, cower, wear: Object.values(app.family.voyage?.data.wolfWear ?? {}) as string[], light: app.view.characterLight(), reflect: app.view.floorReflect(), eyes: app.view.backdrop.starNight() });
       el.style.transform = `translate(${x - wid / 2}px, ${groundY - hgt * 1.12 - hop}px)`;
       w.x = x; w.y = groundY - hgt; w.w = wid;
       // il court : petits nuages de poussière sous les pattes (un toutes les 0,22 s)

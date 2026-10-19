@@ -1,3 +1,4 @@
+import { sceneTouch } from './SceneTouch.js';
 import { Assets } from '../engine/AssetManager.js';
 // La grotte du dragon (refonte UX) : les objets achetés avec l'or des missions sont posés DANS la scène du dragon,
 // et l'onglet « Sa grotte » sert à les placer, déplacer, agrandir, retourner ou ranger, directement sur la scène.
@@ -275,11 +276,14 @@ export function installLairTaps(app: App): void {
     // outils de la grotte (gamelle, bassin, coffre, nid acheté) ; un objet derrière le dragon ne lui vole pas ses caresses
     const any = app.view.decor.hit(p.x, p.y);
     const action = any ? toolAction(any.key) : null;
-    if (!action || !any) return;
-    const item = app.view.decor.items.find(i => i.key === any.key);
-    if (!item?.front && app.view.hitTest(e.clientX, e.clientY)) return;
-    e.stopPropagation(); e.preventDefault();
-    useTool(app, action);
+    const item = any ? app.view.decor.items.find(i => i.key === any.key) : undefined;
+    if (action && (item?.front || !app.view.hitTest(e.clientX, e.clientY))) {
+      e.stopPropagation(); e.preventDefault();
+      useTool(app, action);
+      return;
+    }
+    // le décor peint répond au doigt (cristaux, torches, cascade) ; la nuit, l'étoile filante exauce un vœu
+    if (sceneTouch(app, e.clientX, e.clientY)) { e.stopPropagation(); e.preventDefault(); }
   }, { capture: true });
 }
 

@@ -376,6 +376,15 @@
       "y": -335,
       "rotation": 0,
       "z": 0
+    },
+    {
+      "name": "eye_anchor",
+      "bone": "body",
+      "x": 341,
+      "y": -743,
+      "rotation": 0,
+      "z": 36,
+      "size": 14
     }
   ],
   "camera": {

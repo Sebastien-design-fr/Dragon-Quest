@@ -1,5 +1,5 @@
 {
-  "note": "Décor derrière le dragon, par stade. Image : assets/backgrounds/bg_<stade>.(webp|jpg|png) — sinon décor dessiné par l'appli. floor = hauteur du sol dans l'image (0 haut, 1 bas), là où se posent les pattes. lights = lueurs animées (positions relatives à l'image). ambient = particules d'ambiance.",
+  "note": "Décor derrière le dragon, par stade. Image : assets/backgrounds/bg_<stade>.(webp|jpg|png) — sinon décor dessiné par l'appli. floor = hauteur du sol dans l'image (0 haut, 1 bas), là où se posent les pattes. lights = lueurs animées (positions relatives à l'image). ambient = particules d'ambiance. sky = rectangle de ciel ouvert [x0,y0,x1,y1] (étoiles la nuit ; sans ciel, un feu follet). reflect = force du reflet des personnages sur le sol (0,3 par défaut). touch = coins du décor qui réagissent au doigt (torch, crystal, water, lava, gold ; x, y, r en fractions de l'image).",
   "stages": {
     "baby": {
       "floor": 0.74,
@@ -27,6 +27,57 @@
           "r": 0.4,
           "color": "255,190,110",
           "flicker": 0.12
+        }
+      ],
+      "reflect": 0.22,
+      "touch": [
+        {
+          "x": 0.033,
+          "y": 0.42,
+          "r": 0.05,
+          "kind": "torch"
+        },
+        {
+          "x": 0.12,
+          "y": 0.23,
+          "r": 0.06,
+          "kind": "crystal"
+        },
+        {
+          "x": 0.94,
+          "y": 0.4,
+          "r": 0.05,
+          "kind": "crystal"
+        },
+        {
+          "x": 0.95,
+          "y": 0.68,
+          "r": 0.04,
+          "kind": "torch"
+        },
+        {
+          "x": 0.63,
+          "y": 0.43,
+          "r": 0.04,
+          "kind": "water"
+        },
+        {
+          "x": 0.755,
+          "y": 0.33,
+          "r": 0.04,
+          "kind": "water"
+        },
+        {
+          "x": 0.23,
+          "y": 0.33,
+          "r": 0.05,
+          "kind": "crystal"
+        },
+        {
+          "x": 0.36,
+          "y": 0.46,
+          "r": 0.04,
+          "kind": "torch"
         }
       ]
     },
@@ -56,6 +107,80 @@
           "r": 0.25,
           "color": "140,120,255",
           "flicker": 0.08
+        }
+      ],
+      "sky": [
+        0.46,
+        0.12,
+        0.84,
+        0.42
+      ],
+      "touch": [
+        {
+          "x": 0.137,
+          "y": 0.17,
+          "r": 0.05,
+          "kind": "torch"
+        },
+        {
+          "x": 0.18,
+          "y": 0.5,
+          "r": 0.06,
+          "kind": "crystal"
+        },
+        {
+          "x": 0.3,
+          "y": 0.17,
+          "r": 0.06,
+          "kind": "crystal"
+        },
+        {
+          "x": 0.91,
+          "y": 0.43,
+          "r": 0.07,
+          "kind": "crystal"
+        },
+        {
+          "x": 0.84,
+          "y": 0.57,
+          "r": 0.05,
+          "kind": "crystal"
+        },
+        {
+          "x": 0.37,
+          "y": 0.56,
+          "r": 0.04,
+          "kind": "water"
+        },
+        {
+          "x": 0.35,
+          "y": 0.14,
+          "r": 0.05,
+          "kind": "crystal"
+        },
+        {
+          "x": 0.25,
+          "y": 0.08,
+          "r": 0.05,
+          "kind": "crystal"
+        },
+        {
+          "x": 0.28,
+          "y": 0.25,
+          "r": 0.05,
+          "kind": "crystal"
+        },
+        {
+          "x": 0.79,
+          "y": 0.09,
+          "r": 0.05,
+          "kind": "crystal"
+        },
+        {
+          "x": 0.455,
+          "y": 0.52,
+          "r": 0.04,
+          "kind": "crystal"
         }
       ]
     },
@@ -93,6 +218,63 @@
           "color": "255,160,60",
           "flicker": 0.4
         }
+      ],
+      "reflect": 0.4,
+      "touch": [
+        {
+          "x": 0.07,
+          "y": 0.19,
+          "r": 0.06,
+          "kind": "torch"
+        },
+        {
+          "x": 0.27,
+          "y": 0.41,
+          "r": 0.05,
+          "kind": "torch"
+        },
+        {
+          "x": 0.42,
+          "y": 0.5,
+          "r": 0.04,
+          "kind": "torch"
+        },
+        {
+          "x": 0.885,
+          "y": 0.36,
+          "r": 0.06,
+          "kind": "torch"
+        },
+        {
+          "x": 0.625,
+          "y": 0.37,
+          "r": 0.04,
+          "kind": "water"
+        },
+        {
+          "x": 0.6,
+          "y": 0.55,
+          "r": 0.04,
+          "kind": "water"
+        },
+        {
+          "x": 0.08,
+          "y": 0.6,
+          "r": 0.07,
+          "kind": "gold"
+        },
+        {
+          "x": 0.55,
+          "y": 0.3,
+          "r": 0.04,
+          "kind": "torch"
+        },
+        {
+          "x": 0.665,
+          "y": 0.18,
+          "r": 0.04,
+          "kind": "torch"
+        }
       ]
     },
     "legendary": {
@@ -128,6 +310,57 @@
           "r": 0.18,
           "color": "255,150,50",
           "flicker": 0.4
+        }
+      ],
+      "reflect": 0.4,
+      "touch": [
+        {
+          "x": 0.06,
+          "y": 0.29,
+          "r": 0.05,
+          "kind": "torch"
+        },
+        {
+          "x": 0.21,
+          "y": 0.38,
+          "r": 0.05,
+          "kind": "torch"
+        },
+        {
+          "x": 0.92,
+          "y": 0.34,
+          "r": 0.05,
+          "kind": "torch"
+        },
+        {
+          "x": 0.83,
+          "y": 0.47,
+          "r": 0.05,
+          "kind": "torch"
+        },
+        {
+          "x": 0.69,
+          "y": 0.33,
+          "r": 0.05,
+          "kind": "lava"
+        },
+        {
+          "x": 0.12,
+          "y": 0.55,
+          "r": 0.08,
+          "kind": "gold"
+        },
+        {
+          "x": 0.36,
+          "y": 0.47,
+          "r": 0.04,
+          "kind": "torch"
+        },
+        {
+          "x": 0.49,
+          "y": 0.46,
+          "r": 0.04,
+          "kind": "torch"
         }
       ]
     }

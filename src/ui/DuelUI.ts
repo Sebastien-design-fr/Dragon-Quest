@@ -94,7 +94,9 @@ function result(app: App): void {
   const title = r.result === 'win' ? 'Victoire !' : r.result === 'tie' ? 'Égalité !' : `${d.rival} gagne !`;
   const line = r.result === 'win' ? `${comp?.name ?? 'Ton dragon'} a tout brûlé !` : r.result === 'tie' ? 'Pile le même score, incroyable.' : 'Belle partie quand même : la revanche est permise.';
   const rival = d.rival;
-  show(h('div', { class: `duel-card duel-${r.result}` },
+  // victoire : grand moment sur la scène (ombre, ralenti, éclat) avant la carte des scores
+  const win = r.result === 'win';
+  const showResult = () => show(h('div', { class: `duel-card duel-${r.result}` },
     h('h2', null, title),
     h('div', { class: 'duel-scores' },
       h('div', { class: `duel-side${r.result === 'win' ? ' best' : ''}` }, h('span', null, comp?.name ?? 'Toi'), h('strong', null, String(d.myFinal))),
@@ -105,6 +107,10 @@ function result(app: App): void {
     h('div', { class: 'duel-act' },
       h('button', { class: 'btn primary', onclick: () => { closeOverlay(); duel = null; inviteDuel(app, rival); } }, 'Revanche'),
       h('button', { class: 'btn ghost', onclick: () => { closeOverlay(); duel = null; } }, 'Fermer'))));
+  if (!win) { showResult(); return; }
+  closeOverlay();
+  app.view.spotlight([255, 180, 90]);
+  window.setTimeout(() => { if (duel === d) showResult(); }, 1500);
 }
 
 /** Écoute les messages de duel (invitation, réponse, scores). */

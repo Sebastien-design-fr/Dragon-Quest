@@ -700,7 +700,7 @@ export class DragonView {
       if (this.last && now > this.last) this.stats.fps += (1000 / (now - this.last) - this.stats.fps) * 0.1;
       this.last = now;
       const t0 = performance.now();
-      this.frame(dt * this.timeScale);
+      this.frame(dt * this.timeScale * this.momentTick(dt));
       this.stats.frameMs += (performance.now() - t0 - this.stats.frameMs) * 0.1;
       this.stats.refreshHz = Math.round(hz);
       this.stats.divisor = this.divisor;
@@ -772,7 +772,7 @@ export class DragonView {
   private frame(dt: number): void {
     this.time += dt;
     const sk = this.skeleton;
-    const ctx = this.ctx;
+    let ctx = this.ctx;
     const W = this.canvas.width, H = this.canvas.height;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, W, H);
@@ -828,7 +828,18 @@ export class DragonView {
     if (this.showBackdrop) this.backdrop.draw(ctx, W, H, feet.y, this.camM.e - W / 2, this.time, dt, this.effectsEnabled && this.quality.permanentEffects);
     // objets de la grotte placés derrière le dragon (tapis, nid, objets muraux, objets du fond)
     const decorU = this.backdrop.displayHeight ?? H * 1.15;
+    this.decor.shift = this.backdrop.tiltShift;
     if (this.showBackdrop) this.decor.draw(ctx, 'back', W, feet.y, decorU, this.time, dt, this.dpr);
+    if (this.momentDim > 0) {
+      // grand moment : la grotte s'efface dans l'ombre, un halo reste autour du dragon
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const c = this.camM.point(0, -this.cam.h * 0.35), R = Math.max(W, H) * 0.75;
+      const v = ctx.createRadialGradient(c.x, c.y, R * 0.12, c.x, c.y, R);
+      v.addColorStop(0, `rgba(6,5,12,${0.25 * this.momentDim})`);
+      v.addColorStop(1, `rgba(6,5,12,${0.78 * this.momentDim})`);
+      ctx.fillStyle = v;
+      ctx.fillRect(0, 0, W, H);
+    }
 
     // Ombres (sous le dragon, au sol) puis éclairage de l'image
     this.updateLighting(dt);
@@ -847,6 +858,15 @@ export class DragonView {
 
     if (this.layers.magicalEffect) { this.camM.apply(ctx); this.particles.draw(ctx, 'magical'); }
 
+    // reflet sur le sol mouillé : le dragon est d'abord peint sur un calque, recopié à l'envers sous ses pattes
+    const reflect = evo ? 0 : this.floorReflect();
+    const main = ctx;
+    if (reflect > 0) {
+      const layer = this.charLayer(W, H);
+      layer.setTransform(1, 0, 0, 1, 0, 0);
+      layer.clearRect(0, 0, W, H);
+      ctx = layer;
+    }
     ctx.filter = this.tired && !evo ? 'grayscale(0.75) brightness(0.62) contrast(0.92)' : 'none';
     // boucle de repos à vitesse légèrement variable (cycle non reconnaissable), rythme propre au stade
     const onIdleLoop = (this.animator.baseId ?? '').startsWith('idle') && !this.animator.actionId;
@@ -877,6 +897,12 @@ export class DragonView {
     ctx.globalAlpha = 1;
 
     ctx.filter = 'none';
+    if (reflect > 0) {
+      ctx = main;
+      this.drawReflection(ctx, W, H, feet.y, reflect);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(this.charCanvas!, 0, 0);
+    }
     // objets de la grotte posés devant le dragon (premier plan)
     if (this.showBackdrop) this.decor.draw(ctx, 'front', W, feet.y, decorU, this.time, dt, this.dpr);
     this.drawFireLight(ctx, W, H, dt);
@@ -890,6 +916,92 @@ export class DragonView {
       this.flash = Math.max(0, this.flash - dt * 1.6);
     }
     if (this.showAnchors) this.drawAnchors(sk);
+  }
+
+  /**
+   * La nuit, les yeux luisent doucement (ambre pour le dragon, violet pour la dragonne) ; jamais quand il dort.
+   * Position et taille de l'œil : ancrage eye_anchor du rig, qui suit la tête grâce au maillage.
+   */
+  private drawEyeGlow(ctx: CanvasRenderingContext2D): void {
+    const night = this.showBackdrop ? Math.max(this.backdrop.starNight(), this.backdrop.night * 0.8) : 0;
+    if (night < 0.05 || this.tired || (this.animator.baseId ?? '').startsWith('sleep')) return;
+    const def = this.rig?.anchors.find(a => a.name === 'eye_anchor');
+    const m = this.tmp3;
+    if (!def || !this.anchorWorld('eye_anchor', m)) return;
+    const p = this.camM.point(m.e, m.f);
+    const scale = Math.abs(this.camM.d) * (this.rig?.bones.find(b => b.name === 'body')?.scaleY ?? 1);
+    const r = (def.size ?? 12) * scale;
+    const pulse = 0.85 + 0.15 * Math.sin(this.time * 1.7);
+    const a = night * pulse;
+    const col = this.variant === 'dragonne' ? '200,130,255' : '255,175,50';
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'lighter';
+    const halo = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 3.2);
+    halo.addColorStop(0, `rgba(${col},${0.55 * a})`);
+    halo.addColorStop(0.3, `rgba(${col},${0.22 * a})`);
+    halo.addColorStop(1, `rgba(${col},0)`);
+    ctx.fillStyle = halo;
+    ctx.fillRect(p.x - r * 3.2, p.y - r * 3.2, r * 6.4, r * 6.4);
+    const core = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+    core.addColorStop(0, `rgba(255,250,220,${0.5 * a})`);
+    core.addColorStop(1, `rgba(${col},0)`);
+    ctx.fillStyle = core;
+    ctx.fillRect(p.x - r, p.y - r, r * 2, r * 2);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  /** Force du reflet sur le sol pour les personnages posés à côté (le loup). */
+  floorReflect(): number {
+    return this.showBackdrop && this.effectsEnabled && this.quality.permanentEffects ? this.backdrop.reflect : 0;
+  }
+
+  private charCanvas: HTMLCanvasElement | null = null;
+  private charCtx: CanvasRenderingContext2D | null = null;
+  private reflCanvas: HTMLCanvasElement | null = null;
+
+  /** Calque du personnage, à la taille de la scène. */
+  private charLayer(W: number, H: number): CanvasRenderingContext2D {
+    if (!this.charCanvas) { this.charCanvas = document.createElement('canvas'); this.charCtx = this.charCanvas.getContext('2d')!; }
+    if (this.charCanvas.width !== W || this.charCanvas.height !== H) { this.charCanvas.width = W; this.charCanvas.height = H; }
+    return this.charCtx!;
+  }
+
+  /**
+   * Reflet du dragon sur la pierre humide : image retournée sous la ligne du sol, à demi-résolution (donc un peu floue),
+   * qui s'efface en s'éloignant et ondule à peine ; plus pâle quand le dragon vole haut.
+   */
+  private drawReflection(ctx: CanvasRenderingContext2D, W: number, H: number, groundY: number, strength: number): void {
+    const src = this.charCanvas;
+    const depth = Math.min(H - groundY, H * 0.3);
+    if (!src || depth < 4) return;
+    const rw = Math.max(1, Math.round(W / 2)), rh = Math.max(1, Math.round(depth / 2));
+    const c = this.reflCanvas ?? (this.reflCanvas = document.createElement('canvas'));
+    if (c.width !== rw || c.height !== rh) { c.width = rw; c.height = rh; }
+    const g = c.getContext('2d')!;
+    g.globalCompositeOperation = 'source-over';
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, rw, rh);
+    // ligne r du reflet = ligne (sol − 2r) de l'image
+    g.setTransform(0.5, 0, 0, -0.5, 0, groundY / 2);
+    g.drawImage(src, 0, 0);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalCompositeOperation = 'destination-in';
+    const fade = g.createLinearGradient(0, 0, 0, rh);
+    fade.addColorStop(0, 'rgba(0,0,0,1)');
+    fade.addColorStop(0.45, 'rgba(0,0,0,0.35)');
+    fade.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = fade;
+    g.fillRect(0, 0, rw, rh);
+    g.globalCompositeOperation = 'source-over';
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = strength * (1 - 0.6 * Math.min(1, this.lift * 3));
+    // l'eau frémit : bandes horizontales légèrement décalées
+    const bands = 10, bh = rh / bands;
+    for (let i = 0; i < bands; i++) {
+      const dx = Math.sin(this.time * 1.8 + i * 1.3) * (0.4 + i * 0.25) * this.dpr;
+      ctx.drawImage(c, 0, i * bh, rw, bh, dx, groundY + i * bh * 2, W, bh * 2 + 1);
+    }
+    ctx.globalAlpha = 1;
   }
 
   /** Les flammes éclairent la grotte : halo chaud et vacillant devant la gueule, reflet orangé sur toute la scène. */
@@ -1041,6 +1153,36 @@ export class DragonView {
 
   cameraPulse(amp: number, dur = 1.6): void { this.camFx = { amp, t: 0, dur }; }
 
+  /** Grand moment en cours : temps réel écoulé (s), couleur de l'éclat ; null sinon. */
+  private moment: { t: number; color: RGB; calm: boolean } | null = null;
+  /** Assombrissement de la scène autour du dragon pendant un grand moment (0..1). */
+  private momentDim = 0;
+
+  /**
+   * Grand moment mis en scène (montée de niveau, victoire…) : la scène s'assombrit autour du dragon, le temps ralentit
+   * et la caméra s'approche, puis un éclat de lumière libère tout (≈ 1,8 s). Sans ralenti ni zoom si l'on préfère
+   * réduire les animations.
+   */
+  spotlight(color: RGB = [255, 226, 150]): void {
+    const calm = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    this.moment = { t: 0, color, calm };
+    if (!calm) this.cameraPulse(0.07, 1.6);
+  }
+
+  /** Avance le grand moment (temps réel) et renvoie le facteur de ralenti du jeu. */
+  private momentTick(dt: number): number {
+    const m = this.moment;
+    if (!m) { this.momentDim = 0; return 1; }
+    m.t += dt;
+    const t = m.t, ease = (x: number) => x * x * (3 - 2 * x);
+    // 0-0,35 s : l'ombre gagne ; 0,35-1,05 s : suspendu ; 1,05 s : éclat ; 1,05-1,8 s : retour
+    this.momentDim = t < 0.35 ? ease(t / 0.35) : t < 1.05 ? 1 : Math.max(0, 1 - (t - 1.05) / 0.75);
+    if (t >= 1.05 && t - dt < 1.05) { this.flashColor = m.color; this.flash = 0.75; }
+    if (t > 1.8) { this.moment = null; this.momentDim = 0; return 1; }
+    if (m.calm) return 1;
+    return t < 0.35 ? 1 - 0.7 * ease(t / 0.35) : t < 1.05 ? 0.3 : 0.3 + 0.7 * ease(Math.min(1, (t - 1.05) / 0.4));
+  }
+
   /** Effet continu pendant quelques secondes (particules ascendantes…). */
   emitFor(preset: string, anchor: string, seconds: number): void {
     const id = `temp:${preset}:${this.time}`;
@@ -1074,6 +1216,8 @@ export class DragonView {
         if (this.dirt > 0.04) ctx.drawImage(this.withDirt(gl, W, H), 0, 0);
         else ctx.drawImage(gl, 0, 0, W, H, 0, 0, W, H);
         ctx.imageSmoothingQuality = 'high';
+        // yeux qui luisent la nuit : sur la peau, sous les casques et masques
+        if (alpha > 0.5 && !this.evo) this.drawEyeGlow(ctx);
       } else if (d.part) {
         this.camM.multiply(bone.world, this.tmp).apply(ctx);
         const img = d.partPath ? Assets.peek(d.partPath) : null;
@@ -1198,6 +1342,9 @@ export class DragonView {
     this.lightU = buildUniforms(scene, this.dcfg.lighting, states[key] ?? {}, this.lightState.w * env, { lighting: this.fx.lighting, rim: this.fx.rim });
     if (night > 0) this.lightU.exposure *= 1 - 0.12 * night;
     this.lightU.exposure *= day.exposure;
+    // les flammes des torches vacillent sur les écailles : la lumière principale et l'exposition frémissent avec elles
+    const tf = host.backdrop.torchFlicker(this.time);
+    if (tf) { this.lightU.lightStrength *= 1 + 0.5 * tf; this.lightU.exposure *= 1 + 0.035 * tf; }
     const evo = this.evo;
     if (evo && evo.f.halo > 0) {
       this.lightU.glow = Math.max(this.lightU.glow, Math.min(1, evo.f.halo) * 0.55);

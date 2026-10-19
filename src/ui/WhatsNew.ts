@@ -9,6 +9,12 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
+  { version: '0.33.0', items: [
+    { icon: ICONS.star, title: 'Fais un vœu', text: 'La nuit, des étoiles scintillent dans le ciel de la grotte. Touche une étoile filante (ou le feu follet des grottes fermées) : ton dragon fait un vœu, avec une petite surprise.', childOnly: true },
+    { icon: ICONS.spark, title: 'La grotte répond', text: 'Touche les cristaux pour les faire tinter, les torches pour des étincelles, la cascade pour l’éclabousser. Penche le téléphone : le décor glisse derrière ton dragon.' },
+    { icon: ICONS.moon, title: 'Une grotte plus vivante', text: 'Le dragon et le loup se reflètent sur le sol mouillé, la lumière des torches danse sur les écailles, et la nuit leurs yeux luisent.' },
+    { icon: ICONS.flame, title: 'Duel de feu et grands moments', text: 'Pendant une visite, défiez l’autre dragon au tir de feu, en même temps sur les deux téléphones. Les victoires et les montées de niveau sont mises en scène : ombre, ralenti, éclat de lumière.' }
+  ] },
   { version: '0.32.0', items: [
     { icon: ICONS.mic, title: 'Il comprend beaucoup mieux', text: 'Deux fois plus de sujets et près de 850 répliques. Il comprend les questions comme « tu veux faire quoi ? », « tu aimes… ? », « tu préfères… ou… ? », et retient ce que tu aimes. Les phrases qu’il ne comprend pas sont listées dans les réglages, pour lui apprendre la suite.' }
   ] },

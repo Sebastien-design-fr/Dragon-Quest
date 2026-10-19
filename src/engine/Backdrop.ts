@@ -3,6 +3,7 @@
 // Le décor bouge à peine avec la caméra (parallaxe) pour donner de la profondeur.
 // RÈGLE : l'image du décor est affichée telle quelle (ni flou, ni assombrissement, ni zoom animé).
 // Les ambiances (lueurs, poussières, teinte de nuit) sont des couches séparées, désactivables.
+import { NightSky } from './NightSky.js';
 import type { Mat2D } from '../core/math.js';
 import { NEUTRAL_SCENE, analyseScene, type SceneLight } from './Lighting.js';
 
@@ -12,6 +13,12 @@ export interface BackdropDef {
   warm: string;
   cool: string;
   lights: Array<{ x: number; y: number; r: number; color: string; flicker: number }>;
+  /** Force du reflet des personnages sur le sol (0 = sol mat ; 0.3 par défaut : pierre humide). */
+  reflect?: number;
+  /** Ciel ouvert visible dans l'illustration [x0, y0, x1, y1] (fractions) : étoiles la nuit. */
+  sky?: [number, number, number, number];
+  /** Coins du décor qui réagissent au doigt (fractions de l'image). */
+  touch?: Array<{ x: number; y: number; r: number; kind: 'torch' | 'crystal' | 'water' | 'lava' | 'gold' }>;
 }
 
 interface Mote { x: number; y: number; vx: number; vy: number; life: number; max: number; size: number }
@@ -35,6 +42,12 @@ export class Backdrop {
   fadeTime = 1.2;
   /** Nuit : voile bleuté posé par-dessus le décor (couche séparée). */
   night = 0;
+  /** Inclinaison du téléphone (-1..1) : le décor glisse un peu, le dragon reste au premier plan. */
+  tilt = { x: 0, y: 0 };
+  /** Glissement dû à l'inclinaison à la dernière image (pixels) : les objets posés de la grotte le suivent. */
+  tiltShift = 0;
+  /** Étoiles et étoiles filantes, là où le décor montre du ciel. */
+  readonly sky = new NightSky();
   /** Heure forcée (0-24) pour les tests ; null = heure réelle. */
   hourOverride: number | null = null;
   private rays: HTMLCanvasElement | null = null;
@@ -61,7 +74,7 @@ export class Backdrop {
     if (imagePath) {
       const im = new Image();
       im.decoding = 'async';
-      im.onload = () => { if (this.stageId === stageId) { this.img = im; this.scene = analyseScene(im, def?.floor ?? 0.75, this.sceneOverrides); } };
+      im.onload = () => { if (this.stageId === stageId) { this.img = im; this.scene = analyseScene(im, def?.floor ?? 0.75, this.sceneOverrides); this.sky.analyse(im, def?.sky); } };
       im.src = imagePath;
     }
   }
@@ -73,11 +86,16 @@ export class Backdrop {
     if (!def) return;
     const iw = this.img?.width || 1536, ih = this.img?.height || 1024;
     // « cover » exact : la scène est remplie sans bandes (recadrage minimal nécessaire), image non modifiée
-    const s = Math.max(W / iw, H / ih);
+    // léger débord (6 %) : de la marge pour que le décor glisse avec l'inclinaison sans laisser de bord vide
+    const s = Math.max(W / iw, H / ih) * 1.06;
     const dw = iw * s, dh = ih * s;
     let top = feetY - def.floor * dh;
     top = Math.min(0, Math.max(H - dh, top));
-    const left = Math.min(0, Math.max(W - dw, (W - dw) / 2 - shiftX * 0.15));
+    const clampX = (x: number) => Math.min(0, Math.max(W - dw, x));
+    const still = clampX((W - dw) / 2 - shiftX * 0.15);
+    // seul le glissement horizontal : le sol peint reste sous les pattes
+    const left = clampX(still - this.tilt.x * (dw - W) * 0.45);
+    this.tiltShift = left - still;
     const prev = this.prev;
     if (this.img) {
       ctx.drawImage(this.fit(this.img, dw, dh), Math.round(left), Math.round(top));
@@ -109,14 +127,59 @@ export class Backdrop {
     ctx.globalCompositeOperation = 'source-over';
     if (this.layers.motes) this.ambient(ctx, W, H, dt, def.ambient);
     this.nightTint(ctx, W, H);
+    if (this.img && this.layers.tint) this.sky.draw(ctx, { x: left, y: top, w: dw, h: dh }, this.starNight(), time, dt, Math.min(2, window.devicePixelRatio || 1));
     if (this.layers.motes) this.fireflies(ctx, W, H, dt, time);
   }
+
+  /** Présence des étoiles : elles apparaissent au crépuscule (19 h 30-21 h) et s'effacent à l'aube (5 h 30-6 h 30). */
+  starNight(): number {
+    const h = this.hour();
+    if (h >= 21 || h < 5.5) return 1;
+    if (h >= 19.5) return (h - 19.5) / 1.5;
+    if (h < 6.5) return 6.5 - h;
+    return 0;
+  }
+
+  /** Coin du décor touché (pixels du canvas), avec sa position à l'écran ; null si rien. */
+  touchAt(x: number, y: number): { kind: NonNullable<BackdropDef['touch']>[number]['kind']; x: number; y: number; fx: number } | null {
+    const r = this.lastRect, list = this.def?.touch;
+    if (!r || !list || !this.img) return null;
+    let best: { kind: NonNullable<BackdropDef['touch']>[number]['kind']; x: number; y: number; fx: number } | null = null, bestD = Infinity;
+    for (const t of list) {
+      const cx = r.x + t.x * r.w, cy = r.y + t.y * r.h, rad = t.r * r.w;
+      const d = Math.hypot(x - cx, y - cy);
+      if (d < rad && d < bestD) { bestD = d; best = { kind: t.kind, x: cx, y: cy, fx: t.x }; }
+    }
+    return best;
+  }
+
+  /** Force du reflet sur le sol du décor courant. */
+  get reflect(): number { return this.def ? this.def.reflect ?? 0.3 : 0; }
 
   /** Heure de la journée (décimale), réelle ou forcée. */
   private hour(): number {
     if (this.hourOverride !== null) return this.hourOverride;
     const d = new Date();
     return d.getHours() + d.getMinutes() / 60;
+  }
+
+  /**
+   * Vacillement des torches et braseros du décor sur les personnages (0 = calme) : même formule que les lueurs,
+   * pondérée par la force des flammes ; plus visible le soir, quand le jour ne les couvre plus.
+   */
+  torchFlicker(time: number): number {
+    const def = this.def;
+    if (!def || !this.layers.lights || !def.lights.length) return 0;
+    let f = 0, n = 0;
+    for (const [i, l] of def.lights.entries()) {
+      if (l.flicker <= 0) continue;
+      f += l.flicker * (Math.sin(time * 9 + i * 2) * 0.5 + Math.sin(time * 13.7 + i) * 0.3);
+      n++;
+    }
+    if (!n) return 0;
+    const h = this.hour();
+    const evening = h >= 18 || h < 7 ? 1 : 0.5;
+    return (f / n) * evening;
   }
 
   /**

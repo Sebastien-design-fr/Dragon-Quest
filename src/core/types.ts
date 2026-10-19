@@ -33,6 +33,7 @@ export interface AnchorDef {
   bone: string;   // os qui porte l'ancrage : l'équipement suit cet os pendant les animations
   x: number; y: number; rotation: number;
   z: number;      // profondeur de dessin des équipements accrochés ici
+  size?: number;  // rayon (eye_anchor : taille de l'œil, pour sa lueur la nuit)
 }
 
 export interface Rect { x: number; y: number; w: number; h: number }
