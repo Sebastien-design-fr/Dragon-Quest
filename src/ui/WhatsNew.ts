@@ -9,6 +9,12 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
+  { version: '0.34.0', items: [
+    { icon: ICONS.flame, title: 'Un vrai jet de flammes', text: 'Le souffle de feu devient un long jet qui ondule, avec un cœur blanc et des bords rouges. Son ombre danse sur la paroi, et des braises rougeoient sur le sol.' },
+    { icon: ICONS.star, title: 'Tout ce qui brille rayonne', text: 'Les flammes, les yeux, les cristaux, l’or et les étoiles diffusent un halo doux. Le dragon a maintenant une vraie ombre sur le sol.' },
+    { icon: ICONS.cloud, title: 'Brume et rayons de lumière', text: 'Une brume légère flotte dans la grotte et au ras du sol ; un coup d’aile la chasse. Des rayons de lumière tombent des ouvertures, avec des grains de poussière qui scintillent.' },
+    { icon: ICONS.wing, title: 'Une grotte en relief', text: 'En penchant le téléphone, les rochers proches bougent plus que le fond. Les ailes sont plus souples, et le dragon laisse des empreintes et des ronds dans l’eau en se posant.' }
+  ] },
   { version: '0.33.1', items: [
     { icon: ICONS.wing, title: 'Le coup d’aile', text: 'Touche ses ailes, choisis « Le coup d’aile » dans les tours ou dis-lui « bats des ailes ! » : il frappe l’air et soulève un nuage de poussière. Le loup s’aplatit sous le vent.' }
   ] },

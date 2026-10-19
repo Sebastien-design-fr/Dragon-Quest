@@ -8,6 +8,10 @@
 // Chaque couche s'active / se désactive / se remplace indépendamment. Les équipements ne sont
 // JAMAIS positionnés en coordonnées écran : ils sont accrochés à un ancrage, lui-même porté
 // par un os animé. Quand la tête bouge, le casque suit ; quand l'aile bat, sa protection suit.
+import { Mist } from './Atmosphere.js';
+import { Bloom } from './Bloom.js';
+import { GroundMarks } from './GroundMarks.js';
+import { FlameShader } from './FlameShader.js';
 import { Mat2D } from '../core/math.js';
 import { loadJSON } from '../core/data.js';
 import type {
@@ -154,7 +158,16 @@ export class DragonView {
   debugPose: PoseId | null = null;
   debug = { capDpr2: false, noMipmaps: false };
   /** LOT 2 : ombres et éclairage, désactivables (panneau développeur). */
-  fx = { shadows: true, lighting: true, rim: true };
+  fx = { shadows: true, lighting: true, rim: true, bloom: true, castShadow: true };
+  private bloom = new Bloom();
+  private wingPrev = new Map<string, number>();
+  private wingFlutter = new Map<string, number>();
+  private mist = new Mist();
+  private marks = new GroundMarks();
+  private emberIn = 0;
+  private flame = new FlameShader();
+  /** Réglage de la longueur du jet de flammes (multiplie la portée). */
+  flameReach = 1;
   /** Dragon invité : utilise la lumière de la scène de l'hôte. */
   sceneFrom: DragonView | null = null;
   private dcfg: { shadow: ShadowConfig; lighting: DragonLightConfig } = dragonConfig(undefined, 'adult', 'dragon');
@@ -269,6 +282,7 @@ export class DragonView {
 
   async setStage(stage: StageDef, instant = false, variant = this.variant, rigPath?: string): Promise<void> {
     this.variant = variant;
+    this.marks.clear();
     // Rig propre à la variante s'il existe (data/rigs/<stade>.<variante>.json), sinon celui du dragon.
     const own = variant !== 'dragon' ? stage.rig.replace(/\.sprite\.json$/, `.${variant}.json`) : null;
     const rig = rigPath ? await loadJSON<RigDef>(rigPath)
@@ -610,6 +624,7 @@ export class DragonView {
     if (!e.landed && e.t >= m.land) {
       e.landed = true;
       for (const a of ['front_leg_anchor', 'rear_leg_anchor']) { this.emit('dustLand', a); this.emit('dustLand', a); }
+      this.markLanding();
       this.impact.vel -= 0.5;
     }
     if (e.t >= m.end) {
@@ -832,6 +847,24 @@ export class DragonView {
     this.decor.shift = this.backdrop.tiltShift;
     this.decor.shiftY = this.backdrop.tiltShiftY;
     if (this.showBackdrop) this.decor.draw(ctx, 'back', W, feet.y, decorU, this.time, dt, this.dpr);
+    // brume : nappe du fond, derrière le dragon
+    const misty = this.showBackdrop && this.effectsEnabled && this.quality.permanentEffects && this.backdrop.mistDensity > 0;
+    if (misty) {
+      this.mist.density = this.backdrop.mistDensity;
+      this.mist.update(dt);
+      this.mist.draw(ctx, 'back', W, H, feet.y, this.backdrop.mistTint(), this.backdrop.tiltShift, this.dpr);
+    }
+    // traces au sol (empreintes, ronds dans l'eau, braises), sous le dragon
+    if (this.showBackdrop && this.effectsEnabled && this.quality.permanentEffects && this.rig) {
+      const b = this.rig.bounds, unit = Math.abs(this.camM.d) * (this.rig.fxScale ?? 2);
+      if (this.fireLight > 0.5 && (this.emberIn -= dt) <= 0) {
+        // des braises retombent devant la gueule pendant le souffle
+        this.emberIn = 0.18 + Math.random() * 0.2;
+        const m = this.tmp3;
+        if (this.anchorWorld('mouth_anchor', m)) this.marks.ember(m.e + (60 + Math.random() * 260) * (this.rig.fxScale ?? 2));
+      }
+      this.marks.draw(ctx, dt, unit, x => this.camM.point(x, 0), this.backdrop.reflect >= 0.25, { x0: b.x - b.w * 0.6, x1: b.x + b.w * 1.6 }, this.dpr);
+    }
     if (this.momentDim > 0) {
       // grand moment : la grotte s'efface dans l'ombre, un halo reste autour du dragon
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -862,8 +895,13 @@ export class DragonView {
 
     // reflet sur le sol mouillé : le dragon est d'abord peint sur un calque, recopié à l'envers sous ses pattes
     const reflect = evo ? 0 : this.floorReflect();
+    const rich = this.effectsEnabled && this.quality.permanentEffects;
+    // ombre portée de la silhouette : sur le sol, aplatie, à l'opposé de la lumière
+    const cast = !evo && rich && this.fx.shadows && this.fx.castShadow && this.showBackdrop;
+    const fireShadow = !evo && rich && this.showBackdrop && this.fireGlow > 0.05;
+    const useLayer = reflect > 0 || cast || fireShadow;
     const main = ctx;
-    if (reflect > 0) {
+    if (useLayer) {
       const layer = this.charLayer(W, H);
       layer.setTransform(1, 0, 0, 1, 0, 0);
       layer.clearRect(0, 0, W, H);
@@ -899,17 +937,26 @@ export class DragonView {
     ctx.globalAlpha = 1;
 
     ctx.filter = 'none';
-    if (reflect > 0) {
+    if (useLayer) {
       ctx = main;
-      this.drawReflection(ctx, W, H, feet.y, reflect);
+      if (cast || fireShadow) this.silhouette(W, H);
+      if (fireShadow) this.drawFireShadow(ctx, W, H);
+      if (cast) this.drawCastShadow(ctx, W, H, feet.y);
+      if (reflect > 0) this.drawReflection(ctx, W, H, feet.y, reflect);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(this.charCanvas!, 0, 0);
     }
+    // brume au ras du sol, devant les pattes
+    if (misty) this.mist.draw(ctx, 'front', W, H, feet.y, this.backdrop.mistTint(), this.backdrop.tiltShift, this.dpr);
     // objets de la grotte posés devant le dragon (premier plan)
     if (this.showBackdrop) this.decor.draw(ctx, 'front', W, feet.y, decorU, this.time, dt, this.dpr);
     this.drawFireLight(ctx, W, H, dt);
+    if (this.effectsEnabled && this.quality.permanentEffects && this.fireLight > 0.02) this.drawFlame(ctx);
     if (this.layers.foregroundEffect) { this.camM.apply(ctx); this.particles.draw(ctx, 'foreground'); }
     if (evo) drawEvolutionRing(ctx, evo.c, evo.f, W, feet.x, feet.y, this.dpr);
+
+    // halo de tout ce qui brille (après le feu et les particules, avant l'éclat blanc)
+    if (rich && this.fx.bloom) this.bloom.apply(ctx, this.canvas, W, H);
 
     if (this.flash > 0) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -966,6 +1013,62 @@ export class DragonView {
     if (!this.charCanvas) { this.charCanvas = document.createElement('canvas'); this.charCtx = this.charCanvas.getContext('2d')!; }
     if (this.charCanvas.width !== W || this.charCanvas.height !== H) { this.charCanvas.width = W; this.charCanvas.height = H; }
     return this.charCtx!;
+  }
+
+  private silCanvas: HTMLCanvasElement | null = null;
+
+  /** Silhouette noire du personnage (demi-résolution, bords adoucis), pour les ombres. */
+  private silhouette(W: number, H: number): void {
+    const src = this.charCanvas;
+    if (!src) return;
+    const w = Math.max(1, Math.round(W / 2)), h = Math.max(1, Math.round(H / 2));
+    const c = this.silCanvas ?? (this.silCanvas = document.createElement('canvas'));
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    const g = c.getContext('2d')!;
+    g.globalCompositeOperation = 'copy';
+    g.filter = `blur(${Math.max(1, Math.round(this.dpr))}px)`;
+    g.drawImage(src, 0, 0, W, H, 0, 0, w, h);
+    g.filter = 'none';
+    g.globalCompositeOperation = 'source-in';
+    g.fillStyle = '#05040a';
+    g.fillRect(0, 0, w, h);
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  /**
+   * Ombre portée : la silhouette couchée sur le sol (écrasée verticalement), étirée à l'opposé de la lumière
+   * de la scène. Elle suit ailes, queue et cou ; elle pâlit et s'élargit quand le dragon s'envole.
+   */
+  private drawCastShadow(ctx: CanvasRenderingContext2D, W: number, H: number, groundY: number): void {
+    const c = this.silCanvas;
+    if (!c) return;
+    const dir = this.lightU?.dir ?? [-0.6, -0.8];
+    const shear = Math.max(-0.8, Math.min(0.8, -dir[0] * 0.7));
+    const squash = 0.22;
+    const air = Math.min(1, this.lift * 4 + (this.poseW.fly > 0.5 ? 0.5 : 0));
+    // la lumière vient du fond du décor : l'ombre tombe vers nous, sur le sol devant ses pattes
+    // (x, y) → (x + shear·(sol − y), sol + squash·(sol − y)) ; la silhouette est à demi-résolution
+    ctx.setTransform(2, 0, -shear * 2, -squash * 2, shear * groundY, (1 + squash) * groundY);
+    ctx.globalAlpha = 0.42 * (1 - 0.7 * air) * (0.6 + 0.4 * Math.min(1, (this.lightU?.lightStrength ?? 0.3) * 3));
+    ctx.drawImage(c, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  /** Pendant le souffle de feu, l'ombre du dragon, agrandie, danse sur la paroi derrière lui. */
+  private drawFireShadow(ctx: CanvasRenderingContext2D, W: number, H: number): void {
+    const c = this.silCanvas;
+    const m = this.tmp3;
+    if (!c || !this.anchorWorld('mouth_anchor', m)) return;
+    const mouth = this.camM.point(m.e, m.f);
+    const k = this.fireGlow;
+    // agrandie depuis la gueule (la source), avec un frémissement
+    const s = 1.18 + 0.03 * Math.sin(this.time * 19) + 0.02 * Math.sin(this.time * 31);
+    ctx.setTransform(2 * s, 0, 0, 2 * s, mouth.x * (1 - s), mouth.y * (1 - s) - H * 0.02);
+    ctx.globalAlpha = 0.22 * k;
+    ctx.drawImage(c, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   /**
@@ -1038,6 +1141,17 @@ export class DragonView {
     ctx.save(); ctx.translate(0, feet.y); ctx.scale(1, 0.3); ctx.translate(0, -feet.y);
     ctx.fillStyle = g3; ctx.fillRect(0, feet.y - W * 0.5, W, W); ctx.restore();
     ctx.globalCompositeOperation = 'source-over';
+  }
+
+  /** Jet de flammes continu (shader) sous les particules du souffle. */
+  private drawFlame(ctx: CanvasRenderingContext2D): void {
+    const m = this.tmp3;
+    if (!this.anchorWorld('mouth_anchor', m)) return;
+    const mouth = this.camM.point(m.e, m.f);
+    const dir = this.camM.a < 0 ? -1 : 1;
+    const reach = 290 * (this.rig?.fxScale ?? 2) * Math.abs(this.camM.d) * this.flameReach;
+    // le jet s'allonge à l'allumage (fireLight monte) et se rétracte à la fin
+    this.flame.draw(ctx, mouth.x, mouth.y, dir, reach, this.fireLight, this.time);
   }
 
   /** Intensité actuelle de la lumière du feu (0..1), pour éclairer les éléments posés par-dessus (le loup). */
@@ -1149,11 +1263,19 @@ export class DragonView {
     if (land > L.landed) {
       L.landed = land;
       this.emit('dustLand', 'front_leg_anchor'); this.emit('dustLand', 'rear_leg_anchor');
+      this.markLanding();
       if (land === 1) this.shake = Math.max(this.shake, 2);
     }
   }
 
   cameraPulse(amp: number, dur = 1.6): void { this.camFx = { amp, t: 0, dur }; }
+
+  /** Empreintes et ronds dans l'eau sous les pattes, à l'atterrissage. */
+  private markLanding(): void {
+    const xs: number[] = [], m = this.tmp2;
+    for (const a of ['front_leg_anchor', 'rear_leg_anchor']) if (this.anchorWorld(a, m)) xs.push(m.e);
+    this.marks.land(xs, this.backdrop.reflect >= 0.25);
+  }
 
   /** Coup d'aile (force 0..1) : le souffle chasse la poussière du sol des deux côtés et fait voler les poussières d'ambiance. */
   onGust: ((power: number) => void) | null = null;
@@ -1172,6 +1294,8 @@ export class DragonView {
     }
     const feet = this.camM.point(0, 0);
     this.backdrop.blow(feet.x, power);
+    this.mist.gust(power, this.camM.a >= 0);
+    if (b && power > 0.7) this.marks.gust([b.x + b.w * 0.2, b.x + b.w * 0.8], this.backdrop.reflect >= 0.25);
     this.shake = Math.max(this.shake, 4 * power);
     this.onGust?.(power);
   }
@@ -1447,11 +1571,22 @@ export class DragonView {
     for (const [name, gy, gx] of chain) {
       const b = sk.bone(name);
       if (!b) continue;
-      const target = b.offset.rot + Math.max(-14, Math.min(14, vy * gy + vx * gx));
+      const wing = name === 'wing2' || name === 'wingFar';
+      let target = b.offset.rot + Math.max(-14, Math.min(14, vy * gy + vx * gx));
+      if (wing) {
+        // membrane souple : après un mouvement brusque de l'aile, elle frémit et ondule un instant
+        const prev = this.wingPrev.get(name) ?? b.offset.rot;
+        const speed = Math.abs(b.offset.rot - prev) / dt;
+        this.wingPrev.set(name, b.offset.rot);
+        const e = Math.min(1, (this.wingFlutter.get(name) ?? 0) * Math.exp(-dt * 2.2) + speed * dt * 0.012);
+        this.wingFlutter.set(name, e);
+        target += e * 5 * Math.sin(this.time * 17 + (name === 'wingFar' ? 1.3 : 0));
+      }
       let st = this.springs.get(name);
       if (!st) { st = { v: target, vel: 0 }; this.springs.set(name, st); }
-      // intégration à pas fixe (1/240 s) : même comportement quelle que soit la cadence
-      const k = this.life.p.inertia.k, c = this.life.p.inertia.c, h = 1 / 240;
+      // intégration à pas fixe (1/240 s) : même comportement quelle que soit la cadence ;
+      // les ailes sont plus souples (elles dépassent un peu leur position puis reviennent)
+      const k = this.life.p.inertia.k * (wing ? 0.7 : 1), c = this.life.p.inertia.c * (wing ? 0.5 : 1), h = 1 / 240;
       for (let left = dt; left > 1e-6; left -= h) {
         const step = Math.min(h, left);
         st.vel += (k * (target - st.v) - c * st.vel) * step;
@@ -1520,6 +1655,7 @@ export class DragonView {
         this.emit('dustLand', 'front_leg_anchor'); this.emit('dustLand', 'rear_leg_anchor');
       }
       this.emit('dustLand', 'front_leg_far_anchor'); this.emit('dustLand', 'rear_leg_far_anchor');
+      this.markLanding();
       this.impact.vel -= c.impact * 14;           // écrasement léger à l'impact, amorti ensuite
       if (c.shake > 0) this.shake = Math.max(this.shake, c.shake);
     }

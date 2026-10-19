@@ -1,5 +1,5 @@
 {
-  "note": "Décor derrière le dragon, par stade. Image : assets/backgrounds/bg_<stade>.(webp|jpg|png) — sinon décor dessiné par l'appli. floor = hauteur du sol dans l'image (0 haut, 1 bas), là où se posent les pattes. lights = lueurs animées (positions relatives à l'image). ambient = particules d'ambiance. sky = rectangle de ciel ouvert [x0,y0,x1,y1] (étoiles la nuit ; sans ciel, un feu follet). reflect = force du reflet des personnages sur le sol (0,3 par défaut). touch = coins du décor qui réagissent au doigt (torch, crystal, water, lava, gold ; x, y, r en fractions de l'image).",
+  "note": "Décor derrière le dragon, par stade. Image : assets/backgrounds/bg_<stade>.(webp|jpg|png) — sinon décor dessiné par l'appli. floor = hauteur du sol dans l'image (0 haut, 1 bas), là où se posent les pattes. lights = lueurs animées (positions relatives à l'image). ambient = particules d'ambiance. sky = rectangle de ciel ouvert [x0,y0,x1,y1] (étoiles la nuit ; sans ciel, un feu follet). reflect = force du reflet des personnages sur le sol (0,3 par défaut). touch = coins du décor qui réagissent au doigt (torch, crystal, water, lava, gold ; x, y, r en fractions de l'image). mist = densité de la brume (0 à 1). shafts = rayons de lumière (départ x, y, direction dx, dy, largeur w, longueur len) ; shaftColor = leur teinte.",
   "stages": {
     "baby": {
       "floor": 0.74,
@@ -79,7 +79,27 @@
           "r": 0.04,
           "kind": "torch"
         }
-      ]
+      ],
+      "mist": 1,
+      "shafts": [
+        {
+          "x": 0.6,
+          "y": 0.0,
+          "dx": -0.25,
+          "dy": 1,
+          "w": 0.06,
+          "len": 0.75
+        },
+        {
+          "x": 0.7,
+          "y": 0.0,
+          "dx": -0.12,
+          "dy": 1,
+          "w": 0.04,
+          "len": 0.65
+        }
+      ],
+      "shaftColor": "255,215,150"
     },
     "young": {
       "floor": 0.78,
@@ -182,7 +202,27 @@
           "r": 0.04,
           "kind": "crystal"
         }
-      ]
+      ],
+      "mist": 1,
+      "shafts": [
+        {
+          "x": 0.74,
+          "y": 0.24,
+          "dx": -0.8,
+          "dy": 0.6,
+          "w": 0.06,
+          "len": 0.75
+        },
+        {
+          "x": 0.68,
+          "y": 0.17,
+          "dx": -0.65,
+          "dy": 0.75,
+          "w": 0.045,
+          "len": 0.7
+        }
+      ],
+      "shaftColor": "255,190,130"
     },
     "adult": {
       "floor": 0.8,
@@ -275,7 +315,27 @@
           "r": 0.04,
           "kind": "torch"
         }
-      ]
+      ],
+      "mist": 0.7,
+      "shafts": [
+        {
+          "x": 0.52,
+          "y": 0.0,
+          "dx": -0.1,
+          "dy": 1,
+          "w": 0.05,
+          "len": 0.7
+        },
+        {
+          "x": 0.6,
+          "y": 0.0,
+          "dx": 0.06,
+          "dy": 1,
+          "w": 0.04,
+          "len": 0.6
+        }
+      ],
+      "shaftColor": "255,200,140"
     },
     "legendary": {
       "floor": 0.8,
@@ -362,7 +422,19 @@
           "r": 0.04,
           "kind": "torch"
         }
-      ]
+      ],
+      "mist": 0.5,
+      "shafts": [
+        {
+          "x": 0.56,
+          "y": 0.0,
+          "dx": 0.0,
+          "dy": 1,
+          "w": 0.07,
+          "len": 0.7
+        }
+      ],
+      "shaftColor": "255,150,90"
     }
   }
 }

@@ -3,6 +3,8 @@
 // Le décor bouge à peine avec la caméra (parallaxe) pour donner de la profondeur.
 // RÈGLE : l'image du décor est affichée telle quelle (ni flou, ni assombrissement, ni zoom animé).
 // Les ambiances (lueurs, poussières, teinte de nuit) sont des couches séparées, désactivables.
+import { LightShafts, type ShaftDef } from './Atmosphere.js';
+import { DepthParallax } from './DepthParallax.js';
 import { NightSky } from './NightSky.js';
 import type { Mat2D } from '../core/math.js';
 import { NEUTRAL_SCENE, analyseScene, type SceneLight } from './Lighting.js';
@@ -18,6 +20,11 @@ export interface BackdropDef {
   /** Ciel ouvert visible dans l'illustration [x0, y0, x1, y1] (fractions) : étoiles la nuit. */
   sky?: [number, number, number, number];
   /** Coins du décor qui réagissent au doigt (fractions de l'image). */
+  /** Densité de la brume (0 à 1, 1 par défaut). */
+  mist?: number;
+  /** Rayons de lumière qui tombent des ouvertures, et leur teinte (« r,g,b »). */
+  shafts?: ShaftDef[];
+  shaftColor?: string;
   touch?: Array<{ x: number; y: number; r: number; kind: 'torch' | 'crystal' | 'water' | 'lava' | 'gold' }>;
 }
 
@@ -50,6 +57,10 @@ export class Backdrop {
   tiltShiftY = 0;
   /** Étoiles et étoiles filantes, là où le décor montre du ciel. */
   readonly sky = new NightSky();
+  private shafts = new LightShafts();
+  /** Relief du décor (WebGL) : quand il est prêt, l'inclinaison déplace le proche plus que le lointain. */
+  readonly depth = new DepthParallax();
+  useDepth = true;
   /** Heure forcée (0-24) pour les tests ; null = heure réelle. */
   hourOverride: number | null = null;
   private rays: HTMLCanvasElement | null = null;
@@ -76,7 +87,7 @@ export class Backdrop {
     if (imagePath) {
       const im = new Image();
       im.decoding = 'async';
-      im.onload = () => { if (this.stageId === stageId) { this.img = im; this.scene = analyseScene(im, def?.floor ?? 0.75, this.sceneOverrides); this.sky.analyse(im, def?.sky); } };
+      im.onload = () => { if (this.stageId === stageId) { this.img = im; this.scene = analyseScene(im, def?.floor ?? 0.75, this.sceneOverrides); this.sky.analyse(im, def?.sky); this.depth.setImage(im, def?.floor ?? 0.75); } };
       im.src = imagePath;
     }
   }
@@ -94,14 +105,22 @@ export class Backdrop {
     // inclinaison : glissement léger sur les deux axes (quelques pixels, comme une fenêtre)
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const stillTop = Math.min(0, Math.max(H - dh, feetY - def.floor * dh));
-    const top = Math.min(0, Math.max(H - dh, stillTop - this.tilt.y * 6 * dpr));
-    this.tiltShiftY = top - stillTop;
     const clampX = (x: number) => Math.min(0, Math.max(W - dw, x));
     const still = clampX((W - dw) / 2 - shiftX * 0.15);
-    const left = clampX(still - this.tilt.x * 12 * dpr);
+    // avec le relief, le sol sous le dragon reste fixe et chaque plan glisse selon sa distance ;
+    // sinon, tout le décor glisse d'un bloc
+    const tilting = Math.abs(this.tilt.x) + Math.abs(this.tilt.y) > 0.01;
+    const relief = tilting && this.useDepth && effects && this.depth.ready && !this.prev;
+    const top = relief ? stillTop : Math.min(0, Math.max(H - dh, stillTop - this.tilt.y * 6 * dpr));
+    const left = relief ? still : clampX(still - this.tilt.x * 12 * dpr);
+    this.tiltShiftY = top - stillTop;
     this.tiltShift = left - still;
     const prev = this.prev;
-    if (this.img) {
+    const reliefImg = relief ? this.depth.render(Math.round(W), Math.round(H), { x: left, y: top, w: dw, h: dh }, this.tilt.x * 16 * dpr, this.tilt.y * 10 * dpr) : null;
+    if (this.img && reliefImg) {
+      ctx.drawImage(reliefImg, 0, 0);
+      this.lastRect = { x: Math.round(left), y: Math.round(top), w: Math.round(dw), h: Math.round(dh) };
+    } else if (this.img) {
       ctx.drawImage(this.fit(this.img, dw, dh), Math.round(left), Math.round(top));
       this.lastRect = { x: Math.round(left), y: Math.round(top), w: Math.round(dw), h: Math.round(dh) };
     } else if (!prev) ctx.drawImage(this.paint(def, Math.round(W), Math.round(H), feetY), 0, 0);
@@ -129,6 +148,8 @@ export class Backdrop {
       ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
     ctx.globalCompositeOperation = 'source-over';
+    // rayons de lumière : nets le jour, pâles la nuit
+    if (this.layers.tint && def.shafts) this.shafts.draw(ctx, def.shafts, { x: left, y: top, w: dw, h: dh }, 1 - 0.75 * this.starNight(), `rgb(${def.shaftColor ?? '255,210,150'})`, time, Math.min(2, window.devicePixelRatio || 1));
     if (this.layers.motes) this.ambient(ctx, W, H, dt, def.ambient);
     this.nightTint(ctx, W, H);
     if (this.img && this.layers.tint) this.sky.draw(ctx, { x: left, y: top, w: dw, h: dh }, this.starNight(), time, dt, Math.min(2, window.devicePixelRatio || 1));
@@ -165,6 +186,17 @@ export class Backdrop {
       if (d < rad && d < bestD) { bestD = d; best = { kind: t.kind, x: cx, y: cy, fx: t.x }; }
     }
     return best;
+  }
+
+  /** Densité de brume du décor courant. */
+  get mistDensity(): number { return this.def ? this.def.mist ?? 1 : 0; }
+
+  /** Teinte de la brume selon l'heure : gris bleuté le jour, ambrée le soir, bleu nuit la nuit. */
+  mistTint(): [number, number, number] {
+    const n = this.starNight(), e = this.dayLight().k;
+    const day: [number, number, number] = [205, 212, 228], eve: [number, number, number] = [235, 195, 175], night: [number, number, number] = [110, 125, 170];
+    const mixc = (a: number[], b: number[], t: number) => a.map((v, i) => v + (b[i] - v) * t) as [number, number, number];
+    return mixc(mixc(day, eve, Math.min(1, e * 2.5)), night, n);
   }
 
   /** Force du reflet sur le sol du décor courant. */
