@@ -9,7 +9,7 @@ import type { Duo } from '../family/Duo.js';
 import type { Training } from '../family/Training.js';
 import type { Activity } from '../family/Activity.js';
 import type { Voyage } from '../family/Voyage.js';
-import { installVoyage, wolfReactToFire } from './VoyageUI.js';
+import { installVoyage, wolfReactToFire, wolfReactToGust } from './VoyageUI.js';
 import { checkRoutine } from './Today.js';
 import { installUnlocks } from './Unlocks.js';
 import { installTips } from './Tips.js';
@@ -77,7 +77,7 @@ function fireHaptics(): void {
   setTimeout(() => { try { navigator.vibrate?.(18); } catch { /* pas de vibreur */ } }, 1130);
 }
 
-export const APP_VERSION = '0.33.0';
+export const APP_VERSION = '0.33.1';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -170,7 +170,8 @@ export class App {
   private bubbleAction: ThoughtAction = null;
   private shownAt = new Map<string, number>();
   private remindTimer = 0;
-  private stroke: { x: number; y: number; sx: number; sy: number; t: number; dist: number; moved: number; pets: number; zone: 'head' | 'belly' | 'tail' | 'body'; purring: boolean } | null = null;
+  private lastGust = 0;
+  private stroke: { x: number; y: number; sx: number; sy: number; t: number; dist: number; moved: number; pets: number; zone: 'head' | 'belly' | 'tail' | 'wing' | 'body'; purring: boolean } | null = null;
   /** Visites de l'autre dragon de la famille. */
   readonly visits = new VisitScene(this);
   /** Parent : nid commun du soir avec le dragon de l'enfant. */
@@ -218,6 +219,10 @@ export class App {
       this.syncAmbience();
     };
     applySound();
+    view.onGust = power => {
+      Sound.scenery('gust', power);
+      if (this.showingOwn) { navigator.vibrate?.(power > 0.7 ? 35 : 15); wolfReactToGust(power); }
+    };
     view.onClip = clip => { Sound.forClip(clip, view.stage?.id ?? 'adult', view.variant); if (clip === 'fire') { fireHaptics(); if (this.showingOwn) { wolfReactToFire(); fireSeasonReaction(this); } } };
     Sound.warm(['rumble', 'chuff', 'coins', 'gem']);
     let lastGold = state.data.gold;
@@ -761,16 +766,19 @@ export class App {
   // Toucher la tête : il se frotte et ronronne ; le ventre : chatouilles ; la queue : il court après ;
   // glisser vers le haut : il s'envole ; appui long : menu rond des actions ; mode lavage : frotter les écailles.
   private pressTimer = 0;
-  private zoneAt(x: number, y: number): 'head' | 'belly' | 'tail' | 'body' {
+  private zoneAt(x: number, y: number): 'head' | 'belly' | 'tail' | 'wing' | 'body' {
     const v = this.view;
     const r = v.canvas.getBoundingClientRect();
     const px = x - r.left, py = y - r.top;
     const head = v.screenPos('head_anchor'), tail = v.screenPos('tail_anchor'), tip = v.screenPos('tail_tip_anchor');
-    const chest = v.screenPos('chest_anchor'), body = v.screenPos('body_center');
+    const chest = v.screenPos('chest_anchor'), body = v.screenPos('body_center'), wing = v.screenPos('left_wing_anchor');
     if (!head || !tail || !body) return 'body';
     const size = Math.hypot(head.x - tail.x, head.y - tail.y) || 200;
     const d = (p: { x: number; y: number } | null) => (p ? Math.hypot(px - p.x, py - p.y) / size : 9);
-    const cand: Array<['head' | 'belly' | 'tail', number]> = [
+    // aile : au-dessus du dos, plus haut que l'ancrage de l'aile
+    const onWing = wing && py < wing.y + size * 0.05 && Math.abs(px - wing.x) < size * 0.4 ? Math.hypot(px - wing.x, (py - wing.y) * 0.6) / size / 0.4 : 9;
+    const cand: Array<['head' | 'belly' | 'tail' | 'wing', number]> = [
+      ['wing', onWing],
       ['head', d(head) / 0.22],
       ['tail', Math.min(d(tail), d(tip)) / 0.2],
       ['belly', py > body.y - size * 0.02 ? Math.min(d(chest), d(body)) / 0.24 : 9]
@@ -851,7 +859,7 @@ export class App {
   }
 
   /** Simple toucher selon l'endroit. */
-  private tap(e: PointerEvent, zone: 'head' | 'belly' | 'tail' | 'body'): void {
+  private tap(e: PointerEvent, zone: 'head' | 'belly' | 'tail' | 'wing' | 'body'): void {
     const comp = this.family.companion!;
     const view = this.view;
     if (this.sleeping) { view.burstAt(e.clientX, e.clientY, 'hearts'); this.say('Zzz…', null, 1500); return; }
@@ -862,6 +870,7 @@ export class App {
     if (zone === 'head') { void this.act('purr'); navigator.vibrate?.(20); }
     else if (zone === 'belly') { void this.act('giggle'); this.say(sayFor('tickle'), null, 2500); navigator.vibrate?.([15, 40, 15]); }
     else if (zone === 'tail') { void this.act('tail_chase'); this.say(sayFor('tail'), null, 2800); }
+    else if (zone === 'wing' && performance.now() - this.lastGust > 6000) { this.lastGust = performance.now(); void this.act('gust'); }
     else { void this.act('pet'); this.think(true); }
     comp.save();
   }

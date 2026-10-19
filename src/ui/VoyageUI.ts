@@ -18,7 +18,7 @@ import { unlocked } from './Unlocks.js';
 /** Place du loup dans la scène (unités de scène, voir DecorLayer) : à gauche du dragon, sur le sol. */
 const SPOT = { dx: -0.34, dy: 0.008, h: 0.17 };
 
-let wolf: { el: HTMLCanvasElement; sprite: WolfSprite; badge: HTMLButtonElement; raf: number; mode: 'home' | 'leaving' | 'away' | 'back' | 'arriving' | 'play'; t0: number; happyUntil: number; fireAt: number; nextPlay: number; x: number; y: number; w: number; dustAt?: number } | null = null;
+let wolf: { el: HTMLCanvasElement; sprite: WolfSprite; badge: HTMLButtonElement; raf: number; mode: 'home' | 'leaving' | 'away' | 'back' | 'arriving' | 'play'; t0: number; happyUntil: number; fireAt: number; gustAt?: number; gustPower?: number; nextPlay: number; x: number; y: number; w: number; dustAt?: number } | null = null;
 
 export function installVoyage(app: App): void {
   const v = app.family.voyage, comp = app.family.companion;
@@ -88,6 +88,15 @@ export function installVoyage(app: App): void {
       x -= hgt * 0.32 * (sm(0.42, 0.8) - sm(3.5, 4.2));
       cower = sm(0.9, 1.2) - sm(3.0, 3.5);
       if (ft > 3.5 && ft < 3.55) w.happyUntil = now + 1600;
+    }
+    // coup d'aile : poussé par le vent (s'éloigne du dragon), tête basse, puis il se secoue
+    const gt = (now - (w.gustAt ?? -1e9)) / 1000;
+    if ((w.mode === 'home' || w.mode === 'back') && gt >= 0 && gt < 2) {
+      const k = gt < 0.25 ? gt / 0.25 : Math.max(0, 1 - (gt - 0.25) / 1.4);
+      const ease = k * k * (3 - 2 * k), pw = w.gustPower ?? 1;
+      x -= hgt * 0.12 * pw * ease;
+      cower = Math.max(cower, 0.6 * pw * ease);
+      if (gt > 1.6 && gt < 1.65) w.happyUntil = now + 1200;
     }
     // de temps en temps, il va jouer avec le dragon (s'il est réveillé et que personne ne le touche)
     if (w.mode === 'home' && show && !app.sleeping && now > w.nextPlay && !document.querySelector('.sheet')) { w.mode = 'play'; w.t0 = now; }
@@ -329,6 +338,14 @@ export function openBag(app: App): void {
     loot.first ? h('p', { class: 'small muted' }, 'Premier voyage ici : un souvenir a été ajouté à l’album.') : null
   ].filter((n): n is HTMLDivElement | HTMLParagraphElement => !!n) as Node[]);
   app.refresh();
+}
+
+/** Coup d'aile : le vent le pousse un peu, il plisse les yeux (se tapit), puis se secoue. */
+export function wolfReactToGust(power: number): void {
+  if (!wolf || wolf.mode !== 'home' && wolf.mode !== 'back' && wolf.mode !== 'play') return;
+  if (wolf.mode === 'play') wolf.mode = 'home';
+  wolf.gustAt = performance.now();
+  wolf.gustPower = power;
 }
 
 /** Le dragon crache du feu : le loup réagit (sursaut, se tapit, puis se secoue). */

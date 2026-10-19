@@ -20,6 +20,7 @@ export function commands(app: App): Command[] {
     fire: ['crache', 'feu', 'du feu', 'flamme', 'flammes', 'souffle', 'brule'],
     attack: ['griffe', 'attaque', 'coup de patte', 'griffes'],
     bow: ['reverence', 'salue', 'salut', 'incline'],
+    gust: ['coup d aile', 'coups d ailes', 'bats des ailes', 'bat des ailes', 'battement', 'du vent', 'souffle la poussiere', 'tempete de poussiere'],
     hover: ['vole', 'envole', 'decolle', 'vol', 'voler', 'tes ailes', 'ailes'],
     dance: ['danse', 'danser'],
     roar: ['rugis', 'rugissement', 'rugir', 'grogne', 'crie']

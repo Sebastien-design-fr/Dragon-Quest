@@ -40,6 +40,7 @@
     "tail_chase@sprite.json",
     "purr@sprite.json",
     "dizzy@sprite.json",
-    "cheer@sprite.json"
+    "cheer@sprite.json",
+    "gust@sprite.json"
   ]
 }

@@ -554,6 +554,25 @@ const clips = {};
 }
 
 
+// Coup d'aile : il lève les ailes, se ramasse, puis frappe l'air deux fois ; le souffle soulève la poussière du sol.
+{
+  const D = 2.2;
+  const t = {
+    body: { y: mix(D, [[0, 0], [0.45, 6], [0.68, -8], [0.9, -2], [1.12, -6], [1.5, 0]]), rot: mix(D, [[0, 0], [0.45, 2], [0.68, -3], [1.2, -2], [1.7, 0]]) },
+    ground: { y: mix(D, [[0, 0], [0.45, 0], [0.68, -2], [1.12, -1], [1.5, 0]]) },
+    spine: { sy: mix(D, [[0, 1], [0.45, 0.97], [0.68, 1.04], [1.2, 1.02], [1.7, 1]]) },
+    neck1: { rot: mix(D, [[0, 0], [0.45, -8], [0.68, -12], [1.3, -10], [1.9, 0]]) },
+    neck2: { rot: mix(D, [[0, 0], [0.45, -4], [0.68, -8], [1.3, -6], [1.9, 0]]) },
+    head: { rot: mix(D, [[0, 0], [0.45, -6], [0.68, -10], [1.3, -8], [1.9, 0]]) },
+    wing1: { rot: mix(D, [[0, 0], [0.45, -9], [0.68, 11], [0.92, -5], [1.12, 7], [1.5, -2], [1.9, 0]]) },
+    wing2: { rot: mix(D, [[0, 0], [0.45, 36], [0.68, -26], [0.92, 20], [1.12, -16], [1.5, 6], [1.9, 0]]) },
+    wingFar: { rot: mix(D, [[0, 0], [0.45, 26], [0.68, -16], [0.92, 14], [1.12, -10], [1.5, 4], [1.9, 0]]) },
+    legFront: { rot: mix(D, [[0, 0], [0.45, -3], [0.68, 4], [1.3, 2], [1.8, 0]]) }
+  };
+  tailWave(t, D, 6, 0.5, (tt) => (tt > 0.6 && tt < 1.5 ? -6 : 0), 0.04);
+  clips.gust = { duration: D, loop: false, tracks: t, events: [{ t: 0.66, type: 'gust', value: 1 }, { t: 1.1, type: 'gust', value: 0.55 }] };
+}
+
 // Réaction à une quête validée : anticipation (il se ramasse) → bond joyeux, ailes qui s'ouvrent → impact → retour.
 {
   const D = 1.5;

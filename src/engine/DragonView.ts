@@ -476,6 +476,7 @@ export class DragonView {
       case 'flash': this.flash = e.value ?? 1; break;
       case 'shake': this.shake = e.value ?? 6; break;
       case 'swapStage': void this.onSwapStage?.(); break;
+      case 'gust': this.gust(e.value ?? 1); break;
     }
   }
 
@@ -1153,6 +1154,27 @@ export class DragonView {
   }
 
   cameraPulse(amp: number, dur = 1.6): void { this.camFx = { amp, t: 0, dur }; }
+
+  /** Coup d'aile (force 0..1) : le souffle chasse la poussière du sol des deux côtés et fait voler les poussières d'ambiance. */
+  onGust: ((power: number) => void) | null = null;
+  private gust(power: number): void {
+    if (this.isPoseChild) return;
+    const b = this.rig?.bounds, scale = this.rig?.fxScale ?? 2;
+    if (b && this.effectsEnabled) {
+      // trois bouffées par côté, au ras du sol, sous le corps et sous les ailes
+      const n = power > 0.7 ? 3 : 2;
+      for (let i = 0; i < n; i++) {
+        const k = (i + 0.5) / n;
+        this.particles.burst('gustLeft', b.x + b.w * (0.15 + 0.3 * k), -6, scale * (0.7 + 0.5 * power));
+        this.particles.burst('gustRight', b.x + b.w * (0.55 + 0.3 * k), -6, scale * (0.7 + 0.5 * power));
+      }
+      if (power > 0.7) this.particles.burst('gustRise', b.x + b.w * 0.5, -10, scale);
+    }
+    const feet = this.camM.point(0, 0);
+    this.backdrop.blow(feet.x, power);
+    this.shake = Math.max(this.shake, 4 * power);
+    this.onGust?.(power);
+  }
 
   /** Grand moment en cours : temps réel écoulé (s), couleur de l'éclat ; null sinon. */
   private moment: { t: number; color: RGB; calm: boolean } | null = null;

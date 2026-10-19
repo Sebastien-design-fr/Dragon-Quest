@@ -123,7 +123,7 @@ class SoundManager {
    * Sons du décor touché, synthétisés : cristal qui tinte (note de la gamme pentatonique selon sa place, de gauche
    * à droite), torche qui crépite, eau qui éclabousse, or qui tinte, vœu (petite montée scintillante).
    */
-  scenery(kind: 'crystal' | 'torch' | 'water' | 'lava' | 'gold' | 'wish', place = 0.5): void {
+  scenery(kind: 'crystal' | 'torch' | 'water' | 'lava' | 'gold' | 'wish' | 'gust', place = 0.5): void {
     if (this.muted || this.volume <= 0) return;
     const ctx = this.audio();
     if (!ctx) return;
@@ -159,6 +159,14 @@ class SoundManager {
       hiss(2400, 700, 0.35, 0.06, 1.2, 0.08);
     } else if (kind === 'gold') {
       for (let k = 0; k < 4; k++) bell(2200 + Math.random() * 900, k * 0.07, 0.35, 0.035);
+    } else if (kind === 'gust') {
+      // coup d'aile : souffle grave qui balaie, plus un « boum » sourd ; place = force
+      hiss(180, 900, 0.5, 0.16 * place, 0.7);
+      hiss(1400, 300, 0.7, 0.07 * place, 0.9, 0.05);
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.3);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22 * place * v, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.4);
     } else if (kind === 'wish') {
       [0, 2, 4, 5, 7].forEach((n, k) => bell(PENTA[n] * 2, k * 0.09, 1.2, 0.05));
     }

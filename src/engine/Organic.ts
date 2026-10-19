@@ -11,7 +11,7 @@
 // restent désactivés (poids 0) et sont listés dans DRAGON_ASSET_REQUIREMENTS.md.
 import type { Skeleton } from './Skeleton.js';
 
-export type BehaviorId = 'look' | 'head_tilt' | 'tail_move' | 'wing_adjust' | 'shift' | 'stretch' | 'yawn' | 'sniff' | 'scratch' | 'look_around' | 'fly' | 'blink';
+export type BehaviorId = 'look' | 'head_tilt' | 'tail_move' | 'wing_adjust' | 'shift' | 'stretch' | 'yawn' | 'sniff' | 'scratch' | 'look_around' | 'fly' | 'gust' | 'blink';
 
 export interface Personality {
   /** Vitesse générale (bébé > 1 : plus vif ; légendaire < 1 : plus posé). */
@@ -32,7 +32,7 @@ export interface Personality {
 const DEFAULT: Personality = {
   tempo: 1, breathe: { amp: 0.012, period: 3.4 }, sway: 0.8, head: 3, neck: 2, tail: 5, wing: 2.5,
   inertia: { k: 140, c: 15 }, interval: [5, 11], gesture: 1,
-  weights: { look: 3, head_tilt: 2, tail_move: 2, wing_adjust: 1.5, shift: 1.5, look_around: 1, sniff: 0.8, stretch: 0.6, yawn: 0.5, scratch: 0.6, fly: 0.25, blink: 0 }
+  weights: { look: 3, head_tilt: 2, tail_move: 2, wing_adjust: 1.5, shift: 1.5, look_around: 1, sniff: 0.8, stretch: 0.6, yawn: 0.5, scratch: 0.6, fly: 0.25, gust: 0.2, blink: 0 }
 };
 
 /** Priorité : un comportement n'interrompt qu'un comportement de priorité inférieure. Temps de repos en secondes. */
@@ -41,7 +41,7 @@ const META: Record<BehaviorId, { prio: number; cooldown: number; clip?: string }
   tail_move: { prio: 2, cooldown: 10, clip: 'tail_swish' }, look_around: { prio: 2, cooldown: 14, clip: 'look_around' },
   sniff: { prio: 2, cooldown: 25, clip: 'sniff' }, scratch: { prio: 2, cooldown: 35, clip: 'scratch' },
   stretch: { prio: 3, cooldown: 45, clip: 'stretch' }, yawn: { prio: 3, cooldown: 50, clip: 'yawn' },
-  fly: { prio: 4, cooldown: 120 }, blink: { prio: 0, cooldown: 4 }
+  fly: { prio: 4, cooldown: 120 }, gust: { prio: 3, cooldown: 150, clip: 'gust' }, blink: { prio: 0, cooldown: 4 }
 };
 
 export function personalityFor(cfg: { dragons?: Record<string, { personality?: Partial<Personality> }> } | undefined, stage: string, variant: string): Personality {

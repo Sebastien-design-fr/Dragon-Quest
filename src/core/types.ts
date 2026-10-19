@@ -77,7 +77,7 @@ export type Key = [number, number] | [number, number, string];
 
 export interface AnimEvent {
   t: number;
-  type: 'emit' | 'flash' | 'shake' | 'swapStage' | 'sound';
+  type: 'emit' | 'flash' | 'shake' | 'swapStage' | 'sound' | 'gust';
   preset?: string;
   anchor?: string;
   value?: number;

@@ -23,6 +23,7 @@ export interface TrickDef { id: string; label: string; anim: string; level: numb
 export const TRICKS: TrickDef[] = [
   { id: 'fire', label: 'Souffle de feu', anim: 'fire', level: 1 },
   { id: 'attack', label: 'Coup de griffe', anim: 'attack', level: 1 },
+  { id: 'gust', label: 'Le coup d’aile', anim: 'gust', level: 1 },
   { id: 'bow', label: 'La révérence', anim: 'bow', level: 2 },
   { id: 'hover', label: 'Le vol', anim: 'hover', level: 3 },
   { id: 'dance', label: 'La danse', anim: 'dance', level: 4 },

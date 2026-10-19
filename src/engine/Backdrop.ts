@@ -144,6 +144,16 @@ export class Backdrop {
     return 0;
   }
 
+  /** Souffle d'un coup d'aile parti de x (pixels) : les poussières d'ambiance s'écartent et tourbillonnent. */
+  blow(x: number, power: number): void {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    for (const m of this.motes) {
+      const side = m.x < x ? -1 : 1;
+      m.vx += side * power * (160 + Math.random() * 160) * dpr;
+      m.vy -= power * Math.random() * 60 * dpr;
+    }
+  }
+
   /** Coin du décor touché (pixels du canvas), avec sa position à l'écran ; null si rien. */
   touchAt(x: number, y: number): { kind: NonNullable<BackdropDef['touch']>[number]['kind']; x: number; y: number; fx: number } | null {
     const r = this.lastRect, list = this.def?.touch;

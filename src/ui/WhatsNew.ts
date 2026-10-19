@@ -9,6 +9,9 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
+  { version: '0.33.1', items: [
+    { icon: ICONS.wing, title: 'Le coup d’aile', text: 'Touche ses ailes, choisis « Le coup d’aile » dans les tours ou dis-lui « bats des ailes ! » : il frappe l’air et soulève un nuage de poussière. Le loup s’aplatit sous le vent.' }
+  ] },
   { version: '0.33.0', items: [
     { icon: ICONS.star, title: 'Fais un vœu', text: 'La nuit, des étoiles scintillent dans le ciel de la grotte. Touche une étoile filante (ou le feu follet des grottes fermées) : ton dragon fait un vœu, avec une petite surprise.', childOnly: true },
     { icon: ICONS.spark, title: 'La grotte répond', text: 'Touche les cristaux pour les faire tinter, les torches pour des étincelles, la cascade pour l’éclabousser. Penche le téléphone : le décor glisse derrière ton dragon.' },
