@@ -441,7 +441,7 @@ export class DragonView {
     const pose = this.rig?.pose;
     // la dragonne a d'autres proportions : réglages propres « dragonne », « dragonne.<stade> »
     const v = this.variant;
-    const keys = ['*', st, v, `${v}.${st}`, `*:${anchor}`, `${st}:${anchor}`, `${v}.${st}:${anchor}`, ...(pose ? [pose, `${pose}:${anchor}`] : [])];
+    const keys = ['*', st, v, `${v}.${st}`, `*:${anchor}`, `${st}:${anchor}`, `${v}.${st}:${anchor}`, ...(pose ? [pose, `${pose}:${anchor}`, `${st}.${pose}`, `${v}.${st}.${pose}`] : [])];
     const out: EquipFit = {};
     for (const table of [this.deps.fits?.categories[def.category], this.deps.fits?.items[def.id]]) {
       if (!table) continue;
