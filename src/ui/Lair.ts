@@ -263,6 +263,9 @@ export function installLairTaps(app: App): void {
   updateSafe();
   new ResizeObserver(updateSafe).observe(stage);
   window.setInterval(updateSafe, 1000);
+  // pas de menu « enregistrer l'image » ni de sélection quand on appuie longtemps sur la scène
+  stage.addEventListener('contextmenu', e => e.preventDefault());
+  stage.addEventListener('selectstart', e => e.preventDefault());
   stage.addEventListener('pointerdown', e => {
     if (editor || !app.showingOwn || !app.family.companion) return;
     // touchers sur la scène elle-même ; sur le loup, seulement pour ramasser un débris caché derrière lui

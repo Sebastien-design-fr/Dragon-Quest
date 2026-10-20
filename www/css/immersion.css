@@ -109,3 +109,12 @@ h2, h3 { letter-spacing: .02em; }
   background-image: var(--tex-stone, none), linear-gradient(180deg, #121014, #0a090b);
   background-size: 160px 160px, auto; background-blend-mode: overlay, normal;
 }
+
+/* ================= Pas de sélection ni de menu d'appui long sur le jeu ================= */
+/* Sur Android, un appui un peu long sur le décor sélectionnait le canvas : il se couvrait de la couleur
+   de surlignage du téléphone (souvent jaune) jusqu'au toucher suivant. Le texte des champs reste sélectionnable. */
+html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+canvas, img, svg { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-user-drag: none; }
+.stage-view, .stage-view * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+canvas::selection, .stage-view ::selection { background: transparent; }
+input, textarea, [contenteditable="true"], .pq-result { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
