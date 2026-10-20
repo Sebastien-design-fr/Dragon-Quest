@@ -170,7 +170,14 @@ export interface EquipFit {
    * (fractions ; < 0 prolonge avant le premier os) ; thick = épaisseur (1 = proportions de l'image) ;
    * nudge = décalage perpendiculaire (unités du rig) ; flipY = retourner l'image (piquants vers le haut).
    */
-  ribbon?: { bones: string[]; from?: number; to?: number; thick?: number; nudge?: number; flipY?: boolean };
+  ribbon?: {
+    bones?: string[];
+    /** Tracé dessiné sur l'illustration (repère de l'os « body », comme les ancrages), déformé avec elle. */
+    path?: Array<[number, number]>;
+    /** Ligne médiane de la pièce dans son image ([u, v] en fractions) : redresse une image déjà courbée. */
+    spine?: Array<[number, number]>;
+    from?: number; to?: number; thick?: number; nudge?: number; flipY?: boolean;
+  };
 }
 /** clé "*" = tous les stades ; "<stade>" ; "<stade>:<ancrage>" ou "*:<ancrage>" pour un ancrage précis. */
 export type FitTable = Record<string, EquipFit>;

@@ -106,6 +106,16 @@ const damp = (a: number, b: number, rate: number, dt: number) => b + (a - b) * M
 /** Mesures pour le panneau développeur. */
 export interface ViewStats { fps: number; frameMs: number; renderDpr: number; canvas: string; refreshHz: number; divisor: number }
 
+/** Valeur v de la ligne médiane d'une image en u (interpolation linéaire entre les points donnés). */
+function spineAt(spine: Array<[number, number]>, u: number): number {
+  if (u <= spine[0][0]) return spine[0][1];
+  for (let i = 1; i < spine.length; i++) {
+    const [u1, v1] = spine[i];
+    if (u <= u1) { const [u0, v0] = spine[i - 1]; return v0 + (v1 - v0) * ((u - u0) / ((u1 - u0) || 1)); }
+  }
+  return spine[spine.length - 1][1];
+}
+
 export class DragonView {
   readonly canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -196,6 +206,8 @@ export class DragonView {
   private skin: SpriteSkin | null = null;
   private skinPart: Drawable | null = null;
   private restAnchors = new Map<string, Mat2D>();
+  /** Repère de repos de l'os « body » : base des tracés dessinés sur l'illustration (rubans). */
+  private restBody: Mat2D | null = null;
   private mesh: MeshRenderer | null | undefined;
   /** Position dans la scène (fraction de largeur) et taille relative — pour accueillir un second dragon. */
   placement = { x: 0, scale: 1 };
@@ -433,7 +445,14 @@ export class DragonView {
     const out: EquipFit = {};
     for (const table of [this.deps.fits?.categories[def.category], this.deps.fits?.items[def.id]]) {
       if (!table) continue;
-      for (const k of keys) if (table[k]) Object.assign(out, table[k]);
+      for (const k of keys) {
+        const t = table[k];
+        if (!t) continue;
+        // le ruban se complète au lieu d'être remplacé : tracé du dragon (catégorie) + forme de la pièce (objet)
+        const ribbon = t.ribbon && out.ribbon ? { ...out.ribbon, ...t.ribbon } : (t.ribbon ?? out.ribbon);
+        Object.assign(out, t);
+        if (ribbon) out.ribbon = ribbon;
+      }
     }
     return out;
   }
@@ -536,6 +555,7 @@ export class DragonView {
     // Repères de repos des ancrages (le squelette est encore en pose de repos ici).
     this.restAnchors.clear();
     for (const name of sk.anchorNames()) { const m = sk.anchorWorld(name); if (m) this.restAnchors.set(name, m); }
+    { const bw = sk.bone('body')?.world; this.restBody = bw ? new Mat2D().copy(bw) : null; }
     this.mesh.setMesh(skin, img as HTMLImageElement);
     this.skin = skin;
     this.skinPart = d;
@@ -1424,16 +1444,28 @@ export class DragonView {
   private drawRibbon(ctx: CanvasRenderingContext2D, img: CanvasImageSource & { width: number; height: number }, f: EquipFit): boolean {
     const R = f.ribbon!, sk = this.skeleton;
     if (!sk) return false;
-    // articulations de la chaîne (repère du rig) : début de chaque os, puis bout du dernier
     const pts: Array<[number, number]> = [];
-    for (const name of R.bones) {
-      const b = sk.bone(name);
-      if (!b) return false;
-      pts.push([b.world.e, b.world.f]);
-    }
-    const last = sk.bone(R.bones[R.bones.length - 1])!;
-    const L = last.def.length ?? 0;
-    pts.push([last.world.e + last.world.a * L, last.world.f + last.world.b * L]);
+    if (R.path) {
+      // tracé dessiné sur l'illustration : chaque point suit la déformation de la peinture (comme un ancrage)
+      if (!this.skin || !this.restBody) return false;
+      const m = this.tmp2, rest = new Mat2D();
+      for (const [x, y] of R.path) {
+        Mat2D.fromTRS(x, y, 0, 1, 1, rest);
+        this.restBody.multiply(rest, rest);
+        this.skin.deform(rest, m);
+        pts.push([m.e, m.f]);
+      }
+    } else if (R.bones) {
+      // articulations de la chaîne (repère du rig) : début de chaque os, puis bout du dernier
+      for (const name of R.bones) {
+        const b = sk.bone(name);
+        if (!b) return false;
+        pts.push([b.world.e, b.world.f]);
+      }
+      const last = sk.bone(R.bones[R.bones.length - 1])!;
+      const L = last.def.length ?? 0;
+      pts.push([last.world.e + last.world.a * L, last.world.f + last.world.b * L]);
+    } else return false;
     if (pts.length < 3) return false;
     // courbe lisse (Catmull-Rom) échantillonnée finement, puis répartie à pas réguliers
     const dense: Array<[number, number]> = [];
@@ -1473,7 +1505,9 @@ export class DragonView {
       Mat2D.fromTRS(x, y, (ang * 180) / Math.PI, 1, R.flipY ? -1 : 1, this.tmp);
       this.camM.multiply(this.tmp, this.tmp).apply(ctx);
       const sx = Math.max(0, Math.min(img.width - sw * over, sw * (i + 0.5) - sw * over / 2));
-      ctx.drawImage(img, sx, 0, sw * over, img.height, -seg * over / 2, -h / 2 + (R.nudge ?? 0), seg * over, h);
+      // ligne médiane de l'image : la partie « bras » de la pièce est posée sur le tracé, tranche par tranche
+      const v = R.spine ? spineAt(R.spine, (i + 0.5) / N) : 0.5;
+      ctx.drawImage(img, sx, 0, sw * over, img.height, -seg * over / 2, -v * h + (R.nudge ?? 0), seg * over, h);
     }
     return true;
   }
