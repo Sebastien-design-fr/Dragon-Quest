@@ -164,6 +164,13 @@ export interface EquipFit {
   crop?: [number, number];      // ne garder qu'une partie de l'image (fraction horizontale 0..1)
   pivot?: [number, number];     // point de l'image posé sur l'ancrage (0..1), défaut centre
   hidden?: boolean;             // ne pas afficher cet objet sur ce stade / cet ancrage
+  /**
+   * Ruban : l'image est pliée le long d'une chaîne d'os (la queue) au lieu d'être posée droite.
+   * bones = os de la chaîne, de la base vers le bout ; from / to = début et fin le long de la chaîne
+   * (fractions ; < 0 prolonge avant le premier os) ; thick = épaisseur (1 = proportions de l'image) ;
+   * nudge = décalage perpendiculaire (unités du rig) ; flipY = retourner l'image (piquants vers le haut).
+   */
+  ribbon?: { bones: string[]; from?: number; to?: number; thick?: number; nudge?: number; flipY?: boolean };
 }
 /** clé "*" = tous les stades ; "<stade>" ; "<stade>:<ancrage>" ou "*:<ancrage>" pour un ancrage précis. */
 export type FitTable = Record<string, EquipFit>;

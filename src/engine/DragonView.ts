@@ -1396,6 +1396,7 @@ export class DragonView {
         const s = rig.scale;
         let rot = e.rot + (f?.rotation ?? 0);
         if (this.quality.secondaryMotion && e.def.animationProfile === 'sway') rot += Math.sin(this.time * 2.4 + e.phase) * (f ? 2 : 7);
+        if (img && f?.ribbon && this.drawRibbon(ctx, img as CanvasImageSource & { width: number; height: number }, f)) continue;
         Mat2D.fromTRS(e.dx + (f?.x ?? 0) * s, e.dy + (f?.y ?? 0) * s, rot, f?.flipX ? -1 : 1, 1, this.tmp);
         this.camM.multiply(anchorM.multiply(this.tmp, this.tmp), this.tmp).apply(ctx);
         if (img) {
@@ -1412,6 +1413,69 @@ export class DragonView {
       }
     }
     ctx.globalAlpha = 1;
+  }
+
+  /**
+   * Accessoire en ruban (armure de queue) : l'image, base à gauche et bout à droite, est découpée en fines
+   * tranches posées le long d'une courbe lisse qui passe par les articulations de la queue. Les os suivent
+   * l'animation et la peinture déformée : l'armure épouse toute la queue, jusqu'au bout enroulé.
+   * Renvoie false si la chaîne d'os n'existe pas (l'objet est alors posé normalement).
+   */
+  private drawRibbon(ctx: CanvasRenderingContext2D, img: CanvasImageSource & { width: number; height: number }, f: EquipFit): boolean {
+    const R = f.ribbon!, sk = this.skeleton;
+    if (!sk) return false;
+    // articulations de la chaîne (repère du rig) : début de chaque os, puis bout du dernier
+    const pts: Array<[number, number]> = [];
+    for (const name of R.bones) {
+      const b = sk.bone(name);
+      if (!b) return false;
+      pts.push([b.world.e, b.world.f]);
+    }
+    const last = sk.bone(R.bones[R.bones.length - 1])!;
+    const L = last.def.length ?? 0;
+    pts.push([last.world.e + last.world.a * L, last.world.f + last.world.b * L]);
+    if (pts.length < 3) return false;
+    // courbe lisse (Catmull-Rom) échantillonnée finement, puis répartie à pas réguliers
+    const dense: Array<[number, number]> = [];
+    const P = (i: number) => pts[Math.max(0, Math.min(pts.length - 1, i))];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = P(i - 1), p1 = P(i), p2 = P(i + 1), p3 = P(i + 2);
+      for (let k = 0; k < 8; k++) {
+        const t = k / 8, t2 = t * t, t3 = t2 * t;
+        const c = (a: number, b: number, cc: number, d: number) => 0.5 * (2 * b + (-a + cc) * t + (2 * a - 5 * b + 4 * cc - d) * t2 + (-a + 3 * b - 3 * cc + d) * t3);
+        dense.push([c(p0[0], p1[0], p2[0], p3[0]), c(p0[1], p1[1], p2[1], p3[1])]);
+      }
+    }
+    dense.push(pts[pts.length - 1]);
+    const cum = [0];
+    for (let i = 1; i < dense.length; i++) cum.push(cum[i - 1] + Math.hypot(dense[i][0] - dense[i - 1][0], dense[i][1] - dense[i - 1][1]));
+    const total = cum[cum.length - 1];
+    if (total < 1) return false;
+    const at = (d: number): [number, number, number] => {
+      // point et direction à la distance d le long de la courbe (prolongée en ligne droite avant le début)
+      if (d <= 0) {
+        const [x0, y0] = dense[0], [x1, y1] = dense[1];
+        const l = Math.hypot(x1 - x0, y1 - y0) || 1, ux = (x1 - x0) / l, uy = (y1 - y0) / l;
+        return [x0 + ux * d, y0 + uy * d, Math.atan2(uy, ux)];
+      }
+      let i = 1;
+      while (i < cum.length - 1 && cum[i] < d) i++;
+      const t = (d - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1);
+      const [ax, ay] = dense[i - 1], [bx, by] = dense[i];
+      return [ax + (bx - ax) * t, ay + (by - ay) * t, Math.atan2(by - ay, bx - ax)];
+    };
+    const from = (R.from ?? 0) * total, to = (R.to ?? 1) * total, len = to - from;
+    const h = len * (img.height / img.width) * (R.thick ?? 1);
+    // tranches fines qui se chevauchent (x 1,7) : dans les virages serrés (bout enroulé), pas de marches ni de trous
+    const N = 72, seg = len / N, sw = img.width / N, over = 1.7;
+    for (let i = 0; i < N; i++) {
+      const [x, y, ang] = at(from + seg * (i + 0.5));
+      Mat2D.fromTRS(x, y, (ang * 180) / Math.PI, 1, R.flipY ? -1 : 1, this.tmp);
+      this.camM.multiply(this.tmp, this.tmp).apply(ctx);
+      const sx = Math.max(0, Math.min(img.width - sw * over, sw * (i + 0.5) - sw * over / 2));
+      ctx.drawImage(img, sx, 0, sw * over, img.height, -seg * over / 2, -h / 2 + (R.nudge ?? 0), seg * over, h);
+    }
+    return true;
   }
 
   /**

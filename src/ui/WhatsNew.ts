@@ -9,6 +9,9 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
+  { version: '0.36.0', items: [
+    { icon: ICONS.shield, title: 'Des armures sur mesure', text: 'Les protections de queue recouvrent maintenant toute la queue et suivent ses mouvements, jusqu’au bout enroulé. Casques, colliers, armures et ailes sont ajustés à chaque stade, pour le dragon comme pour la dragonne.' }
+  ] },
   { version: '0.35.0', items: [
     { icon: ICONS.dragon, title: 'Des écailles plus belles', text: 'Les écailles du dragon sont plus nettes et en relief, et des reflets dorés glissent lentement sur ses bords. Le loup a un liseré de lumière sur la fourrure.' },
     { icon: ICONS.flame, title: 'Une image de cinéma', text: 'Les couleurs de la grotte suivent l’heure du jour, les bords de l’image s’assombrissent doucement, et l’air tremble au-dessus des flammes.' },
