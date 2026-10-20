@@ -3,10 +3,14 @@
 // Il se dessine sous les particules du souffle (braises, fumée), qui gardent le détail.
 
 const VS = `attribute vec2 p; varying vec2 v; void main(){ v = p * 0.5 + 0.5; v.y = 1.0 - v.y; gl_Position = vec4(p, 0.0, 1.0); }`;
-const FS = `precision mediump float;
+const FS = `#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
 varying vec2 v;
 uniform float t, power;
-float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float hash(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
 float noise(vec2 p){
   vec2 i = floor(p), f = fract(p);
   vec2 u = f * f * (3.0 - 2.0 * f);
@@ -43,6 +47,8 @@ export class FlameShader {
     this.canvas.width = 256; this.canvas.height = 128;
     const gl = this.canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false }) as WebGLRenderingContext | null;
     if (!gl) { this.failed = true; return false; }
+    // contexte perdu (mémoire du téléphone) : on n'insiste pas, le souffle garde ses particules
+    this.canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); this.failed = true; this.gl = null; });
     const sh = (type: number, src: string) => { const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s); return s; };
     const prog = gl.createProgram()!;
     gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
@@ -66,12 +72,12 @@ export class FlameShader {
    * power : 0..1 (le jet s'allonge à l'allumage et se rétracte à la fin) ; reach : longueur maximale en pixels.
    */
   draw(ctx: CanvasRenderingContext2D, x: number, y: number, dir: number, reach: number, power: number, time: number): void {
-    if (power < 0.02 || !this.init()) return;
+    if (power < 0.02 || !this.init() || this.gl!.isContextLost()) return;
     const gl = this.gl!;
     gl.viewport(0, 0, 256, 128);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.uniform1f(this.loc.t, time);
+    gl.uniform1f(this.loc.t, time % 100); // petit nombre : précise même en précision réduite
     gl.uniform1f(this.loc.power, Math.min(1, power));
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     const L = reach, Hh = reach * 0.5;

@@ -6,7 +6,11 @@
 // Le rendu passe par WebGL (une texture pour l'image, une pour la profondeur) ; sans WebGL, rien ne change.
 
 const VS = `attribute vec2 p; varying vec2 v; void main(){ v = p * 0.5 + 0.5; v.y = 1.0 - v.y; gl_Position = vec4(p, 0.0, 1.0); }`;
-const FS = `precision mediump float;
+const FS = `#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
 varying vec2 v;
 uniform sampler2D img, dep;
 uniform vec4 rect;      // x, y, w, h de l'image en pixels écran
@@ -43,6 +47,7 @@ export class DepthParallax {
     if (this.failed) return false;
     const gl = this.canvas.getContext('webgl', { premultipliedAlpha: false, alpha: false, antialias: false }) as WebGLRenderingContext | null;
     if (!gl) { this.failed = true; return false; }
+    this.canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); this.failed = true; this.gl = null; this.source = null; });
     const sh = (type: number, src: string) => { const s = gl.createShader(type)!; gl.shaderSource(s, src); gl.compileShader(s); return s; };
     const prog = gl.createProgram()!;
     gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
@@ -80,7 +85,16 @@ export class DepthParallax {
     const gl = this.gl!;
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.texImg);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+    // copie en 2048×1024 (puissance de 2) pour avoir des versions réduites (mipmaps) : sans elles,
+    // l'image réduite sur un petit écran scintille
+    const pot = document.createElement('canvas');
+    pot.width = 2048; pot.height = 1024;
+    const pg = pot.getContext('2d')!;
+    pg.imageSmoothingQuality = 'high';
+    pg.drawImage(img, 0, 0, pot.width, pot.height);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, pot);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
     const depth = estimateDepth(img, floor);
     if (!depth) { this.source = null; return; }
     gl.activeTexture(gl.TEXTURE1);
@@ -91,7 +105,7 @@ export class DepthParallax {
     this.plane = depth[Math.min(GH - 1, Math.round(floor * GH)) * GW + GW / 2] / 255;
   }
 
-  get ready(): boolean { return !!this.source && !!this.gl; }
+  get ready(): boolean { return !!this.source && !!this.gl && !this.gl.isContextLost(); }
 
   /** Image du décor avec relief, à la taille de l'écran ; shift = décalage max en pixels (x, y). */
   render(W: number, H: number, rect: { x: number; y: number; w: number; h: number }, sx: number, sy: number): HTMLCanvasElement | null {

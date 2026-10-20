@@ -5,11 +5,15 @@
 // Aucun coût pendant le jeu ; sans WebGL, l'interface garde ses dégradés lisses.
 
 const VS = `attribute vec2 p; varying vec2 v; void main(){ v = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }`;
-const FS = `precision mediump float;
+const FS = `#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
 varying vec2 v;
 uniform float seed;
 // bruit de valeur périodique : la texture se raccorde sur ses bords
-float hash(vec2 p){ p = fract(p * vec2(234.34, 435.345) + seed); p += dot(p, p + 34.23); return fract(p.x * p.y); }
+float hash(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031 + seed); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
 float pnoise(vec2 p, float per){
   vec2 i = floor(p), f = fract(p);
   vec2 u = f * f * (3.0 - 2.0 * f);

@@ -61,6 +61,7 @@ export class Backdrop {
   /** Relief du décor (WebGL) : quand il est prêt, l'inclinaison déplace le proche plus que le lointain. */
   readonly depth = new DepthParallax();
   useDepth = true;
+  private reliefHold = 0;
   /** Heure forcée (0-24) pour les tests ; null = heure réelle. */
   hourOverride: number | null = null;
   private rays: HTMLCanvasElement | null = null;
@@ -109,8 +110,12 @@ export class Backdrop {
     const still = clampX((W - dw) / 2 - shiftX * 0.15);
     // avec le relief, le sol sous le dragon reste fixe et chaque plan glisse selon sa distance ;
     // sinon, tout le décor glisse d'un bloc
-    const tilting = Math.abs(this.tilt.x) + Math.abs(this.tilt.y) > 0.01;
-    const relief = tilting && this.useDepth && effects && this.depth.ready && !this.prev;
+    // hystérésis : le relief s'allume franchement (> 0,04) et ne s'éteint qu'après 1,5 s sans inclinaison,
+    // sinon un téléphone tenu presque immobile fait basculer le décor d'un rendu à l'autre à chaque image
+    const amount = Math.abs(this.tilt.x) + Math.abs(this.tilt.y);
+    if (amount > 0.04) this.reliefHold = 1.5;
+    else if (amount < 0.005) this.reliefHold = Math.max(0, this.reliefHold - dt);
+    const relief = this.reliefHold > 0 && this.useDepth && effects && this.depth.ready && !this.prev;
     const top = relief ? stillTop : Math.min(0, Math.max(H - dh, stillTop - this.tilt.y * 6 * dpr));
     const left = relief ? still : clampX(still - this.tilt.x * 12 * dpr);
     this.tiltShiftY = top - stillTop;
