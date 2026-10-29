@@ -447,12 +447,16 @@ export class Companion {
     return true;
   }
   /** Défi réussi aujourd'hui : elle mange, se réjouit et grandit (XP et or hors du plafond des soins). */
+  /** Appelé à chaque défi fait (le parent réchauffe l'œuf de famille). */
+  onDefiDone: (() => void) | null = null;
+
   completeDefi(id: string): string | null {
     if (this.mode !== 'parent') return null;
     this.tick();
     const st = this.defiState();
     if (!st.chosen.includes(id) || st.done.includes(id)) return null;
     st.done.push(id);
+    this.onDefiDone?.();
     const d = this.data;
     d.hunger = clamp(d.hunger + 10); d.mood = clamp(d.mood + 12);
     this.addBond(1);

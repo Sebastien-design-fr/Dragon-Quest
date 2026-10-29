@@ -1,4 +1,6 @@
 // Coquille de l'application : HUD, vue du dragon (en haut), écrans et onglets selon le profil.
+import { openEggWindow } from './EggWindow.js';
+import type { FamilyEgg } from '../family/FamilyEgg.js';
 import type { EquipmentDef, StageDef } from '../core/types.js';
 import type { DragonView } from '../engine/DragonView.js';
 import type { ChildBook } from '../family/ChildBook.js';
@@ -69,6 +71,8 @@ export interface FamilyContext {
   activity?: Activity | null;
   /** Voyages du dragon. */
   voyage?: Voyage | null;
+  /** Œuf de famille, puis petit dragon partagé. */
+  egg?: FamilyEgg | null;
 }
 
 /** Souffle de feu : une seule vibration discrète au moment où les flammes jaillissent (rien de lassant). */
@@ -77,7 +81,7 @@ function fireHaptics(): void {
   setTimeout(() => { try { navigator.vibrate?.(18); } catch { /* pas de vibreur */ } }, 1130);
 }
 
-export const APP_VERSION = '0.36.2';
+export const APP_VERSION = '0.37.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -345,6 +349,9 @@ export class App {
     installActivity(this);
     installVoyage(this);
     installDuel(this);
+    // l'œuf de famille éclot pendant qu'on joue : on ouvre la fenêtre pour voir naître le petit
+    this.family.egg?.events.on('hatch', () => setTimeout(() => { if (!document.querySelector('.sheet, .duel-ov, .egg-ov')) openEggWindow(this); else this.refresh(); }, 1200));
+    this.family.egg?.events.on('change', () => this.refresh());
     installUnlocks(this);
     installTips(this);
     installWhatsNew(this);

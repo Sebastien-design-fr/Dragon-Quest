@@ -1,5 +1,7 @@
 // « Aujourd'hui » : une ligne de pastilles sous la scène (soins du jour, quêtes, pas, loup, coffre),
 // et la routine du jour : nourrir, laver, jouer, envoyer le loup, coucher. On sait toujours quoi faire ensuite.
+import { EGG_GOAL } from '../family/FamilyEgg.js';
+import { eggThumb, openEggWindow } from './EggWindow.js';
 import type { App } from './App.js';
 import { ICONS, h, icon } from './dom.js';
 import { gamesSheet } from './CareSheets.js';
@@ -100,6 +102,15 @@ export function todayStrip(app: App): HTMLElement | null {
       const d = t.filter(s => s === 'done').length;
       chips.push(chip(pending ? 'alert' : '', icon(ICONS.shield, 18), snap.name, pending ? `${pending} à valider` : `${d} / ${t.length} quêtes`, () => app.show('validations')));
     }
+  }
+
+  // œuf de famille (ou le petit dragon, une fois né)
+  const egg = app.family.egg;
+  if (egg) {
+    const born = egg.hatched && egg.data.hatchSeen;
+    const lead = h('span', { class: 'td-ring td-egg' }, born ? null : ringSvg(egg.progress, 30, 4), eggThumb(egg));
+    const sub = egg.hatched && !egg.data.hatchSeen ? 'il éclot !' : born ? 'votre petit' : `${Math.min(egg.total, EGG_GOAL)} / ${EGG_GOAL}`;
+    chips.push(chip(egg.hatched && !egg.data.hatchSeen ? 'alert' : '', lead, born ? egg.babyName === 'le petit' ? 'Le petit' : egg.babyName : 'L’œuf', sub, () => openEggWindow(app)));
   }
 
   // pas

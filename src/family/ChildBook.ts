@@ -1,5 +1,6 @@
 // Côté enfant : liste des missions, réalisation, demandes de validation, réponses des parents,
 // bonus reçus, et envoi de l'état du dragon aux parents. Le téléphone de l'enfant fait foi.
+import type { FamilyEgg } from './FamilyEgg.js';
 import { EventBus } from '../core/events.js';
 import { loadJSON } from '../core/data.js';
 import type { GameState } from '../game/GameState.js';
@@ -222,6 +223,8 @@ export class ChildBook {
   childName = '';
   /** Le dragon compagnon (soins, faim, amitié). */
   companion: Companion | null = null;
+  /** Œuf de famille (chaque quête faite le réchauffe). */
+  egg: FamilyEgg | null = null;
 
   /**
    * Crédite une récompense : une quête = de l'XP et de l'or, rien d'autre (les soins du dragon sont à part).
@@ -232,6 +235,7 @@ export class ChildBook {
     if (gold) this.state.addGold(gold);
     if (gainedXp) this.state.addXp(gainedXp);
     if (gainedXp || gold) this.events.emit('reward', { xp: gainedXp, gold, mission });
+    if (mission && this.egg) { this.egg.addMine(); this.queueStatus(800); }
     return rewardText(gainedXp, gold) || 'aucune récompense';
   }
 
@@ -622,6 +626,11 @@ export class ChildBook {
         return true;
       }
       case 'rules': return false; // réglage des sanctions supprimé
+      case 'egg.sync': {
+        // défis du parent (+ quêtes des frères et sœurs) : ils réchauffent le même œuf
+        this.egg?.setOthers(Number(p.others));
+        return true;
+      }
       case 'nest.wake': {
         // la dragonne du parent vient réveiller le petit en douceur
         this.events.emit('story', `${p.name ?? 'La dragonne'} est venue me réveiller tout doucement… Bonjour ! Tu ouvres les rideaux ?`);
@@ -668,7 +677,8 @@ export class ChildBook {
       confiscated: this.data.confiscated?.id ?? null,
       gems: this.data.gems, rewards: this.data.rewards, shields: this.data.shields,
       expedition: { title: journeyFor(this.data.expedition.week).title, steps: this.data.expedition.steps, goal: this.expeditionGoal(), opened: this.data.expedition.opened },
-      week: this.weekStats()
+      week: this.weekStats(),
+      egg: this.egg?.snapshot()
     };
   }
 

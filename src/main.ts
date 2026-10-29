@@ -10,6 +10,7 @@ import { Activity } from './family/Activity.js';
 import { Voyage } from './family/Voyage.js';
 import { ParentHub } from './family/ParentHub.js';
 import { Reminders } from './family/Reminders.js';
+import { FamilyEgg } from './family/FamilyEgg.js';
 import { Catalog } from './game/Catalog.js';
 import { GameState } from './game/GameState.js';
 import { LocalSaveBackend } from './game/save/SaveBackend.js';
@@ -61,6 +62,7 @@ async function boot(): Promise<void> {
   let hub: ParentHub | null = null;
   let companion: Companion | null = null;
   let duo: Duo | null = null;
+  let familyEgg: FamilyEgg | null = null;
   if (linkState.role === 'parent') {
     hub = new ParentHub(link);
     // La maman (ou le papa) a sa propre dragonne : un tamagotchi qui grandit avec les soins.
@@ -69,6 +71,24 @@ async function boot(): Promise<void> {
     hub.onOther = m => duo!.handle(m);
     // les gestes de parent (valider, encourager, proposer une quête) nourrissent sa dragonne
     hub.events.on('care', kind => { const t = companion!.familyMeal(kind); if (t) hub!.events.emit('toast', t); });
+    // œuf de famille : les défis du parent et les quêtes des enfants le réchauffent ensemble
+    const egg = new FamilyEgg('parent');
+    familyEgg = egg;
+    companion.onDefiDone = () => egg.addMine();
+    const sent: Record<string, number> = {};
+    const eggTick = () => {
+      const kids = Object.entries(hub!.data.children);
+      const mineOf = (s: { snapshot: { egg?: { mine: number } } | null }) => s.snapshot?.egg?.mine ?? 0;
+      egg.setOthers(kids.reduce((n, [, c]) => n + mineOf(c), 0));
+      const first = kids.find(([, c]) => c.snapshot?.egg)?.[1].snapshot?.egg;
+      if (first) egg.follow(first.design, first.name);
+      for (const [id] of kids) {
+        const others = egg.data.mine + kids.filter(([k]) => k !== id).reduce((n, [, c]) => n + mineOf(c), 0);
+        if (sent[id] !== others) { sent[id] = others; void hub!.eggSync(id, others); }
+      }
+    };
+    hub.events.on('change', eggTick);
+    egg.events.on('change', eggTick);
     hub.syncMembers(linkState.members);
     await hub.sync();
     link.onInbox(() => void hub!.sync());
@@ -77,6 +97,9 @@ async function boot(): Promise<void> {
     book.childName = linkState.deviceName;
     companion = new Companion(state);
     book.companion = companion;
+    familyEgg = new FamilyEgg('child');
+    book.egg = familyEgg;
+    familyEgg.events.on('change', () => book!.queueStatus(800));
     // couché / réveillé : le téléphone du parent le sait (nid commun du soir)
     let wasAsleep = companion.asleep();
     companion.events.on('change', () => { const a = companion!.asleep(); if (a !== wasAsleep) { wasAsleep = a; book!.queueStatus(500); } });
@@ -98,7 +121,7 @@ async function boot(): Promise<void> {
   const activity = new Activity(link, state, linkState.role === 'parent' ? 'parent' : 'child');
   await activity.load();
   const voyage = companion ? new Voyage(state, companion, activity, linkState.role === 'parent' ? 'parent' : 'child') : null;
-  new App(root, catalog, state, view, { link, linkState, reminders, book, hub, companion, duo, training, activity, voyage });
+  new App(root, catalog, state, view, { link, linkState, reminders, book, hub, companion, duo, training, activity, voyage, egg: familyEgg });
   duo?.hello();
 }
 

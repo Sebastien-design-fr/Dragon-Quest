@@ -72,6 +72,8 @@ export interface ChildSnapshot {
   companion?: { name: string; hunger: number; clean: number; mood: number; bond: string; moodLabel: string; asleep?: boolean };
   /** Bilan des 7 derniers jours (le plus ancien d'abord, aujourd'hui compris). */
   week?: Array<{ date: string; done: number; total: number }>;
+  /** Œuf de famille : quêtes faites par cet enfant, dessin choisi, nom du petit. */
+  egg?: { mine: number; design: number; name: string };
 }
 
 export const DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];

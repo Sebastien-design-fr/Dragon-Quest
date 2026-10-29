@@ -9,6 +9,9 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
+  { version: '0.37.0', items: [
+    { icon: ICONS.heart, title: 'L’œuf de la famille', text: 'Un œuf commun à toute la famille : chaque quête de l’enfant et chaque défi du parent le réchauffe. Il se fissure peu à peu, puis éclot en un petit dragon qui appartient à tous les deux. Touche « L’œuf » dans la ligne du jour.' }
+  ] },
   { version: '0.36.0', items: [
     { icon: ICONS.shield, title: 'Des armures sur mesure', text: 'Les protections de queue recouvrent maintenant toute la queue et suivent ses mouvements, jusqu’au bout enroulé. Casques, colliers, armures et ailes sont ajustés à chaque stade, pour le dragon comme pour la dragonne.' }
   ] },

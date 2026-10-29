@@ -188,5 +188,8 @@ export class ParentHub {
     this.save();
   }
 
+  /** Œuf de famille : envoie à un enfant ce que les autres ont fait (défis du parent + autres enfants). */
+  async eggSync(childId: string, others: number): Promise<void> { await this.link.send(childId, 'egg.sync', { others }, null); }
+
   async requestStatus(): Promise<void> { await this.link.send('children', 'status.request', {}); }
 }
