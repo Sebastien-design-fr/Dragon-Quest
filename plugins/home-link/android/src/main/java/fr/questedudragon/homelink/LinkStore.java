@@ -97,8 +97,25 @@ public final class LinkStore {
 
     // ---------------- Boîte d'envoi ----------------
 
+    /**
+     * Messages d'état : seul le plus récent compte (profil du dragon, état de l'enfant, œuf…).
+     * Un nouveau remplace l'ancien encore en attente pour le même destinataire, sinon la file
+     * se remplit quand l'autre téléphone est loin et retarde les visites, cadeaux et duels.
+     */
+    private static final java.util.Set<String> LATEST_ONLY = new java.util.HashSet<>(java.util.Arrays.asList(
+        "status", "status.request", "duo.profile", "duo.request", "egg.sync", "rewards.set", "duel.score"));
+
     public static synchronized void enqueue(Context c, String to, JSONObject message) {
-        JSONArray out = readArr(c, "outbox");
+        JSONArray old = readArr(c, "outbox"), out = new JSONArray();
+        String type = message.optString("type");
+        boolean latestOnly = LATEST_ONLY.contains(type);
+        for (int i = 0; i < old.length(); i++) {
+            JSONObject e = old.optJSONObject(i);
+            if (e == null) continue;
+            JSONObject m = e.optJSONObject("msg");
+            if (latestOnly && m != null && to.equals(e.optString("to")) && type.equals(m.optString("type"))) continue;
+            out.put(e);
+        }
         try {
             out.put(new JSONObject().put("to", to).put("msg", message).put("created", System.currentTimeMillis()).put("attempts", 0));
         } catch (JSONException ignored) {}
@@ -119,15 +136,21 @@ public final class LinkStore {
         write(c, "outbox", keep);
     }
 
-    /** Incrémente les tentatives et supprime les messages trop anciens. */
-    public static synchronized void failed(Context c, String to, String id) {
+    /**
+     * Après un passage de livraison : incrémente les tentatives des messages non livrés (clés « to\nid »)
+     * et supprime les messages trop anciens ou destinés à un appareil qui n'est plus dans la famille.
+     */
+    public static synchronized void failed(Context c, java.util.Set<String> keys) {
         JSONArray out = readArr(c, "outbox"), keep = new JSONArray();
+        JSONObject peers = peers(c);
         long now = System.currentTimeMillis();
         for (int i = 0; i < out.length(); i++) {
             JSONObject e = out.optJSONObject(i);
             if (e == null || now - e.optLong("created") > OUTBOX_TTL_MS) continue;
             JSONObject msg = e.optJSONObject("msg");
-            if (msg != null && to.equals(e.optString("to")) && id.equals(msg.optString("id"))) {
+            // destinataire retiré de la famille : on garde un jour, le temps qu'il soit éventuellement réenregistré
+            if (msg == null || (!peers.has(e.optString("to")) && now - e.optLong("created") > 24L * 3600 * 1000)) continue;
+            if (keys.contains(e.optString("to") + "\n" + msg.optString("id"))) {
                 try { e.put("attempts", e.optInt("attempts") + 1); } catch (JSONException ignored) {}
             }
             keep.put(e);

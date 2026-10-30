@@ -130,10 +130,15 @@ public final class LinkProtocol {
         }
     }
 
-    /** Tente de livrer toute la boîte d'envoi. Retourne le nombre de messages livrés. */
+    /**
+     * Tente de livrer toute la boîte d'envoi. Retourne le nombre de messages livrés.
+     * Un téléphone qui ne répond pas n'est essayé qu'une fois par passage : ses autres messages attendent
+     * le suivant, sans bloquer ceux des autres téléphones (avant, chaque message coûtait 3 s d'attente).
+     */
     public static int flush(Context c) {
         JSONArray out = LinkStore.outbox(c);
         JSONObject peers = LinkStore.peers(c);
+        java.util.Set<String> unreachable = new java.util.HashSet<>(), failed = new java.util.HashSet<>();
         int delivered = 0;
         for (int i = 0; i < out.length(); i++) {
             JSONObject e = out.optJSONObject(i);
@@ -142,15 +147,18 @@ public final class LinkProtocol {
             JSONObject msg = e.optJSONObject("msg");
             JSONObject peer = peers.optJSONObject(to);
             if (msg == null || peer == null) continue;
+            if (unreachable.contains(to)) { failed.add(to + "\n" + msg.optString("id")); continue; }
             String reply = exchange(peer.optString("host"), peer.optInt("port"), msg.toString());
             if (reply != null && reply.startsWith("OK")) {
                 LinkStore.delivered(c, to, msg.optString("id"));
                 LinkStore.upsertPeer(c, to, null, null, null, 0); // met à jour lastSeen
                 delivered++;
             } else {
-                LinkStore.failed(c, to, msg.optString("id"));
+                unreachable.add(to);
+                failed.add(to + "\n" + msg.optString("id"));
             }
         }
+        LinkStore.failed(c, failed);
         return delivered;
     }
 }

@@ -81,9 +81,12 @@ public class HomeLinkService extends Service {
 
     public static int currentPort() { return port; }
 
+    /** Une livraison déjà prévue suffit : plusieurs envois rapprochés ne lancent qu'un passage. */
+    private final java.util.concurrent.atomic.AtomicBoolean flushQueued = new java.util.concurrent.atomic.AtomicBoolean(false);
+
     public static void requestFlush(Context c) {
         HomeLinkService s = instance;
-        if (s != null && s.scheduler != null) s.scheduler.execute(s::flushNow);
+        if (s != null && s.scheduler != null) { if (s.flushQueued.compareAndSet(false, true)) s.scheduler.execute(s::flushNow); }
         else if (LinkStore.isPaired(c)) start(c);
     }
 
@@ -142,6 +145,7 @@ public class HomeLinkService extends Service {
     // ---------------- Livraison ----------------
 
     private void flushNow() {
+        flushQueued.set(false);
         try {
             if (!LinkStore.isPaired(this)) return;
             LinkProtocol.flush(this);

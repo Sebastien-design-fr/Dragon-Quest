@@ -4,7 +4,7 @@ import type { FamilyEgg } from './FamilyEgg.js';
 import { EventBus } from '../core/events.js';
 import { loadJSON } from '../core/data.js';
 import type { GameState } from '../game/GameState.js';
-import type { LinkMessage, NotifSpec, Transport } from '../link/Transport.js';
+import { handleSafely, type LinkMessage, type NotifSpec, type Transport } from '../link/Transport.js';
 import { readStore, writeStore } from '../platform/storage.js';
 import {
   appliesOn, newId, rewardText, todayKey,
@@ -535,7 +535,7 @@ export class ChildBook {
     this.settle();
     const msgs = await this.link.drainInbox();
     let changed = before !== this.data.lastSettled;
-    for (const m of msgs) changed = this.handle(m) || changed;
+    for (const m of msgs) changed = handleSafely(m, x => this.handle(x)) || changed;
     if (changed) { this.checkBadges(); this.save(); }
     await this.refreshReminders();
     this.queueStatus();

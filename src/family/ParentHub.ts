@@ -1,6 +1,6 @@
 // Côté parent : demandes de validation reçues, état des enfants, gestion des missions et bonus.
 import { EventBus } from '../core/events.js';
-import type { LinkMessage, Member, Transport } from '../link/Transport.js';
+import { handleSafely, type LinkMessage, type Member, type Transport } from '../link/Transport.js';
 import { readStore, writeStore } from '../platform/storage.js';
 import { newId, rewardText, type ChildSnapshot, type Mission, type RequestInfo, type Reward } from './model.js';
 
@@ -44,7 +44,7 @@ export class ParentHub {
   async sync(): Promise<void> {
     const msgs = await this.link.drainInbox();
     let changed = false;
-    for (const m of msgs) changed = this.handle(m) || changed;
+    for (const m of msgs) changed = handleSafely(m, x => this.handle(x)) || changed;
     if (changed) this.save();
   }
 

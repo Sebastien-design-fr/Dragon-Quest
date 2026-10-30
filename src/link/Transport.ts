@@ -21,6 +21,14 @@ export interface LinkMessage {
   payload: any; outgoing?: boolean;
 }
 
+/**
+ * Traite un message reçu sans jamais interrompre la boucle : la boîte de réception est vidée d'un coup,
+ * une erreur sur un message ne doit pas faire perdre ceux qui suivent (visites, cadeaux, duels…).
+ */
+export function handleSafely(m: LinkMessage, handle: (m: LinkMessage) => boolean): boolean {
+  try { return handle(m); } catch (e) { console.error(`Message « ${m.type} » non traité`, e); return false; }
+}
+
 export interface Member { id: string; name: string; role: Role; lastSeen?: number }
 
 export interface LinkState {
