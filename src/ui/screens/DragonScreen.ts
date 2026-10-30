@@ -36,15 +36,15 @@ export class DragonScreen implements Screen {
     clear(el);
     if (!comp) return;
     // Refonte UX : la prochaine quête d'abord (un seul geste), puis « À découvrir » en carrousel horizontal.
+    // la question d'anniversaire attend dans « À découvrir » : la prochaine quête garde la première place
     const discover = [
-      friendBirthdayCard(app), eventCard(app), stepsCard(app), dailyChestCard(app), nextStageCard(app), collectionCard(app),
+      birthdayAskCard(app), friendBirthdayCard(app), eventCard(app), stepsCard(app), dailyChestCard(app), nextStageCard(app), collectionCard(app),
       book ? this.expeditionCard(comp) : null,
       app.family.duo ? familyQuestCard(app) : null
     ].filter((x): x is HTMLElement => !!x);
     put(el,
       todayStrip(app),
       this.nameCard(comp),
-      birthdayAskCard(app),
       book ? questDeck(app) : this.careStrip(comp),
       h('div', { class: 'ds-tools' },
         h('button', { class: 'ds-tool', onclick: () => openLair(app) }, icon(ICONS.dragon, 22), h('span', null, 'Sa grotte')),

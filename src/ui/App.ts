@@ -81,7 +81,7 @@ function fireHaptics(): void {
   setTimeout(() => { try { navigator.vibrate?.(18); } catch { /* pas de vibreur */ } }, 1130);
 }
 
-export const APP_VERSION = '0.37.1';
+export const APP_VERSION = '0.37.2';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -728,6 +728,13 @@ export class App {
     const right = Math.max(12, Math.min(w - p.x + 10, w - bw - 12));
     this.bubble.style.right = `${right}px`;
     this.bubble.style.top = `${Math.max(8, p.y - 90)}px`;
+    // sur un petit écran la bulle passe sur la carte du dragon : la carte s'efface le temps qu'il parle
+    const b = this.bubble.getBoundingClientRect();
+    const over = [...host.querySelectorAll<HTMLElement>('.sh-status, .talk-fab')].some(e => {
+      const r = e.getBoundingClientRect();
+      return r.width > 0 && r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top;
+    });
+    host.classList.toggle('bubble-over', over);
   }
 
   /** Choisit une pensée : les rappels importants d'abord, sans répéter la même trop souvent. */

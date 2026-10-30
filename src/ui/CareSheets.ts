@@ -110,8 +110,7 @@ export function gamesSheet(app: App): void {
   const img = (k: string) => Assets.dragonPart(stage, k, variant) ?? Assets.dragonPart(stage, 'full', variant) ?? '';
   const opts = { stand: img('full'), flyUp: img('flyUp'), flyDown: img('flyDown'), backdrop: Assets.background(stage) ?? undefined, stage };
   openSheet('Jouer avec ' + comp.name, close => [
-    h('p', { class: 'small muted' }, 'Chaque jeu entraîne une de ses qualités. La première partie de chaque jeu rapporte de l’or et des points d’entraînement chaque jour.'),
-    powerStrip(app, stage),
+    h('p', { class: 'small muted' }, 'Ta première partie de chaque jeu rapporte de l’or aujourd’hui.'),
     ...GAMES.map(g => {
       const lv = training?.level(g.stat as GameStat);
       const already = training?.rewarded(g.id) ?? false;
@@ -154,6 +153,9 @@ export function gamesSheet(app: App): void {
             best ? h('span', { class: 'chip-mini' }, `Record ${best}`) : null,
             already ? h('span', { class: 'chip-mini muted' }, 'Déjà joué aujourd’hui') : h('span', { class: 'chip-mini gold' }, 'Récompense du jour'))),
         h('span', { class: 'chev' }, '›'));
-    })
+    }),
+    // les pouvoirs à venir après les jeux : on commence par ce qu'on peut faire, pas par ce qui est fermé
+    h('h4', { class: 'cs-powers-head' }, 'Pouvoirs de ' + comp.name),
+    powerStrip(app, stage)
   ]);
 }
