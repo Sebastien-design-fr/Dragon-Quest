@@ -7,7 +7,7 @@ import type { GameState } from '../game/GameState.js';
 import { handleSafely, type LinkMessage, type NotifSpec, type Transport } from '../link/Transport.js';
 import { readStore, writeStore } from '../platform/storage.js';
 import {
-  appliesOn, newId, rewardText, todayKey,
+  appliesOn, needsPhoto, newId, rewardText, todayKey,
   type ChildSnapshot, type Mission, type MissionStatus, type RequestInfo, type Reward
 } from './model.js';
 import { fill, journeyFor, landmarks, weekKey } from './Expedition.js';
@@ -183,6 +183,7 @@ export class ChildBook {
     const m: Mission = dbl > 1 ? { ...found, xp: found.xp * 2, gold: found.gold * 2 } : found;
     const st = this.status(id);
     if (st === 'done' || st === 'pending') return;
+    if (needsPhoto(found) && !photo) { this.events.emit('toast', `${found.title} : tes parents demandent une photo`); return; }
     const date = todayKey();
 
     if (m.validation === 'trust') {

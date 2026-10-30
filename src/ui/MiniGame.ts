@@ -1,9 +1,11 @@
 // Mini-jeu « Chasse aux gemmes » : des gemmes tombent, on les touche pour les attraper (30 secondes).
 // Les gemmes dorées valent 3 points ; les pierres de lave font perdre 2 points.
+// Le dragon est là, en bas : chaque gemme attrapée vole jusqu'à lui et il sautille ; la lave le fait sursauter.
+import { Assets } from '../engine/AssetManager.js';
 import { hasPower } from '../game/StagePowers.js';
 import { h } from './dom.js';
 import type { GameOpts } from './games/index.js';
-import { Ambience, GRADES, Juice, loadImage, paintBackdrop, powerNote } from './games/Scenery.js';
+import { Ambience, GRADES, Juice, endCard, loadImage, paintBackdrop, powerNote, starsFor } from './games/Scenery.js';
 
 interface Gem { x: number; y: number; vy: number; r: number; kind: 'blue' | 'red' | 'gold' | 'lava'; rot: number; vr: number; hit: number }
 
@@ -34,6 +36,25 @@ export function playGemGame(dragonName: string, opts?: GameOpts): Promise<number
     const reach = opts?.stage && hasPower(opts.stage, 'agile') ? 30 : 14;
     const goldPts = goldPtsFor(opts);
     const backdrop = loadImage(opts?.backdrop);
+    const dragonImg = loadImage(opts?.stand);
+    // gemmes peintes (assets/games/gem_<sorte>.webp, voir docs/ILLUSTRATIONS.md) ; sinon gemmes dessinées
+    const gemArt = Object.fromEntries((['blue', 'red', 'gold', 'lava'] as const).map(k => [k, loadImage(Assets.art(`games/gem_${k}`) ?? undefined)])) as Record<Gem['kind'], ReturnType<typeof loadImage>>;
+    const paintedGem = (kind: Gem['kind'], s: number): boolean => {
+      const a = gemArt[kind];
+      if (!a.ok()) return false;
+      const size = s * 2.3;
+      ctx.drawImage(a.img, -size / 2, -size / 2, size, size);
+      return true;
+    };
+    // le dragon : saut de joie (hop), sursaut (flinch), il se penche vers la dernière gemme attrapée
+    let hop = 0, flinch = 0, lean = 0, glow = 0, party = false;
+    const dragonBox = () => {
+      const img = dragonImg.img, ratio = dragonImg.ok() ? img.naturalWidth / img.naturalHeight : 1.3;
+      const hh = Math.min(H * 0.24, 210), ww = hh * ratio;
+      return { x: W / 2 - ww / 2, y: H - hh - 18, w: ww, h: hh };
+    };
+    /** Gemmes attrapées en route vers le dragon. */
+    const flyers: Array<{ x0: number; y0: number; k: number; kind: Gem['kind'] }> = [];
     const ambience = new Ambience('dust', 40);
     const juice = new Juice();
     let bg: HTMLCanvasElement | null = null, bgPainted = false;
@@ -70,6 +91,8 @@ export function playGemGame(dragonName: string, opts?: GameOpts): Promise<number
         const pts = g.kind === 'gold' ? goldPts : g.kind === 'lava' ? -2 : 1;
         score = Math.max(0, score + pts);
         juice.pop(g.x, g.y, pts > 0 ? `+${pts}` : `${pts}`, pts > 0 ? (g.kind === 'gold' ? '#fff1a8' : '#ffd76a') : '#ff6b5a', g.kind === 'gold');
+        if (pts > 0) { flyers.push({ x0: g.x, y0: g.y, k: 0, kind: g.kind }); lean = Math.max(-1, Math.min(1, (g.x - W / 2) / (W / 2))); }
+        else flinch = 1;
         const [c1, c2] = COLORS[g.kind];
         for (let k = 0; k < (g.kind === 'gold' ? 22 : 12); k++) {
           const a = Math.random() * Math.PI * 2, sp = 80 + Math.random() * 220;
@@ -116,7 +139,7 @@ export function playGemGame(dragonName: string, opts?: GameOpts): Promise<number
         halo.addColorStop(0, g.kind === 'lava' ? 'rgba(255,90,30,0.35)' : 'rgba(255,240,200,0.28)'); halo.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = halo; ctx.fillRect(-s * 2, -s * 2, s * 4, s * 4);
       }
-      if (g.kind === 'lava') {
+      if (paintedGem(g.kind, s)) { /* gemme peinte */ } else if (g.kind === 'lava') {
         const grd = ctx.createLinearGradient(-s, -s, s, s);
         grd.addColorStop(0, c1); grd.addColorStop(1, c2);
         ctx.fillStyle = grd;
@@ -146,6 +169,50 @@ export function playGemGame(dragonName: string, opts?: GameOpts): Promise<number
       ambience.draw(ctx, W, H, dt, now);
       for (const g of gems) { g.y += g.vy * dt; g.rot += g.vr * dt; if (g.hit) g.hit += dt * 3; }
       for (let i = gems.length - 1; i >= 0; i--) if (gems[i].y - gems[i].r > H || gems[i].hit > 0.5) gems.splice(i, 1);
+      // le dragon respire, se penche, saute quand une gemme lui arrive
+      if (party && hop <= 0) hop = 1; // fin de partie : il sautille de joie à côté de la carte
+      hop = Math.max(0, hop - dt * 2.6); flinch = Math.max(0, flinch - dt * 2.2); glow = Math.max(0, glow - dt * 2);
+      lean *= Math.pow(0.25, dt);
+      const db = dragonBox();
+      const chest = { x: db.x + db.w * 0.5, y: db.y + db.h * 0.42 };
+      if (dragonImg.ok()) {
+        ctx.save();
+        const lift = Math.sin(Math.min(1, hop) * Math.PI) * 26, shake = Math.sin(now / 22) * 7 * flinch;
+        const breathe = 1 + 0.018 * Math.sin(now / 520);
+        ctx.translate(db.x + db.w / 2 + shake + lean * 10, db.y + db.h);
+        ctx.rotate(lean * 0.05);
+        ctx.scale(1 / Math.sqrt(breathe), breathe);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath(); ctx.ellipse(0, -2, db.w * 0.36 * (1 - lift / 90), 9, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.drawImage(dragonImg.img, -db.w / 2, -db.h - lift, db.w, db.h);
+        ctx.restore();
+        if (glow > 0) {
+          ctx.save(); ctx.globalCompositeOperation = 'lighter';
+          const gl = ctx.createRadialGradient(chest.x, chest.y, 4, chest.x, chest.y, db.w * 0.5);
+          gl.addColorStop(0, `rgba(255,225,150,${0.45 * glow})`); gl.addColorStop(1, 'rgba(255,200,120,0)');
+          ctx.fillStyle = gl; ctx.fillRect(chest.x - db.w, chest.y - db.w, db.w * 2, db.w * 2);
+          ctx.restore();
+        }
+      }
+      // gemmes attrapées : elles filent en arc jusqu'au dragon, en rapetissant
+      for (let i = flyers.length - 1; i >= 0; i--) {
+        const f = flyers[i];
+        f.k += dt / 0.42;
+        if (f.k >= 1) {
+          flyers.splice(i, 1);
+          hop = 1; glow = f.kind === 'gold' ? 1.4 : 0.8;
+          const [c1, c2] = COLORS[f.kind];
+          for (let k = 0; k < 8; k++) { const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4, sp = 60 + Math.random() * 120; sparks.push({ x: chest.x, y: chest.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.4 + Math.random() * 0.3, color: k % 2 ? c1 : c2 }); }
+          continue;
+        }
+        const e = f.k * f.k * (3 - 2 * f.k);
+        const x = f.x0 + (chest.x - f.x0) * e, y = f.y0 + (chest.y - f.y0) * e - Math.sin(e * Math.PI) * 70;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(e * 6);
+        const [c1, c2] = COLORS[f.kind];
+        const fs = (f.kind === 'gold' ? 20 : 24) * (1 - 0.6 * e);
+        if (!paintedGem(f.kind, fs)) drawFacets(fs, c1, c2);
+        ctx.restore();
+      }
       gems.forEach(drawGem);
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       for (const p of sparks) {
@@ -164,10 +231,10 @@ export function playGemGame(dragonName: string, opts?: GameOpts): Promise<number
     function start(): void { running = true; t = 0; }
     function end(): void {
       running = false;
-      const box = h('div', { class: 'game-intro' },
-        h('h2', null, `${score} point${score > 1 ? 's' : ''} !`),
-        h('p', null, score >= 25 ? `${dragonName} est impressionné !` : score >= 12 ? `${dragonName} s’est bien amusé.` : `${dragonName} a adoré jouer avec toi.`),
-        h('button', { class: 'btn primary', onclick: () => { cancelAnimationFrame(raf); root.remove(); resolve(score); } }, 'Retour au dragon'));
+      party = true;
+      const box = endCard({ score, stars: starsFor(score, 12, 25), record: !!opts?.best && score > opts.best,
+        lines: [score >= 25 ? `${dragonName} est impressionné !` : score >= 12 ? `${dragonName} s’est bien amusé.` : `${dragonName} a adoré jouer avec toi.`],
+        onDone: () => { cancelAnimationFrame(raf); root.remove(); resolve(score); } });
       root.append(box);
     }
     window.addEventListener('resize', resize, { once: true });

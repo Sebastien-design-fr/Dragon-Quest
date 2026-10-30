@@ -16,8 +16,13 @@ export interface Mission {
   once?: boolean;
   /** Quête bonus facultative : rapporte plus, jamais sanctionnée si elle n'est pas faite. */
   optional?: boolean;
+  /** Le parent demande une photo comme preuve (missions validées par un parent) : l'enfant ne peut l'envoyer qu'avec. */
+  photo?: boolean;
   note?: string;
 }
+
+/** La mission ne peut être envoyée qu'avec une photo. */
+export const needsPhoto = (m: Pick<Mission, 'photo' | 'validation'>): boolean => !!m.photo && m.validation === 'parent';
 
 export type MissionStatus = 'todo' | 'pending' | 'done' | 'refused';
 

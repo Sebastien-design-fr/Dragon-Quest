@@ -166,3 +166,33 @@ input, textarea, [contenteditable="true"], .pq-result { -webkit-user-select: tex
 }
 .game-hud .game-score::before { --hud-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z'/%3E%3C/svg%3E"); }
 .game-hud .game-time::before { --hud-ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 2h12v2h-1v3.2a5 5 0 0 1-2.4 4.3L13.8 12l.8.5A5 5 0 0 1 17 16.8V20h1v2H6v-2h1v-3.2a5 5 0 0 1 2.4-4.3l.8-.5-.8-.5A5 5 0 0 1 7 7.2V4H6zm3 2v3.2c0 1 .5 2 1.4 2.6L12 10.8l1.6-1c.9-.6 1.4-1.6 1.4-2.6V4z'/%3E%3C/svg%3E"); }
+
+/* Fin de partie des mini-jeux (endCard) : dragon qui saute, étoiles qui s'allument, score qui défile. */
+.game-end.ge { overflow: visible; }
+.game-end.ge-has-dragon { padding-top: 64px; }
+.ge-dragon { position: absolute; left: 50%; top: 0; width: 132px; height: 132px; object-fit: contain; transform: translate(-50%, -62%);
+  filter: drop-shadow(0 8px 14px rgba(0,0,0,.6)); animation: ge-hop .9s cubic-bezier(.3,1.6,.5,1) .15s both; }
+.ge-top .ge-dragon { animation: ge-hop .9s cubic-bezier(.3,1.6,.5,1) .15s both, ge-joy .7s ease-in-out 1.1s 3; }
+@keyframes ge-hop { from { transform: translate(-50%, -30%) scale(.6); opacity: 0; } to { transform: translate(-50%, -62%) scale(1); opacity: 1; } }
+@keyframes ge-joy { 0%, 100% { transform: translate(-50%, -62%); } 40% { transform: translate(-50%, -78%) rotate(-4deg); } }
+.ge-stars { display: flex; justify-content: center; gap: 10px; margin-bottom: 2px; }
+.ge-star { width: 40px; height: 40px; background: rgba(255,255,255,.12);
+  -webkit-mask: var(--ge-star) center / contain no-repeat; mask: var(--ge-star) center / contain no-repeat;
+  --ge-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z'/%3E%3C/svg%3E"); }
+.ge-star:nth-child(2) { width: 50px; height: 50px; margin-top: -8px; }
+.ge-star.on { background: linear-gradient(180deg, #fff3b8, #f0b43c 60%, #c98418); filter: drop-shadow(0 0 8px rgba(255,200,90,.7));
+  animation: ge-star-in .45s cubic-bezier(.3,1.7,.5,1) var(--d) both; }
+@keyframes ge-star-in { from { transform: scale(0) rotate(-40deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.ge-score { font-variant-numeric: tabular-nums; }
+.ge-record { color: var(--gold-soft); font-family: var(--display); letter-spacing: .03em; }
+@media (prefers-reduced-motion: reduce) { .ge-dragon, .ge-top .ge-dragon, .ge-star.on { animation: none; } }
+
+/* Photo demandée par les parents : case dans le formulaire, bouton « Prends la photo » côté enfant. */
+.pm-photo-opt { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.03); cursor: pointer; }
+.pm-photo-opt input { width: 22px; height: 22px; margin-top: 1px; accent-color: var(--gold); flex: none; }
+.pm-photo-opt > span { display: flex; flex-direction: column; gap: 2px; }
+.pm-chip.photo { border-color: rgba(214,170,90,.5); color: var(--gold-soft); }
+.qd-shoot { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 56px; font-size: 17px; }
+.qd-shoot svg, .q-go svg { width: 22px; height: 22px; }
+.qd-needs-photo { color: var(--gold-soft); }
+.qd-needs-photo svg { width: 13px; height: 13px; }

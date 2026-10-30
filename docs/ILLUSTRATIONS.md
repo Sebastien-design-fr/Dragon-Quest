@@ -180,6 +180,32 @@ Style commun à rappeler dans chaque demande :
 
 ---
 
+## 6. Les gemmes de la Chasse aux gemmes (priorité moyenne)
+
+Quatre petites images carrées, une par sorte de gemme. Elles remplacent les gemmes dessinées par le code ;
+tant qu'elles manquent, le jeu garde ses gemmes actuelles. Les créer **dans la même conversation**, en
+commençant par la bleue, puis demander les autres « dans exactement le même style, même cadrage, même taille ».
+
+Style commun à rappeler dans chaque demande :
+
+> A single precious gem as a game item icon, painted realistic fantasy illustration in the style of the
+> attached dragon and cave artwork (warm candle and lava light, rich detail, soft rim light from the top left).
+> The gem is centered, fills about 80 % of a square canvas, seen slightly from above with clear faceted
+> crown and pavilion, strong inner glow and one bright sparkle highlight. Clean readable silhouette that stays
+> clear when shown very small on a phone. Transparent background, no shadow on the ground, no text, nothing else.
+
+| Gemme | Demande | Fichier |
+|---|---|---|
+| Bleue (1 point, la plus fréquente) | « A sapphire blue gem, cushion cut, deep blue with cyan light inside. » | `gem_blue.png` |
+| Rouge (1 point) | « A ruby red gem, pear (drop) cut, crimson with warm pink light inside. » | `gem_red.png` |
+| Dorée (3 points, rare) | « A golden topaz gem, star cut, glowing honey gold with tiny floating sparkles around it, clearly more precious and magical than the others. » | `gem_gold.png` |
+| Pierre de lave (à éviter, −2) | « Not a gem: a rough black volcanic rock with glowing orange lava cracks and a thin wisp of smoke, clearly dangerous and hot, same size and framing as the gems. » | `gem_lava.png` |
+
+Format : PNG transparent, carré, 512 × 512 px au moins. Les déposer dans `art/games/` ; je les convertis et
+les range dans `www/assets/games/` (`gem_blue.webp`, `gem_red.webp`, `gem_gold.webp`, `gem_lava.webp`).
+
+---
+
 ## Ce que je ferai à l'arrivée des images
 
 | Image | Effet dans le jeu |
@@ -190,3 +216,4 @@ Style commun à rappeler dans chaque demande :
 | Loup assis / couché / course | le loup s'assoit, dort vraiment, galope au lieu de sautiller |
 | Icône / démarrage | une appli belle dès l'écran d'accueil du téléphone |
 | Œuf de famille, nid, petit dragon | fenêtre de l'œuf commun, éclosion mise en scène, petit dragon partagé sur les deux téléphones |
+| Gemmes | gemmes peintes dans la Chasse aux gemmes, y compris quand elles volent jusqu'au dragon |

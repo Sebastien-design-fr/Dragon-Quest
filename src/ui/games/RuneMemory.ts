@@ -3,7 +3,7 @@
 // Score = paires × 3 + bonus de temps (secondes restantes / 3).
 import { h } from '../dom.js';
 import type { GameOpts } from './index.js';
-import { Ambience, GRADES, loadImage, paintBackdrop } from './Scenery.js';
+import { Ambience, GRADES, endCard, loadImage, paintBackdrop } from './Scenery.js';
 
 const DURATION = 60;
 const PREVIEW = 1.6;
@@ -179,11 +179,9 @@ export function playRuneMemory(dragonName: string, opts: GameOpts): Promise<numb
       const score = pairs * 3 + bonus;
       scoreEl.textContent = String(score);
       tiles.forEach(tl => { if (!tl.found) { setOpen(tl, true); tl.el.classList.add('unsolved'); } });
-      const box = h('div', { class: 'game-intro game-end' },
-        h('h2', null, `Score : ${score}`),
-        h('p', { class: 'game-rules' }, `${pairs} paire${pairs > 1 ? 's' : ''} × 3${bonus ? ` + ${bonus} de bonus de temps` : ''}`),
-        h('p', null, pairs === 8 ? `Toutes les runes sont déchiffrées ! ${dragonName} devient plus sage.` : pairs >= 4 ? `Bien joué, ${dragonName} apprend vite.` : `${dragonName} a aimé réfléchir avec toi.`),
-        h('button', { class: 'btn primary', onclick: () => finish(score) }, 'Continuer'));
+      const box = endCard({ score, stars: pairs === 8 ? 3 : pairs >= 4 ? 2 : 1, dragon: opts.stand, record: !!opts.best && score > opts.best, onDone: () => finish(score),
+        lines: [h('p', { class: 'game-rules' }, `${pairs} paire${pairs > 1 ? 's' : ''} × 3${bonus ? ` + ${bonus} de bonus de temps` : ''}`),
+          pairs === 8 ? `Toutes les runes sont déchiffrées ! ${dragonName} devient plus sage.` : pairs >= 4 ? `Bien joué, ${dragonName} apprend vite.` : `${dragonName} a aimé réfléchir avec toi.`] });
       setTimeout(() => root.append(box), 500);
     }
     function finish(score: number): void {

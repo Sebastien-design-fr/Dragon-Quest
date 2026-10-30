@@ -131,7 +131,7 @@ export function gamesSheet(app: App): void {
           }
           setTimeout(() => cover.remove(), 50);
         }
-        const score = await g.play(comp.name, { ...opts, stand, flyUp, flyDown });
+        const score = await g.play(comp.name, { ...opts, stand, flyUp, flyDown, best });
         const first = !already;
         const firstOfDay = (training?.playedToday() ?? 0) === 0;
         const res = training?.record(g.id, g.stat as GameStat, score);

@@ -9,7 +9,7 @@ import { playFishing } from './Fishing.js';
  * Images du dragon utilisées par les mini-jeux (URL d’images webp transparentes, dragon tourné vers la droite),
  * décor peint du stade (fond des jeux) et stade (pouvoirs, voir game/StagePowers.ts).
  */
-export interface GameOpts { stand: string; flyUp: string; flyDown: string; backdrop?: string; stage?: string; duel?: DuelOpts }
+export interface GameOpts { stand: string; flyUp: string; flyDown: string; backdrop?: string; stage?: string; duel?: DuelOpts; /** Meilleur score jusqu'ici (pour « Nouveau record ! »). */ best?: number }
 
 /** Duel en direct : mêmes cibles des deux côtés (graine commune), score de l'autre affiché, sans pouvoirs de stade. */
 export interface DuelOpts { seed: number; rival: string; rivalScore: () => number; onScore: (score: number) => void }

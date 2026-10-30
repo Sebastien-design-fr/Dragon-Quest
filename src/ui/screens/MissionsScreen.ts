@@ -1,6 +1,6 @@
 // Onglet « Quêtes » de l'enfant : le tableau des quêtes du jour, illustré.
 // Ordre : à faire (par heure) → à refaire → en attente des parents → faites (repliées).
-import { DAY_LABELS, type Mission, type MissionStatus } from '../../family/model.js';
+import { DAY_LABELS, needsPhoto, type Mission, type MissionStatus } from '../../family/model.js';
 import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon } from '../dom.js';
 import { openSheet } from './common.js';
@@ -27,6 +27,8 @@ export class MissionsScreen implements Screen {
     input.remove();
     if (!file) return;
     const photo = await shrink(file);
+    const m = this.app.family.book?.data.missions.find(x => x.id === id);
+    if (m && needsPhoto(m) && !photo) { this.app.toast('La photo n’a pas marché, réessaie'); return; }
     if (!await this.celebrate(id, card, 'Envoyé !')) return;
     await this.app.family.book!.complete(id, photo ?? undefined);
   }
@@ -167,7 +169,7 @@ export class MissionsScreen implements Screen {
         h('div', { class: 'q-sub' },
           m.time ? h('span', { class: 'q-time' }, icon(ICONS.clock, 13), `avant ${m.time.replace(':', ' h ')}`) : null,
           m.once ? h('span', { class: 'q-tag' }, 'Quête spéciale') : null,
-          parent && actionable ? h('span', { class: 'q-who' }, icon(ICONS.shield, 13), 'un parent valide') : null)),
+          parent && actionable ? h('span', { class: 'q-who' }, icon(ICONS.shield, 13), needsPhoto(m) ? 'un parent valide · photo demandée' : 'un parent valide') : null)),
       h('div', { class: 'q-rew' }, chips, m.note ? h('p', { class: 'q-note' }, m.note) : null));
 
     if (status === 'refused') {
@@ -180,8 +182,10 @@ export class MissionsScreen implements Screen {
 
     if (actionable) {
       const act = h('div', { class: 'q-act' });
-      act.append(h('button', { class: 'btn primary q-go', onclick: () => void this.finish(m.id, card) }, icon(ICONS.check, 20), status === 'refused' ? 'Refait !' : 'Fait !'));
-      if (parent) act.append(h('button', { class: 'btn q-photo', title: 'Envoyer une photo comme preuve', onclick: () => void this.withPhoto(m.id, card) }, cameraIcon(), h('span', null, 'Avec photo')));
+      // photo demandée par les parents : le bouton principal ouvre directement l'appareil photo
+      if (needsPhoto(m)) act.append(h('button', { class: 'btn primary q-go', onclick: () => void this.withPhoto(m.id, card) }, cameraIcon(), status === 'refused' ? 'Refait : prends la photo' : 'Prends la photo'));
+      else act.append(h('button', { class: 'btn primary q-go', onclick: () => void this.finish(m.id, card) }, icon(ICONS.check, 20), status === 'refused' ? 'Refait !' : 'Fait !'));
+      if (parent && !needsPhoto(m)) act.append(h('button', { class: 'btn q-photo', title: 'Envoyer une photo comme preuve', onclick: () => void this.withPhoto(m.id, card) }, cameraIcon(), h('span', null, 'Avec photo')));
       card.append(act);
     }
     return card;

@@ -3,6 +3,7 @@
 // Courtes (1 à 3 s) et jamais bloquantes : l'interface reste utilisable pendant l'effet.
 import type { EquipmentDef, StageDef } from '../core/types.js';
 import { Sound } from '../engine/Sound.js';
+import { sayFor } from '../family/Thoughts.js';
 import type { App } from './App.js';
 import { ICONS, h, icon } from './dom.js';
 import { thumb } from './screens/common.js';
@@ -69,6 +70,10 @@ export function missionReaction(app: App, xp: number, gold: number): void {
     if (app.sleeping) { if (xp) floatLabel(app, `+${xp} XP`, 'xp', 0); if (gold) floatLabel(app, `+${gold}`, 'gold', 150); return 1400; }
     void app.view.play('cheer');
     app.view.emit('sparkle', 'head_anchor');
+    // quête validée : un moment à soi (élan, étincelles, petite fanfare, et il le dit)
+    if (!document.documentElement.hasAttribute('data-night-soft')) Sound.ui('success');
+    navigator.vibrate?.([20, 50, 30]);
+    setTimeout(() => app.say(sayFor('questDone'), null, 3500), 700);
     if (xp) floatLabel(app, `+${xp} XP`, 'xp', 420);
     if (gold) floatLabel(app, `+${gold}`, 'gold', 560);
     return 1600;

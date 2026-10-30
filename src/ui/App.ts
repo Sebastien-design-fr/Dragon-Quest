@@ -35,7 +35,7 @@ import { toggleDevPanel } from './DevPanel.js';
 import { installSurprises } from './SurprisesUI.js';
 import { installShake, installTilt } from './Sensors.js';
 import { hideDrape, morningCurtain, nightKey, openBlanket, showDrape } from './Rituals.js';
-import { appliesOn, todayKey } from '../family/model.js';
+import { appliesOn, needsPhoto, todayKey } from '../family/model.js';
 import { sayFor, thoughts, type Thought, type ThoughtAction } from '../family/Thoughts.js';
 import type { ParentHub } from '../family/ParentHub.js';
 import type { Reminders } from '../family/Reminders.js';
@@ -81,7 +81,7 @@ function fireHaptics(): void {
   setTimeout(() => { try { navigator.vibrate?.(18); } catch { /* pas de vibreur */ } }, 1130);
 }
 
-export const APP_VERSION = '0.37.2';
+export const APP_VERSION = '0.38.0';
 
 export class App {
   /** Essai en boutique : affiché sur le dragon sans être acheté ni équipé. */
@@ -194,6 +194,9 @@ export class App {
       if (!book || action !== 'done') { if (book) setTimeout(() => this.show('dragon'), 300); return; }
       const st = book.status(missionId);
       if (st === 'done' || st === 'pending') return;
+      // photo demandée : « C'est fait » depuis la notification ouvre la quête pour prendre la photo
+      const pm = book.data.missions.find(x => x.id === missionId);
+      if (pm && needsPhoto(pm)) { setTimeout(() => { this.show('dragon'); this.say('Tes parents veulent une photo : touche « Prends la photo » !', null, 5000); }, 600); return; }
       setTimeout(() => {
         this.show('dragon');
         void book.complete(missionId).then(() => this.say('C’est noté ! Merci, tu assures.', null, 4000));
@@ -327,7 +330,17 @@ export class App {
         const cold = !!wx && (wx.temp <= 6 || wx.kind === 'snow');
         if (cold && this.showingOwn && !this.sleeping && !this.evolving && !document.hidden && Math.random() < 0.3) this.view.emit('breathMist', 'mouth_anchor');
       }, 2500);
-      document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(() => this.think(true), 1200); });
+      // retour dans l'appli : après une vraie pause (10 min), il fête le retour au lieu d'une simple pensée
+      let hiddenAt = 0;
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) { hiddenAt = Date.now(); return; }
+        const pause = hiddenAt ? Date.now() - hiddenAt : 0;
+        setTimeout(() => {
+          if (pause > 10 * 60000 && !this.isParent && !this.sleeping && this.showingOwn) {
+            void this.act('welcome'); this.view.emit('hearts', 'head_anchor'); this.say(sayFor('back'), null, 4500);
+          } else this.think(true);
+        }, 1200);
+      });
     }
 
     if (comp) {

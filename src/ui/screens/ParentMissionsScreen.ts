@@ -1,4 +1,4 @@
-import { DAY_LABELS, newId, type ChildSnapshot, type Mission, type MissionStatus, type Reward, type Validation } from '../../family/model.js';
+import { DAY_LABELS, needsPhoto, newId, type ChildSnapshot, type Mission, type MissionStatus, type Reward, type Validation } from '../../family/model.js';
 import type { App, Screen } from '../App.js';
 import { ICONS, clear, h, icon } from '../dom.js';
 import { childPicker } from './ValidationsScreen.js';
@@ -175,7 +175,8 @@ export class ParentMissionsScreen implements Screen {
           h('div', { class: 'pm-meta' },
             m.xp ? h('span', { class: 'pm-chip xp' }, `+${m.xp} XP`) : null,
             m.gold ? h('span', { class: 'pm-chip gold' }, icon(ICONS.coin, 12), `+${m.gold}`) : null,
-            h('span', { class: `pm-chip val ${m.validation}` }, icon(m.validation === 'parent' ? ICONS.shield : ICONS.hand, 12), m.validation === 'parent' ? 'Parent' : 'Confiance'))),
+            h('span', { class: `pm-chip val ${m.validation}` }, icon(m.validation === 'parent' ? ICONS.shield : ICONS.hand, 12), m.validation === 'parent' ? 'Parent' : 'Confiance'),
+            needsPhoto(m) ? h('span', { class: 'pm-chip photo' }, 'Photo') : null)),
         h('div', { class: 'pm-actions' },
           h('button', { class: 'icon-btn', 'aria-label': `Modifier ${m.title}`, onclick: () => this.edit(m) }, icon(ICONS.edit, 18)),
           h('button', { class: 'icon-btn', 'aria-label': `Supprimer ${m.title}`, onclick: async () => {
@@ -286,6 +287,9 @@ export class ParentMissionsScreen implements Screen {
         input('Or', { type: 'number', min: '0', max: '500', value: String(d.gold), inputmode: 'numeric' }, v => { d.gold = Math.max(0, Number(v) || 0); })),
       h('span', { class: 'small' }, 'Qui valide ?'), valSel,
       h('p', { class: 'small muted' }, d.validation === 'parent' ? 'L’enfant coche, un parent valide : l’XP n’est crédité qu’après.' : 'L’XP est crédité dès que l’enfant coche.'),
+      d.validation === 'parent' ? h('label', { class: 'pm-photo-opt' },
+        h('input', { type: 'checkbox', checked: !!d.photo, onchange: (e: Event) => { d.photo = (e.target as HTMLInputElement).checked; } }),
+        h('span', null, h('strong', null, 'Demander une photo'), h('span', { class: 'small muted' }, 'L’enfant devra prendre une photo pour l’envoyer (chambre rangée, vaisselle…).'))) : null,
       d.once ? null : h('span', { class: 'small' }, 'Jours'), d.once ? null : days, d.once ? null : quickDays,
       input('Heure du rappel (vide = pas de rappel)', { type: 'time', value: d.time ?? '' }, v => { d.time = v || null; }),
       h('div', { class: 'row end' },

@@ -6,7 +6,7 @@ import { Assets } from '../../engine/AssetManager.js';
 import { hasPower } from '../../game/StagePowers.js';
 import { h } from '../dom.js';
 import type { GameOpts } from './index.js';
-import { powerNote } from './Scenery.js';
+import { endCard, powerNote } from './Scenery.js';
 
 const DURATION = 60;
 type FishKind = 'small' | 'big' | 'gold';
@@ -296,11 +296,9 @@ export function playFishing(dragonName: string, opts: GameOpts): Promise<number>
       if (over) return;
       over = true; running = false;
       lastCatch = caught;
-      const box = h('div', { class: 'game-intro game-end' },
-        h('h2', null, `Score : ${score}`),
-        h('p', { class: 'game-rules' }, `${caught} poisson${caught > 1 ? 's' : ''} attrapé${caught > 1 ? 's' : ''}`),
-        h('p', null, caught >= 8 ? `Quelle pêche ! ${dragonName} et le loup vont se régaler.` : caught >= 3 ? `Belle pêche, ${dragonName} est ravi.` : `Ça mord peu aujourd’hui… ${dragonName} a aimé ce moment calme avec toi.`),
-        h('button', { class: 'btn primary', onclick: finish }, 'Continuer'));
+      const box = endCard({ score, stars: caught >= 8 ? 3 : caught >= 3 ? 2 : 1, dragon: opts.stand, record: !!opts.best && score > opts.best, onDone: finish,
+        lines: [h('p', { class: 'game-rules' }, `${caught} poisson${caught > 1 ? 's' : ''} attrapé${caught > 1 ? 's' : ''}`),
+          caught >= 8 ? `Quelle pêche ! ${dragonName} et le loup vont se régaler.` : caught >= 3 ? `Belle pêche, ${dragonName} est ravi.` : `Ça mord peu aujourd’hui… ${dragonName} a aimé ce moment calme avec toi.`] });
       setTimeout(() => root.append(box), 400);
     }
     function finish(): void {

@@ -3,7 +3,7 @@
 import { hasPower } from '../../game/StagePowers.js';
 import { h } from '../dom.js';
 import type { GameOpts } from './index.js';
-import { GRADES, Juice, loadImage, paintBackdrop, powerNote } from './Scenery.js';
+import { GRADES, Juice, endCard, loadImage, paintBackdrop, powerNote, starsFor } from './Scenery.js';
 
 interface Rock { x: number; w: number; gapY: number; gap: number; top: number[]; bot: number[]; passed: boolean; gem: { y: number; taken: number; phase: number } | null }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number; max: number; color: string; size: number }
@@ -372,12 +372,10 @@ export function playFlightRace(dragonName: string, opts: GameOpts): Promise<numb
     function end(): void {
       if (over) return;
       running = false; over = true;
-      const box = h('div', { class: 'game-intro game-end' },
-        h('h2', null, `Score : ${score}`),
-        h('p', null, hearts <= 0
+      const box = endCard({ score, stars: starsFor(score, 12, 25), dragon: opts.stand, record: !!opts.best && score > opts.best, onDone: finish,
+        lines: [hearts <= 0
           ? `Aïe ! ${dragonName} s’est cogné trop souvent, mais il a bien volé.`
-          : score >= 25 ? `${dragonName} vole comme le vent !` : score >= 12 ? `Beau vol, ${dragonName} progresse.` : `${dragonName} a adoré voler avec toi.`),
-        h('button', { class: 'btn primary', onclick: finish }, 'Continuer'));
+          : score >= 25 ? `${dragonName} vole comme le vent !` : score >= 12 ? `Beau vol, ${dragonName} progresse.` : `${dragonName} a adoré voler avec toi.`] });
       setTimeout(() => root.append(box), hearts <= 0 ? 600 : 0);
     }
     function finish(): void {

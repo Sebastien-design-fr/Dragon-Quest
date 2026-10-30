@@ -3,7 +3,7 @@
 import { hasPower } from '../../game/StagePowers.js';
 import { h } from '../dom.js';
 import type { GameOpts } from './index.js';
-import { Ambience, GRADES, Juice, loadImage, paintBackdrop, powerNote } from './Scenery.js';
+import { Ambience, GRADES, Juice, endCard, loadImage, paintBackdrop, powerNote, starsFor } from './Scenery.js';
 
 type Kind = 'shield' | 'dummy' | 'lantern' | 'gold' | 'ice';
 interface Target { x: number; y: number; bx: number; by: number; r: number; kind: Kind; age: number; life: number; hit: boolean; out: number; mx: number; my: number; ph: number }
@@ -399,10 +399,8 @@ export function playFireTargets(dragonName: string, opts: GameOpts): Promise<num
       if (over) return;
       running = false; over = true;
       if (duel) { finish(); return; } // le résultat du duel est affiché par l'écran de duel
-      const box = h('div', { class: 'game-intro game-end' },
-        h('h2', null, `Score : ${score}`),
-        h('p', null, score >= 30 ? `${dragonName} est un maître du feu !` : score >= 15 ? `Joli tir, ${dragonName} chauffe de plus en plus.` : `${dragonName} a adoré cracher du feu avec toi.`),
-        h('button', { class: 'btn primary', onclick: finish }, 'Continuer'));
+      const box = endCard({ score, stars: starsFor(score, 15, 30), dragon: opts.stand, record: !!opts.best && score > opts.best, onDone: finish,
+        lines: [score >= 30 ? `${dragonName} est un maître du feu !` : score >= 15 ? `Joli tir, ${dragonName} chauffe de plus en plus.` : `${dragonName} a adoré cracher du feu avec toi.`] });
       root.append(box);
     }
     function finish(): void {

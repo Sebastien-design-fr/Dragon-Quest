@@ -2,6 +2,7 @@
 //  - fond : le décor peint du stade (cadré « cover »), étalonné selon l'ambiance du jeu, avec vignette ;
 //  - ambiance : poussières, braises ou étoiles qui dérivent (deux profondeurs) ;
 //  - impacts : secousse d'écran, éclair coloré, gains qui jaillissent (police du jeu, contour, rebond).
+import { Sound } from '../../engine/Sound.js';
 import { gameEffects } from '../../game/StagePowers.js';
 import { h } from '../dom.js';
 
@@ -145,3 +146,43 @@ export function powerNote(stage: string | undefined, gameId: string): HTMLElemen
   if (!effects.length) return null;
   return h('ul', { class: 'game-powers', 'aria-label': 'Pouvoirs actifs' }, ...effects.map(e => h('li', null, e)));
 }
+
+/**
+ * Fin de partie commune à tous les mini-jeux : le dragon saute de joie, les étoiles s'allument une à une
+ * (au moins une : on ne rate jamais tout), le score défile jusqu'à sa valeur, puis la phrase du dragon.
+ * Sons : une pièce par étoile, la petite fanfare seulement pour trois étoiles (pas la nuit).
+ */
+export function endCard(o: {
+  score: number; stars: number; dragon?: string; lines: Array<string | HTMLElement | null>;
+  record?: boolean; button?: string; onDone: () => void;
+}): HTMLElement {
+  const stars = Math.max(1, Math.min(3, Math.round(o.stars)));
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const night = document.documentElement.hasAttribute('data-night-soft');
+  const scoreEl = h('span', { class: 'ge-score' }, calm ? String(o.score) : '0');
+  const starEls = [0, 1, 2].map(i => h('span', { class: `ge-star${i < stars ? ' on' : ''}`, style: `--d:${0.35 + i * 0.32}s` }));
+  const box = h('div', { class: `game-intro game-end ge${stars === 3 ? ' ge-top' : ''}${o.dragon ? ' ge-has-dragon' : ''}` },
+    o.dragon ? h('img', { class: 'ge-dragon', src: o.dragon, alt: '' }) : null,
+    h('div', { class: 'ge-stars', 'aria-label': `${stars} étoile${stars > 1 ? 's' : ''} sur 3` }, ...starEls),
+    h('h2', null, scoreEl, ` point${o.score > 1 ? 's' : ''}`),
+    o.record ? h('p', { class: 'ge-record' }, 'Nouveau record !') : null,
+    ...o.lines.filter((x): x is string | HTMLElement => !!x).map(x => typeof x === 'string' ? h('p', null, x) : x),
+    h('button', { class: 'btn primary', onclick: () => { Sound.ui('tap'); o.onDone(); } }, o.button ?? 'Retour au dragon'));
+  if (!calm) {
+    // score qui défile (0,8 s), étoiles qui sonnent au moment où elles s'allument
+    const t0 = performance.now();
+    const roll = (now: number) => {
+      const k = Math.min(1, (now - t0) / 800);
+      scoreEl.textContent = String(Math.round(o.score * (1 - Math.pow(1 - k, 3))));
+      if (k < 1 && box.isConnected) requestAnimationFrame(roll);
+    };
+    requestAnimationFrame(roll);
+  }
+  for (let i = 0; i < stars; i++) setTimeout(() => { if (box.isConnected) Sound.ui('coin'); }, calm ? 0 : (350 + i * 320));
+  if (stars === 3 && !night) setTimeout(() => { if (box.isConnected) Sound.ui('success'); }, calm ? 0 : 1350);
+  if (navigator.vibrate) navigator.vibrate(stars === 3 ? [20, 60, 20, 60, 40] : 20);
+  return box;
+}
+
+/** Étoiles d'une partie : 1 pour avoir joué, 2 au-delà de « bien », 3 au-delà de « très bien ». */
+export function starsFor(score: number, good: number, great: number): number { return score >= great ? 3 : score >= good ? 2 : 1; }

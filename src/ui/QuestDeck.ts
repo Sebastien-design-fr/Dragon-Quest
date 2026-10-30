@@ -3,7 +3,7 @@
 // - balayer la carte (gauche / droite) : voir les autres quêtes du jour ;
 // - quête validée : la carte s'envole, le dragon réagit, la suivante arrive.
 // Les quêtes détaillées (bonus, semaine, nouvelles) restent dans l'onglet Quêtes.
-import type { Mission, MissionStatus } from '../family/model.js';
+import { needsPhoto, type Mission, type MissionStatus } from '../family/model.js';
 import type { App } from './App.js';
 import { ICONS, h, icon } from './dom.js';
 import { art, cameraIcon, gemIcon, illustration, shrink } from './screens/MissionsScreen.js';
@@ -129,15 +129,19 @@ export function questDeck(app: App): HTMLElement | null {
     const mult = x2 ? 2 : 1;
     const parent = m.validation === 'parent';
     const card = h('article', { class: `qd-card${t.status === 'refused' ? ' refused' : ''}${x2 ? ' x2' : ''}` });
-    const photoBtn = parent ? h('button', { class: 'qd-photo', 'aria-label': 'Valider avec une photo', onclick: async () => {
+    const shoot = async () => {
       const input = h('input', { type: 'file', accept: 'image/*', capture: 'environment', style: { display: 'none' } }) as HTMLInputElement;
       document.body.append(input);
       const file = await new Promise<File | null>(res => { input.onchange = () => res(input.files?.[0] ?? null); input.click(); setTimeout(() => res(null), 120000); });
       input.remove();
       if (!file) return;
       const p = await shrink(file);
+      if (needsPhoto(m) && !p) { app.toast('La photo n’a pas marché, réessaie'); return; }
       await complete(card, t, p ?? undefined);
-    } }, cameraIcon()) : null;
+    };
+    // photo demandée par les parents : un seul bouton, qui ouvre l'appareil photo
+    const mustShoot = needsPhoto(m);
+    const photoBtn = parent && !mustShoot ? h('button', { class: 'qd-photo', 'aria-label': 'Valider avec une photo', onclick: () => void shoot() }, cameraIcon()) : null;
     card.append(
       h('div', { class: 'qd-main' },
         art(illustration(m.title), 'qd-ill'),
@@ -146,14 +150,17 @@ export function questDeck(app: App): HTMLElement | null {
           h('h3', { class: 'qd-title' }, m.title),
           h('div', { class: 'qd-meta' },
             m.time ? h('span', null, icon(ICONS.clock, 13), `avant ${m.time.replace(':', ' h ')}`) : null,
-            parent ? h('span', null, icon(ICONS.shield, 13), 'un parent valide') : null),
+            parent ? h('span', null, icon(ICONS.shield, 13), 'un parent valide') : null,
+            mustShoot ? h('span', { class: 'qd-needs-photo' }, cameraIcon(), 'photo demandée') : null),
           refusalNote(app, t)),
         photoBtn),
       h('div', { class: 'qd-rew' },
         m.xp ? h('span', { class: 'qd-r xp' }, icon(ICONS.star, 14), `+${m.xp * mult}`, h('small', null, 'XP')) : null,
         m.gold ? h('span', { class: 'qd-r or' }, icon(ICONS.coin, 14), `+${m.gold * mult}`, h('small', null, 'or')) : null,
         h('span', { class: 'qd-r gem', title: 'Gemmes : à échanger contre de vraies récompenses' }, gemIcon(), `+${m.optional ? 2 : 1}`)),
-      slider(onDone, t.status === 'refused' ? 'Glisse quand c’est refait' : 'Glisse quand c’est fait'));
+      mustShoot
+        ? h('button', { class: 'btn primary qd-shoot', onclick: () => void shoot() }, cameraIcon(), t.status === 'refused' ? 'Refait ? Prends la photo' : 'C’est fait ? Prends la photo')
+        : slider(onDone, t.status === 'refused' ? 'Glisse quand c’est refait' : 'Glisse quand c’est fait'));
     return card;
   }
 }

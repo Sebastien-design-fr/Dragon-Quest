@@ -103,6 +103,8 @@ export const REACTIONS: Record<string, string[]> = {
   wake: ['Mmh… encore cinq minutes…', 'Quoi ? Il fait encore nuit…'],
   tuck: ['Bonne nuit… à demain.', 'Tu me raconteras une histoire demain ?'],
   welcome: ['Te revoilà ! Tu m’as tellement manqué !', 'Enfin ! Je t’attendais !'],
+  back: ['Ah, te revoilà ! On continue ?', 'Coucou ! Je t’ai gardé une place près du feu.', 'Tu es revenu ! Je savais que tu reviendrais.'],
+  questDone: ['On a réussi ! Tu es trop fort !', 'Bravo ! Je suis tellement fier de toi !', 'Une quête de plus ! Ensemble, on est imbattables !', 'Youpi ! Tu as vu ça ? On avance !'],
   locked: ['Je ne sais pas encore faire ça… soyons encore plus amis !'],
   cured: ['Je suis guéri ! Merci, tu es génial.', 'Je revis ! Merci pour cette journée parfaite.']
 };

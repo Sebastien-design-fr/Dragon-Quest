@@ -9,6 +9,11 @@ interface News { version: string; items: Array<{ icon: string; title: string; te
 
 /** Du plus récent au plus ancien. */
 const NEWS: News[] = [
+  { version: '0.38.0', items: [
+    { icon: ICONS.star, title: 'Des mini-jeux plus vivants', text: 'Ton dragon joue avec toi à la Chasse aux gemmes : chaque gemme attrapée vole jusqu’à lui et il saute de joie. À la fin de chaque jeu, gagne jusqu’à trois étoiles !' },
+    { icon: ICONS.heart, title: 'Un dragon plus expressif', text: 'Il fête chaque quête réussie avec toi, et te fait la fête quand tu reviens le voir.', childOnly: true },
+    { icon: ICONS.shield, title: 'Photo demandée', text: 'En créant une mission validée par un parent, cochez « Demander une photo » : l’enfant ne pourra l’envoyer qu’avec une photo.', parentOnly: true }
+  ] },
   { version: '0.37.0', items: [
     { icon: ICONS.heart, title: 'L’œuf de la famille', text: 'Un œuf commun à toute la famille : chaque quête de l’enfant et chaque défi du parent le réchauffe. Il se fissure peu à peu, puis éclot en un petit dragon qui appartient à tous les deux. Touche « L’œuf » dans la ligne du jour.' }
   ] },
